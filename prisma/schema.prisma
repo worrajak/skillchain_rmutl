@@ -1,0 +1,243 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ==================== Users ====================
+
+enum UserRole {
+  student
+  employer
+  admin
+  teacher
+  donor
+  superadmin
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  role            UserRole @default(student)
+  name            String
+  campus          String   @default("huaykaew")
+  wallet_address  String?  @unique
+  is_active       Boolean  @default(true)
+  email_verified  Boolean  @default(false)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  deleted_at      DateTime?
+
+  // Relations
+  student_tier         StudentTier?
+  student_qualification StudentQualification?
+  student_availability  StudentAvailability?
+  jobs_as_employer     Job[]          @relation("EmployerJobs")
+  jobs_as_student      Job[]          @relation("StudentJobs")
+  jobs_as_mentor       Job[]          @relation("MentorJobs")
+  evaluations_given    Evaluation[]   @relation("TeacherEvaluations")
+  evaluations_received Evaluation[]   @relation("StudentEvaluations")
+  donations            DonationFund[]
+  behavior_logs        BehaviorLog[]
+
+  @@map("users")
+}
+
+// ==================== Student Tier System ====================
+
+enum TierLevel {
+  trainee
+  apprentice
+  certified
+}
+
+model StudentTier {
+  id                     String    @id @default(uuid())
+  student_id             String    @unique
+  tier                   TierLevel @default(trainee)
+  training_jobs_completed Int      @default(0)
+  avg_mentor_score       Float     @default(0)
+  safety_incidents       Int       @default(0)
+  promoted_at            DateTime?
+  student                User      @relation(fields: [student_id], references: [id])
+
+  @@map("student_tiers")
+}
+
+enum BadgeLevel {
+  LOCKED
+  BASIC
+  TRUSTED
+  ELITE
+}
+
+model StudentQualification {
+  id              String     @id @default(uuid())
+  student_id      String     @unique
+  total_jobs      Int        @default(0)
+  avg_score       Float      @default(0)
+  success_rate    Float      @default(0)
+  badge_level     BadgeLevel @default(LOCKED)
+  max_job_value   Float      @default(0)
+  suspended_until DateTime?
+  student         User       @relation(fields: [student_id], references: [id])
+
+  @@map("student_qualifications")
+}
+
+enum AvailabilityStatus {
+  available
+  busy
+  unavailable
+}
+
+model StudentAvailability {
+  student_id   String             @id
+  status       AvailabilityStatus @default(available)
+  busy_until   DateTime?
+  current_jobs Int                @default(0)
+  location     String?
+  student      User               @relation(fields: [student_id], references: [id])
+
+  @@map("student_availability")
+}
+
+// ==================== Jobs ====================
+
+enum JobType {
+  PAID
+  VOLUNTEER
+  TRAINING
+  EXEMPTED
+}
+
+enum JobStatus {
+  OPEN
+  ASSIGNED
+  CONFIRMED
+  IN_PROGRESS
+  SUBMITTED
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum HiringMode {
+  MODE_A
+  MODE_B
+  MODE_C
+}
+
+enum JobCategory {
+  electrical
+  hvac
+  automotive
+  general
+}
+
+model Job {
+  id            String      @id @default(uuid())
+  title         String
+  description   String
+  type          JobType
+  job_category  JobCategory
+  status        JobStatus   @default(OPEN)
+  hiring_mode   HiringMode  @default(MODE_A)
+  is_mentorship Boolean     @default(false)
+  location      String
+  campus        String
+  pay_amount    Float       @default(0)
+  deadline      DateTime
+  employer_id   String
+  student_id    String?
+  mentor_id     String?
+  escrow_tx     String?
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+
+  // Relations
+  employer    User         @relation("EmployerJobs", fields: [employer_id], references: [id])
+  student     User?        @relation("StudentJobs", fields: [student_id], references: [id])
+  mentor      User?        @relation("MentorJobs", fields: [mentor_id], references: [id])
+  evaluations Evaluation[]
+  behavior_logs BehaviorLog[]
+
+  @@index([status])
+  @@index([type])
+  @@index([campus])
+  @@index([employer_id])
+  @@index([student_id])
+  @@map("jobs")
+}
+
+// ==================== Evaluations ====================
+
+model Evaluation {
+  id             String   @id @default(uuid())
+  job_id         String
+  student_id     String
+  teacher_id     String
+  score_quality  Float    // 40%
+  score_skill    Float    // 30%
+  score_time     Float    // 20%
+  score_tool     Float    // 10%
+  weighted_score Float
+  comment        String?
+  nft_tx_hash    String?
+  created_at     DateTime @default(now())
+
+  job     Job  @relation(fields: [job_id], references: [id])
+  student User @relation("StudentEvaluations", fields: [student_id], references: [id])
+  teacher User @relation("TeacherEvaluations", fields: [teacher_id], references: [id])
+
+  @@map("evaluations")
+}
+
+// ==================== Fund System ====================
+
+model DonationFund {
+  id               String   @id @default(uuid())
+  donor_id         String
+  amount           Float
+  purpose          String
+  is_restricted    Boolean  @default(false)
+  restriction_note String?
+  nft_tx_hash      String?
+  created_at       DateTime @default(now())
+
+  donor User @relation(fields: [donor_id], references: [id])
+
+  @@map("donation_funds")
+}
+
+// ==================== Behavior Log ====================
+
+enum Severity {
+  low
+  medium
+  high
+  critical
+}
+
+model BehaviorLog {
+  id              String   @id @default(uuid())
+  user_id         String
+  job_id          String?
+  event_type      String
+  severity        Severity @default(low)
+  description     String
+  penalty_applied Boolean  @default(false)
+  on_chain_tx     String?
+  created_at      DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id])
+  job  Job?  @relation(fields: [job_id], references: [id])
+
+  @@index([user_id])
+  @@index([event_type])
+  @@map("behavior_logs")
+}
