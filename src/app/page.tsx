@@ -289,7 +289,8 @@ export default async function HomePage() {
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {recentJobs.map((job) => (
-                <Card key={job.id} className="hover:ring-2 hover:ring-blue-200 transition-all">
+                <Link key={job.id} href={`/jobs/${job.id}`}>
+                <Card className="hover:ring-2 hover:ring-blue-200 transition-all cursor-pointer">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-base leading-snug text-foreground">{job.title}</CardTitle>
                     <div className="flex flex-wrap gap-1.5 mt-2">
@@ -315,6 +316,7 @@ export default async function HomePage() {
                     </div>
                   </CardContent>
                 </Card>
+                </Link>
               ))}
             </div>
           </section>
