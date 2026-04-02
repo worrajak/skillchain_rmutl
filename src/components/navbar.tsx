@@ -10,8 +10,6 @@ import { useState } from "react";
 const navLinks = [
   { href: "/", label: "หน้าหลัก" },
   { href: "/about", label: "เกี่ยวกับระบบ" },
-  { href: "/login", label: "เข้าสู่ระบบ" },
-  { href: "/register", label: "ลงทะเบียน" },
 ];
 
 export function Navbar() {

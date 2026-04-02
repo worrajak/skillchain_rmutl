@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -117,19 +116,6 @@ export default async function HomePage() {
                 ))}
               </div>
 
-              {/* CTA */}
-              <div className="flex gap-3 pt-2">
-                <Link href="/register">
-                  <Button size="lg" className="font-semibold bg-white text-blue-700 hover:bg-blue-50 px-6">
-                    ลงทะเบียนเลย
-                  </Button>
-                </Link>
-                <Link href="#how-it-works">
-                  <Button size="lg" variant="outline" className="font-semibold text-white border-white/40 bg-white/10 hover:bg-white/20 px-6">
-                    ดูขั้นตอน
-                  </Button>
-                </Link>
-              </div>
             </div>
 
             {/* Right: Live Stats + Recent Jobs */}
@@ -266,12 +252,6 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto px-4 text-center text-sm text-muted-foreground space-y-2">
           <p className="font-medium text-foreground">กลุ่มใต้ร่มพระบารมี — มหาวิทยาลัยเทคโนโลยีราชมงคลล้านนา</p>
           <p>Powered by Next.js, Supabase &amp; TRON Blockchain (Nile Testnet)</p>
-          <div className="flex justify-center gap-6 pt-2">
-            <Link href="/about" className="text-xs text-muted-foreground hover:text-foreground transition-colors">เกี่ยวกับระบบ</Link>
-            <Link href="/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors">เข้าสู่ระบบ</Link>
-            <Link href="/register" className="text-xs text-muted-foreground hover:text-foreground transition-colors">ลงทะเบียน</Link>
-            <Link href="/admin/dashboard" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Admin</Link>
-          </div>
         </div>
       </footer>
     </div>
