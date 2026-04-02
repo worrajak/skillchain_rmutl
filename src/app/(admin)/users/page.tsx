@@ -152,7 +152,7 @@ export default function AdminUsersPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Select value={filterRole} onValueChange={setFilterRole}>
+          <Select value={filterRole} onValueChange={(v) => v && setFilterRole(v)}>
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="ทุก Role" />
             </SelectTrigger>

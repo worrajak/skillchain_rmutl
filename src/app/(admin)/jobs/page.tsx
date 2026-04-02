@@ -143,7 +143,7 @@ export default function AdminJobsPage() {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <Select value={filterStatus} onValueChange={(v) => v && setFilterStatus(v)}>
             <SelectTrigger className="w-[160px]">
               <SelectValue placeholder="ทุกสถานะ" />
             </SelectTrigger>
