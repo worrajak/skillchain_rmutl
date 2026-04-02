@@ -1,0 +1,218 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { AlertTriangle, CheckCircle, Home } from "lucide-react";
+import { toast } from "sonner";
+import { JOB_POSTER_ROLES } from "@/types/database";
+import type { UserRole } from "@/types/database";
+
+export default function NewJobPage() {
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+
+  // Form fields
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [jobType, setJobType] = useState("PAID");
+  const [jobCategory, setJobCategory] = useState("general");
+  const [location, setLocation] = useState("");
+  const [campus, setCampus] = useState("huaykaew");
+  const [payAmount, setPayAmount] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [isMentorship, setIsMentorship] = useState(false);
+
+  const supabase = createClient();
+  const router = useRouter();
+
+  useEffect(() => {
+    async function init() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      setUserId(user.id);
+      const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
+      if (profile) setUserRole(profile.role as UserRole);
+    }
+    init();
+  }, []);
+
+  const canPost = userRole && JOB_POSTER_ROLES.includes(userRole);
+  const isSimulated = userRole && ["teacher", "project_staff", "rmutl_staff", "admin", "superadmin"].includes(userRole);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!userId || !canPost) return;
+    setLoading(true);
+
+    const { error } = await supabase.from("jobs").insert({
+      title,
+      description,
+      type: jobType,
+      job_category: jobCategory,
+      location,
+      campus,
+      pay_amount: parseFloat(payAmount) || 0,
+      deadline: new Date(deadline).toISOString(),
+      employer_id: userId,
+      is_mentorship: isMentorship,
+      status: "OPEN",
+    });
+
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("ลงงานสำเร็จ!");
+      setSuccess(true);
+    }
+  }
+
+  if (success) {
+    return (
+      <div className="max-w-md mx-auto mt-10">
+        <Card className="text-center">
+          <CardContent className="py-10 space-y-4">
+            <CheckCircle className="size-16 mx-auto text-green-500" />
+            <h2 className="text-xl font-bold text-foreground">ลงงานสำเร็จ!</h2>
+            <p className="text-sm text-muted-foreground">งานจะปรากฏในหน้า Job Board ให้นักศึกษาสมัครได้</p>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={() => { setSuccess(false); setTitle(""); setDescription(""); }}>ลงงานอีก</Button>
+              <Link href="/"><Button variant="outline"><Home className="size-4 mr-1" />หน้าหลัก</Button></Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (userRole && !canPost) {
+    return (
+      <div className="max-w-md mx-auto mt-10">
+        <Card>
+          <CardContent className="py-10 text-center space-y-3">
+            <AlertTriangle className="size-12 mx-auto text-yellow-500" />
+            <p className="font-medium text-foreground">ไม่มีสิทธิ์ลงงาน</p>
+            <p className="text-sm text-muted-foreground">เฉพาะผู้ว่าจ้าง อาจารย์ หรือคณะทำงานเท่านั้น</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      {isSimulated && (
+        <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+          <AlertTriangle className="size-4 shrink-0" />
+          <span>คุณกำลังสร้าง<strong>งานจ้างเทียม</strong> (ทดสอบทักษะ/ทดลองระบบ) ในฐานะ {userRole}</span>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card>
+          <CardHeader><CardTitle className="text-foreground">รายละเอียดงาน</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-foreground">ชื่องาน</Label>
+              <Input placeholder="เช่น ซ่อมแอร์ตึก A ชั้น 3" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-foreground">รายละเอียด</Label>
+              <Textarea placeholder="อธิบายงานที่ต้องทำ อุปกรณ์ที่ต้องใช้ ฯลฯ" value={description} onChange={(e) => setDescription(e.target.value)} rows={4} required />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-foreground">ประเภทงาน</Label>
+                <Select value={jobType} onValueChange={(v) => v && setJobType(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="PAID">งานจ้าง (PAID)</SelectItem>
+                    <SelectItem value="VOLUNTEER">จิตอาสา (VOLUNTEER)</SelectItem>
+                    <SelectItem value="TRAINING">ฝึกทักษะ (TRAINING)</SelectItem>
+                    <SelectItem value="EXEMPTED">ยกเว้นค่าบริการ (EXEMPTED)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">หมวดงาน</Label>
+                <Select value={jobCategory} onValueChange={(v) => v && setJobCategory(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="electrical">ไฟฟ้า</SelectItem>
+                    <SelectItem value="hvac">แอร์/เครื่องเย็น</SelectItem>
+                    <SelectItem value="automotive">ยานยนต์</SelectItem>
+                    <SelectItem value="general">ทั่วไป</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle className="text-foreground">สถานที่ & กำหนดเวลา</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-foreground">สถานที่ทำงาน</Label>
+              <Input placeholder="เช่น ตึกวิศวกรรม ชั้น 2 ห้อง 201" value={location} onChange={(e) => setLocation(e.target.value)} required />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-foreground">วิทยาเขต</Label>
+                <Select value={campus} onValueChange={(v) => v && setCampus(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="huaykaew">ห้วยแก้ว</SelectItem>
+                    <SelectItem value="doisaket">ดอยสะเก็ด</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-foreground">กำหนดส่งงาน</Label>
+                <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} required />
+              </div>
+            </div>
+            {jobType === "PAID" && (
+              <div className="space-y-2">
+                <Label className="text-foreground">ค่าจ้าง (TRX)</Label>
+                <Input type="number" placeholder="0" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} min="0" />
+              </div>
+            )}
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={isMentorship} onChange={(e) => setIsMentorship(e.target.checked)} className="size-4 rounded" />
+              <div>
+                <div className="text-sm font-medium text-foreground">งานนี้ต้องมี Mentor</div>
+                <div className="text-xs text-muted-foreground">นักศึกษาระดับ 2 ต้องมีพี่เลี้ยงดูแล</div>
+              </div>
+            </label>
+          </CardContent>
+        </Card>
+
+        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+          {loading ? "กำลังบันทึก..." : "ลงประกาศงาน"}
+        </Button>
+      </form>
+    </div>
+  );
+}

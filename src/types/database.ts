@@ -121,6 +121,16 @@ export const COMPETENCY_TEST_CRITERIA = {
   ],
 };
 
+// Role ที่สร้างงาน (post job) ได้
+export const JOB_POSTER_ROLES: UserRole[] = [
+  "employer", "teacher", "project_staff", "rmutl_staff", "admin", "superadmin",
+];
+
+// ตรวจว่างานเป็น "งานจ้างเทียม" (สร้างโดย staff ไม่ใช่ employer ภายนอก)
+export function isSimulatedJob(posterRole: UserRole): boolean {
+  return ["teacher", "project_staff", "rmutl_staff", "admin", "superadmin"].includes(posterRole);
+}
+
 export const CREDENTIAL_LABELS: Record<CredentialLevel, { en: string; th: string; nft: string }> = {
   LEVEL_1: { en: "Registered", th: "ลงทะเบียน", nft: "none" },
   LEVEL_2: { en: "Project Certified", th: "ผ่านฝึกอบรมโครงการ", nft: "bronze" },
