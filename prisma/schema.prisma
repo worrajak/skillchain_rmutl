@@ -17,19 +17,40 @@ enum UserRole {
   teacher
   donor
   superadmin
+  project_staff  // คณะทำงานใต้ร่มพระบารมี
+  rmutl_staff    // คณะทำงาน มทร.ล้านนา (ผู้ว่าจ้างเทียม+ผู้ประเมิน)
+}
+
+enum ApprovalStatus {
+  PENDING    // รอยืนยัน
+  APPROVED   // ยืนยันแล้ว
+  REJECTED   // ปฏิเสธ
+  SUSPENDED  // ระงับชั่วคราว
 }
 
 model User {
-  id              String   @id @default(uuid())
-  email           String   @unique
-  role            UserRole @default(student)
+  id              String         @id @default(uuid())
+  email           String         @unique
+  role            UserRole       @default(student)
   name            String
-  campus          String   @default("huaykaew")
-  wallet_address  String?  @unique
-  is_active       Boolean  @default(true)
-  email_verified  Boolean  @default(false)
-  created_at      DateTime @default(now())
-  updated_at      DateTime @updatedAt
+  campus          String         @default("huaykaew")
+  wallet_address  String?        @unique
+  is_active       Boolean        @default(true)
+  email_verified  Boolean        @default(false)
+  approval_status ApprovalStatus @default(PENDING)
+  approved_by     String?        // user id ที่ยืนยัน
+  approved_at     DateTime?
+  // ข้อมูลเพิ่มเติมตาม role
+  student_id_card String?        // รหัสนักศึกษา
+  faculty         String?        // คณะ/สาขา
+  year_level      Int?           // ชั้นปี (สำหรับ student)
+  organization    String?        // ชื่อหน่วยงาน/บริษัท (employer/donor)
+  org_registration String?       // เลขทะเบียน/เลขผู้เสียภาษี
+  org_address     String?        // ที่อยู่หน่วยงาน
+  staff_position  String?        // ตำแหน่ง (staff roles)
+  teacher_id_card String?        // รหัสอาจารย์
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
   deleted_at      DateTime?
 
   // Relations

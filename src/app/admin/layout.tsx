@@ -14,12 +14,14 @@ import {
   LogOut,
   Menu,
   X,
+  UserCheck,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/approvals", label: "ยืนยันผู้ใช้", icon: UserCheck },
   { href: "/admin/users", label: "ผู้ใช้งาน", icon: Users },
   { href: "/admin/jobs", label: "งาน", icon: Briefcase },
   { href: "/admin/credentials", label: "Credential", icon: Award },

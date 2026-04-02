@@ -1,6 +1,8 @@
 // SkillChain RMUTL — Database Types (ตาม MasterPlan v3)
 
-export type UserRole = "student" | "employer" | "admin" | "teacher" | "donor" | "superadmin";
+export type UserRole = "student" | "employer" | "admin" | "teacher" | "donor" | "superadmin" | "project_staff" | "rmutl_staff";
+
+export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED";
 
 export type StudentTier = "trainee" | "apprentice" | "certified";
 
@@ -67,9 +69,33 @@ export interface User {
   wallet_address: string | null;
   is_active: boolean;
   email_verified: boolean;
+  approval_status: ApprovalStatus;
+  approved_by: string | null;
+  approved_at: string | null;
+  // ข้อมูลเพิ่มเติมตาม role
+  student_id_card: string | null;
+  faculty: string | null;
+  year_level: number | null;
+  organization: string | null;
+  org_registration: string | null;
+  org_address: string | null;
+  staff_position: string | null;
+  teacher_id_card: string | null;
   created_at: string;
   updated_at: string;
 }
+
+// สิทธิ์ที่แต่ละ role สามารถยืนยัน role อื่นได้
+export const APPROVAL_PERMISSIONS: Record<UserRole, UserRole[]> = {
+  superadmin: ["admin", "teacher", "project_staff", "rmutl_staff", "employer", "student", "donor"],
+  admin: ["teacher", "project_staff", "rmutl_staff", "employer", "student", "donor"],
+  teacher: ["employer", "student"],
+  project_staff: ["employer", "student", "donor"],
+  rmutl_staff: ["student"],
+  employer: [],
+  student: [],
+  donor: [],
+};
 
 export interface StudentTierRecord {
   id: string;
