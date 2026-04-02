@@ -134,13 +134,28 @@ export default function AdminUsersPage() {
   }
 
   async function handleDelete(user: User) {
-    if (!confirm(`ต้องการลบ "${user.name}" จริงหรือไม่?`)) return;
+    if (!confirm(`ต้องการลบ/ระงับ "${user.name}" จริงหรือไม่?\n\n(ถ้ามีข้อมูลเชื่อมโยง จะระงับบัญชีแทนลบ)`)) return;
+
+    // ลองลบจริงก่อน
     const { error } = await supabase.from("users").delete().eq("id", user.id);
     if (!error) {
       toast.success("ลบสำเร็จ");
       loadUsers();
+      return;
+    }
+
+    // ถ้าลบไม่ได้ (foreign key) → soft delete: ระงับ + deactivate
+    const { error: softErr } = await supabase.from("users").update({
+      is_active: false,
+      approval_status: "SUSPENDED",
+      deleted_at: new Date().toISOString(),
+    }).eq("id", user.id);
+
+    if (!softErr) {
+      toast.success("ระงับบัญชีแล้ว (มีข้อมูลเชื่อมโยงจึงไม่สามารถลบถาวรได้)");
+      loadUsers();
     } else {
-      toast.error("ลบไม่สำเร็จ: " + error.message);
+      toast.error("ดำเนินการไม่สำเร็จ: " + softErr.message);
     }
   }
 
