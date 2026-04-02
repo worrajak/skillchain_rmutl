@@ -1,0 +1,1 @@
+- [Dev Environment Setup](user_dev_setup.md) — Uses Vercel for dev, Supabase cloud DB, Mac
