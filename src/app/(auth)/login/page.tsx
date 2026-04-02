@@ -39,7 +39,18 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/student/dashboard");
+    // Redirect based on role
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    const role = authUser?.user_metadata?.role ?? "student";
+    const routes: Record<string, string> = {
+      student: "/student/dashboard",
+      employer: "/employer/dashboard",
+      teacher: "/teacher/evaluation",
+      admin: "/admin/dashboard",
+      superadmin: "/admin/dashboard",
+      donor: "/donor/donate",
+    };
+    router.push(routes[role] ?? "/student/dashboard");
     router.refresh();
   }
 
