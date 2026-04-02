@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { ClipboardCheck, Clock, LogOut, Menu, X, GraduationCap } from "lucide-react";
+import { ClipboardCheck, Clock, LogOut, Menu, X, GraduationCap, PlusCircle, Users, Award } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/teacher/evaluation", label: "ประเมินผลงาน", icon: ClipboardCheck },
+  { href: "/teacher/students", label: "ประเมินระดับ นศ.", icon: Award },
   { href: "/teacher/pending", label: "รอประเมิน", icon: Clock },
+  { href: "/employer/jobs/new", label: "สร้างงาน", icon: PlusCircle },
 ];
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {

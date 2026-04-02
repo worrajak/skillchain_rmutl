@@ -51,6 +51,8 @@ const ROLES = [
   { value: "student", label: "นักศึกษา" },
   { value: "employer", label: "ผู้ว่าจ้าง" },
   { value: "teacher", label: "อาจารย์" },
+  { value: "project_staff", label: "คณะทำงานใต้ร่มฯ" },
+  { value: "rmutl_staff", label: "คณะทำงาน มทร." },
   { value: "donor", label: "ผู้บริจาค" },
   { value: "admin", label: "แอดมิน" },
   { value: "superadmin", label: "Super Admin" },
@@ -94,6 +96,8 @@ export default function AdminUsersPage() {
 
   async function handleUpdateUser() {
     if (!editUser) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const u = editUser as any;
     const { error } = await supabase
       .from("users")
       .update({
@@ -101,6 +105,10 @@ export default function AdminUsersPage() {
         role: editUser.role,
         campus: editUser.campus,
         is_active: editUser.is_active,
+        can_post_jobs: u.can_post_jobs ?? false,
+        can_evaluate: u.can_evaluate ?? false,
+        can_approve_users: u.can_approve_users ?? false,
+        can_manage_credentials: u.can_manage_credentials ?? false,
       })
       .eq("id", editUser.id);
 
@@ -313,6 +321,28 @@ export default function AdminUsersPage() {
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              {/* สิทธิ์เพิ่มเติม */}
+              <div className="space-y-2">
+                <Label className="text-foreground">สิทธิ์เพิ่มเติม (นอกเหนือ role หลัก)</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { key: "can_post_jobs", label: "สร้างงาน/จ้างงาน" },
+                    { key: "can_evaluate", label: "ประเมิน นศ." },
+                    { key: "can_approve_users", label: "ยืนยันผู้ใช้" },
+                    { key: "can_manage_credentials", label: "จัดการ Credential" },
+                  ].map((perm) => (
+                    <label key={perm.key} className="flex items-center gap-2 rounded-md border p-2 cursor-pointer hover:bg-muted text-sm">
+                      <input
+                        type="checkbox"
+                        className="size-4 rounded"
+                        checked={!!((editUser as any)[perm.key])}
+                        onChange={(e) => setEditUser({ ...editUser, [perm.key]: e.target.checked } as any)}
+                      />
+                      <span className="text-foreground">{perm.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
               <div className="flex gap-3 pt-2">
                 <Button onClick={handleUpdateUser} className="flex-1">
