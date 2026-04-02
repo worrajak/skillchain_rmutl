@@ -39,7 +39,87 @@ export type CertifyingBody =
   | "TPQI"
   | "MASTER_TECH";
 
-export type EvalPhase = "PRE_WORK" | "IN_PROGRESS" | "POST_WORK";
+export type EvalPhase = "PRE_WORK" | "IN_PROGRESS" | "POST_WORK" | "COMPETENCY_TEST";
+
+// ==================== เกณฑ์การประเมิน 3 ระยะ ====================
+
+// ระยะ 1: ก่อนเริ่มงาน — อาจารย์/คณะทำงาน ประเมินทักษะเบื้องต้น → กำหนด credential level
+export const PRE_WORK_CRITERIA = {
+  evaluator: ["teacher", "project_staff", "rmutl_staff", "admin"] as UserRole[],
+  criteria: [
+    { key: "basic_knowledge", label: "ความรู้พื้นฐานทางช่าง", max: 4 },
+    { key: "tool_familiarity", label: "ความคุ้นเคยกับเครื่องมือ", max: 4 },
+    { key: "safety_awareness", label: "ความตระหนักด้านความปลอดภัย", max: 4 },
+    { key: "readiness", label: "ความพร้อมในการปฏิบัติงาน", max: 4 },
+  ],
+};
+
+// ระยะ 2: ระหว่างทำงาน
+// 2A: อาจารย์/คณะทำงาน ออก observe ร่วมทำงาน
+export const DURING_WORK_OBSERVER_CRITERIA = {
+  evaluator: ["teacher", "project_staff", "rmutl_staff", "admin"] as UserRole[],
+  criteria: [
+    { key: "practical_skill", label: "ทักษะการปฏิบัติงานจริง", max: 4 },
+    { key: "problem_solving", label: "การแก้ปัญหาเฉพาะหน้า", max: 4 },
+    { key: "work_process", label: "ลำดับขั้นตอนการทำงาน", max: 4 },
+    { key: "safety_practice", label: "การปฏิบัติด้านความปลอดภัย", max: 4 },
+  ],
+};
+
+// 2B: ผู้ว่าจ้าง ประเมินระหว่างทำงาน (พฤติกรรม/มารยาท)
+export const DURING_WORK_EMPLOYER_CRITERIA = {
+  evaluator: ["employer", "rmutl_staff"] as UserRole[],
+  criteria: [
+    { key: "knowledge", label: "องค์ความรู้ในงาน", max: 5 },
+    { key: "discipline", label: "ความมีระเบียบวินัย/เรียบร้อย", max: 5 },
+    { key: "behavior", label: "มารยาท/พฤติกรรม (ไม่หยิบของโดยไม่ถาม)", max: 5 },
+    { key: "sense_engineer", label: "Sense Engineer/ความปลอดภัย", max: 5 },
+  ],
+};
+
+// ระยะ 3: หลังงานเสร็จ
+// 3A: ผู้ว่าจ้าง ประเมินผลงาน
+export const POST_WORK_EMPLOYER_CRITERIA = {
+  evaluator: ["employer", "rmutl_staff"] as UserRole[],
+  criteria: [
+    { key: "quality", label: "คุณภาพผลงาน", max: 5 },
+    { key: "punctuality", label: "ตรงเวลา/ส่งงานตามกำหนด", max: 5 },
+    { key: "cleanliness", label: "ความเรียบร้อยหลังทำงาน", max: 5 },
+    { key: "overall_satisfaction", label: "ความพึงพอใจโดยรวม", max: 5 },
+  ],
+};
+
+// 3B: อาจารย์/คณะทำงาน ประเมินทักษะรวม (สอบถามเพิ่มเติม → ให้ดาวเพิ่ม/เลื่อนระดับ)
+export const POST_WORK_TEACHER_CRITERIA = {
+  evaluator: ["teacher", "project_staff", "rmutl_staff", "admin"] as UserRole[],
+  criteria: [
+    { key: "skill_improvement", label: "ทักษะที่พัฒนาขึ้น", max: 4 },
+    { key: "work_quality", label: "คุณภาพงานตามมาตรฐาน", max: 4 },
+    { key: "attitude", label: "ทัศนคติ/ความรับผิดชอบ", max: 4 },
+    { key: "recommend_level_up", label: "แนะนำเลื่อนระดับ", max: 4 },
+  ],
+};
+
+// 3C: นศ. ประเมินผู้จ้าง
+export const POST_WORK_STUDENT_CRITERIA = {
+  criteria: [
+    { key: "clarity", label: "งานชัดเจน/อธิบายดี", max: 5 },
+    { key: "payment", label: "จ่ายเงินครบ/ตรงเวลา", max: 5 },
+    { key: "safety_env", label: "สถานที่ปลอดภัย/อุปกรณ์พร้อม", max: 5 },
+    { key: "respect", label: "ให้เกียรติ/สุภาพ", max: 5 },
+  ],
+};
+
+// ระยะพิเศษ: ทดสอบสมรรถนะผ่านสถาบันภายนอก → เลื่อน credential
+export const COMPETENCY_TEST_CRITERIA = {
+  evaluator: ["admin", "project_staff"] as UserRole[],
+  fields: [
+    { key: "institution", label: "สถาบันที่ทดสอบ" },
+    { key: "certificate_number", label: "เลขที่ใบรับรอง" },
+    { key: "test_date", label: "วันที่ทดสอบ" },
+    { key: "result", label: "ผลการทดสอบ" },
+  ],
+};
 
 export const CREDENTIAL_LABELS: Record<CredentialLevel, { en: string; th: string; nft: string }> = {
   LEVEL_1: { en: "Registered", th: "ลงทะเบียน", nft: "none" },

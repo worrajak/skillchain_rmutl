@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -10,73 +11,122 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import {
   RubricScore,
   TEACHER_RUBRIC_LEVELS,
   RubricBar,
 } from "@/components/reviews/rubric-score";
 import { ScoreCircle } from "@/components/reviews/badge-display";
 import { createClient } from "@/lib/supabase/client";
-import { ClipboardCheck } from "lucide-react";
+import { ClipboardCheck, Home, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
+import {
+  PRE_WORK_CRITERIA,
+  DURING_WORK_OBSERVER_CRITERIA,
+  POST_WORK_TEACHER_CRITERIA,
+} from "@/types/database";
+import type { EvalPhase } from "@/types/database";
 
-const CRITERIA = [
-  { key: "score_quality", label: "คุณภาพงาน", weight: 0.4, description: "ผลงานตรงตามมาตรฐานและความต้องการ" },
-  { key: "score_skill", label: "ทักษะช่าง", weight: 0.3, description: "ความชำนาญในการใช้เครื่องมือและเทคนิค" },
-  { key: "score_time", label: "ตรงเวลา", weight: 0.2, description: "ส่งงานภายในกำหนดเวลา" },
-  { key: "score_tool", label: "การใช้อุปกรณ์", weight: 0.1, description: "ดูแลรักษาและใช้อุปกรณ์อย่างถูกต้อง" },
-] as const;
+const PHASE_OPTIONS: { value: EvalPhase; label: string; desc: string; statuses: string[] }[] = [
+  { value: "PRE_WORK", label: "ก่อนเริ่มงาน", desc: "ประเมินทักษะเบื้องต้น → กำหนด credential level", statuses: ["ASSIGNED", "CONFIRMED"] },
+  { value: "IN_PROGRESS", label: "ระหว่างทำงาน (Observe)", desc: "ออกไปดูงานร่วมกับนักศึกษา ประเมินทักษะจริง", statuses: ["IN_PROGRESS"] },
+  { value: "POST_WORK", label: "หลังงานเสร็จ", desc: "ประเมินทักษะรวม + แนะนำเลื่อนระดับ", statuses: ["SUBMITTED", "COMPLETED"] },
+];
+
+function getCriteria(phase: EvalPhase) {
+  switch (phase) {
+    case "PRE_WORK": return PRE_WORK_CRITERIA.criteria;
+    case "IN_PROGRESS": return DURING_WORK_OBSERVER_CRITERIA.criteria;
+    case "POST_WORK": return POST_WORK_TEACHER_CRITERIA.criteria;
+    default: return PRE_WORK_CRITERIA.criteria;
+  }
+}
 
 export default function TeacherEvaluationPage() {
-  const [scores, setScores] = useState<Record<string, number>>({
-    score_quality: 0,
-    score_skill: 0,
-    score_time: 0,
-    score_tool: 0,
-  });
+  const [phase, setPhase] = useState<EvalPhase>("PRE_WORK");
+  const [jobs, setJobs] = useState<{ id: string; title: string; student_name: string }[]>([]);
+  const [selectedJob, setSelectedJob] = useState("");
+  const [scores, setScores] = useState<Record<string, number>>({});
   const [comment, setComment] = useState("");
+  const [recommendLevelUp, setRecommendLevelUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   const supabase = createClient();
+  const criteria = getCriteria(phase);
+  const phaseConfig = PHASE_OPTIONS.find((p) => p.value === phase)!;
 
-  const weightedScore = CRITERIA.reduce((sum, c) => {
-    return sum + (scores[c.key] || 0) * c.weight;
-  }, 0);
+  useEffect(() => {
+    async function loadJobs() {
+      const { data } = await supabase
+        .from("jobs")
+        .select("id, title, student:users!jobs_student_id_fkey(name)")
+        .in("status", phaseConfig.statuses)
+        .order("created_at", { ascending: false });
+      setJobs((data ?? []).map((j) => ({
+        id: j.id, title: j.title,
+        student_name: String((j.student as unknown as { name: string })?.name ?? "ยังไม่มี"),
+      })));
+    }
+    loadJobs();
+    setScores({});
+    setSelectedJob("");
+    setComment("");
+    setRecommendLevelUp(false);
+    setSuccess(false);
+  }, [phase]);
 
-  const allScored = CRITERIA.every((c) => scores[c.key] > 0);
+  const allScored = criteria.every((c) => (scores[c.key] ?? 0) > 0);
+  const avgScore = criteria.length > 0
+    ? criteria.reduce((sum, c) => sum + (scores[c.key] ?? 0), 0) / criteria.length : 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!allScored) return;
-
+    if (!selectedJob || !allScored) return;
     setLoading(true);
 
-    // TODO: Get actual job_id, student_id, teacher_id from context/params
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { toast.error("กรุณาเข้าสู่ระบบ"); setLoading(false); return; }
+
+    const { data: job } = await supabase.from("jobs").select("student_id").eq("id", selectedJob).single();
+
     const { error } = await supabase.from("evaluations").insert({
-      job_id: "", // placeholder
-      student_id: "", // placeholder
-      teacher_id: "", // placeholder
-      score_quality: scores.score_quality,
-      score_skill: scores.score_skill,
-      score_time: scores.score_time,
-      score_tool: scores.score_tool,
-      weighted_score: weightedScore,
+      job_id: selectedJob,
+      student_id: job?.student_id ?? "",
+      teacher_id: user.id,
+      score_quality: scores[criteria[0]?.key] ?? 0,
+      score_skill: scores[criteria[1]?.key] ?? 0,
+      score_time: scores[criteria[2]?.key] ?? 0,
+      score_tool: scores[criteria[3]?.key] ?? 0,
+      weighted_score: avgScore,
+      eval_phase: phase,
       comment: comment || null,
     });
 
     setLoading(false);
-    if (!error) setSuccess(true);
+    if (error) { toast.error(error.message); }
+    else { toast.success("บันทึกสำเร็จ"); setSuccess(true); }
   }
 
   if (success) {
     return (
-      <div className="min-h-screen bg-muted flex items-center justify-center px-4">
-        <Card className="w-full max-w-md text-center">
-          <CardContent className="pt-8 pb-6 space-y-4">
+      <div className="max-w-md mx-auto mt-10">
+        <Card className="text-center">
+          <CardContent className="py-10 space-y-4">
             <ClipboardCheck className="size-16 mx-auto text-green-500" />
             <h2 className="text-xl font-bold text-foreground">ประเมินเสร็จสิ้น</h2>
-            <p className="text-sm text-muted-foreground">
-              คะแนนถ่วงน้ำหนักรวม: {weightedScore.toFixed(2)} / 4.0
-            </p>
+            <p className="text-sm text-muted-foreground">คะแนนเฉลี่ย: {avgScore.toFixed(2)} / 4.0</p>
+            <div className="flex gap-3 justify-center">
+              <Button onClick={() => setSuccess(false)}>ประเมินงานอื่น</Button>
+              <Link href="/"><Button variant="outline"><Home className="size-4 mr-1" />หน้าหลัก</Button></Link>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -84,95 +134,96 @@ export default function TeacherEvaluationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-muted px-4 py-8">
-      <div className="max-w-2xl mx-auto space-y-6">
-        <h1 className="text-2xl font-bold text-foreground">
-          ประเมินผลงานนักศึกษา
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          ใช้เกณฑ์ Rubric 4 ระดับ (1=ปรับปรุง, 2=พอใช้, 3=ดี, 4=เยี่ยม)
-          ถ่วงน้ำหนัก: คุณภาพ 40% / ทักษะ 30% / เวลา 20% / อุปกรณ์ 10%
-        </p>
+    <div className="max-w-2xl mx-auto space-y-6">
+      {/* Phase Selection */}
+      <Card>
+        <CardHeader><CardTitle className="text-foreground">เลือกระยะการประเมิน</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          {PHASE_OPTIONS.map((p) => (
+            <button key={p.value} type="button" onClick={() => setPhase(p.value)}
+              className={cn("w-full text-left rounded-lg border p-3 transition-all",
+                phase === p.value ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200" : "hover:bg-muted"
+              )}>
+              <div className="font-medium text-sm text-foreground">{p.label}</div>
+              <div className="text-xs text-muted-foreground">{p.desc}</div>
+            </button>
+          ))}
+        </CardContent>
+      </Card>
 
+      {/* Job Selection */}
+      <Card>
+        <CardHeader><CardTitle className="text-foreground">เลือกงาน</CardTitle></CardHeader>
+        <CardContent>
+          {jobs.length > 0 ? (
+            <Select value={selectedJob} onValueChange={(v) => v && setSelectedJob(v)}>
+              <SelectTrigger><SelectValue placeholder="เลือกงาน" /></SelectTrigger>
+              <SelectContent>
+                {jobs.map((j) => <SelectItem key={j.id} value={j.id}>{j.title} — นศ.: {j.student_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          ) : (
+            <div className="flex items-center gap-2 text-sm text-yellow-700 bg-yellow-50 rounded-lg p-3">
+              <AlertTriangle className="size-4 shrink-0" />ไม่มีงานสำหรับระยะนี้
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Rubric */}
+      {selectedJob && (
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Rubric Criteria */}
           <Card>
-            <CardHeader>
-              <CardTitle className="text-foreground">เกณฑ์การประเมิน</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-foreground">เกณฑ์: {phaseConfig.label}</CardTitle></CardHeader>
             <CardContent className="space-y-6">
-              {CRITERIA.map((c) => (
-                <div key={c.key}>
-                  <RubricScore
-                    label={`${c.label} (${(c.weight * 100).toFixed(0)}%)`}
-                    value={scores[c.key]}
-                    levels={TEACHER_RUBRIC_LEVELS}
-                    onChange={(v) =>
-                      setScores((prev) => ({ ...prev, [c.key]: v }))
-                    }
-                  />
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {c.description}
-                  </p>
-                </div>
+              {criteria.map((c) => (
+                <RubricScore key={c.key} label={c.label} value={scores[c.key] ?? 0}
+                  levels={TEACHER_RUBRIC_LEVELS}
+                  onChange={(v) => setScores((prev) => ({ ...prev, [c.key]: v }))} />
               ))}
             </CardContent>
           </Card>
 
-          {/* Score Preview */}
           {allScored && (
             <Card>
-              <CardHeader>
-                <CardTitle className="text-foreground">สรุปคะแนน</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="text-foreground">สรุปคะแนน</CardTitle></CardHeader>
               <CardContent>
                 <div className="flex items-center gap-8">
-                  <ScoreCircle
-                    score={weightedScore}
-                    max={4}
-                    label="คะแนนรวม"
-                    size="lg"
-                  />
+                  <ScoreCircle score={avgScore} max={4} label="คะแนนเฉลี่ย" size="lg" />
                   <div className="flex-1 space-y-2">
-                    {CRITERIA.map((c) => (
-                      <RubricBar
-                        key={c.key}
-                        label={c.label}
-                        value={scores[c.key]}
-                        max={4}
-                      />
-                    ))}
+                    {criteria.map((c) => <RubricBar key={c.key} label={c.label} value={scores[c.key] ?? 0} max={c.max} />)}
                   </div>
                 </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Comment */}
+          {phase === "POST_WORK" && (
+            <Card>
+              <CardContent className="pt-4">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={recommendLevelUp} onChange={(e) => setRecommendLevelUp(e.target.checked)} className="size-4 rounded" />
+                  <div>
+                    <div className="font-medium text-sm text-foreground">แนะนำเลื่อนระดับ Credential</div>
+                    <div className="text-xs text-muted-foreground">นักศึกษาพร้อมที่จะเลื่อนระดับทักษะ</div>
+                  </div>
+                </label>
+              </CardContent>
+            </Card>
+          )}
+
           <Card>
-            <CardHeader>
-              <CardTitle className="text-foreground">ความคิดเห็น</CardTitle>
-            </CardHeader>
+            <CardHeader><CardTitle className="text-foreground">ความคิดเห็น</CardTitle></CardHeader>
             <CardContent>
-              <Textarea
-                placeholder="ข้อเสนอแนะเพิ่มเติม (ไม่บังคับ)"
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={3}
-              />
+              <Textarea placeholder="ข้อเสนอแนะ (ไม่บังคับ)" value={comment} onChange={(e) => setComment(e.target.value)} rows={3} />
             </CardContent>
           </Card>
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={!allScored || loading}
-            size="lg"
-          >
+          <Button type="submit" className="w-full" size="lg" disabled={!allScored || loading}>
             {loading ? "กำลังบันทึก..." : "ยืนยันการประเมิน"}
           </Button>
         </form>
-      </div>
+      )}
     </div>
   );
 }

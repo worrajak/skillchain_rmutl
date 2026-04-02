@@ -15,6 +15,7 @@ const phaseLabels: Record<EvalPhase, string> = {
   PRE_WORK: "ก่อนเริ่มงาน",
   IN_PROGRESS: "ระหว่างทำงาน",
   POST_WORK: "หลังงานเสร็จ",
+  COMPETENCY_TEST: "ทดสอบสมรรถนะ",
 };
 
 export function EvalWindowBanner({
