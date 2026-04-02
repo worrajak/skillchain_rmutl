@@ -140,15 +140,15 @@ export default function StudentProfilePage() {
               <div className="flex-1 grid grid-cols-3 gap-3 text-center text-xs">
                 <div className="rounded-lg bg-blue-50 p-3">
                   <div className="font-bold text-blue-700 text-lg">{Number(ratings.avg_teacher_score).toFixed(1)}</div>
-                  <div className="text-muted-foreground">อาจารย์ ({ratings.teacher_review_count})</div>
+                  <div className="text-muted-foreground">อาจารย์ ({String(ratings.teacher_review_count)})</div>
                 </div>
                 <div className="rounded-lg bg-green-50 p-3">
                   <div className="font-bold text-green-700 text-lg">{Number(ratings.avg_employer_rating).toFixed(1)}</div>
-                  <div className="text-muted-foreground">ผู้จ้าง ({ratings.employer_review_count})</div>
+                  <div className="text-muted-foreground">ผู้จ้าง ({String(ratings.employer_review_count)})</div>
                 </div>
                 <div className="rounded-lg bg-purple-50 p-3">
                   <div className="font-bold text-purple-700 text-lg">{Number(ratings.avg_mentor_score).toFixed(1)}</div>
-                  <div className="text-muted-foreground">พี่เลี้ยง ({ratings.mentor_review_count})</div>
+                  <div className="text-muted-foreground">พี่เลี้ยง ({String(ratings.mentor_review_count)})</div>
                 </div>
               </div>
             </div>
