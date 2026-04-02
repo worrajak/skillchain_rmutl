@@ -16,16 +16,11 @@ import {
   Wallet,
   Award,
   MapPin,
-  Clock,
   Star,
   Trophy,
   Shield,
   Zap,
-  ArrowRight,
-  UserPlus,
-  FileCheck,
   Wrench,
-  BadgeCheck,
 } from "lucide-react";
 
 const JOB_TYPE_LABELS: Record<string, string> = {
@@ -42,19 +37,6 @@ const JOB_CATEGORY_LABELS: Record<string, string> = {
   general: "ทั่วไป",
 };
 
-const BADGE_COLORS: Record<string, string> = {
-  PAID: "bg-green-100 text-green-800",
-  VOLUNTEER: "bg-blue-100 text-blue-800",
-  TRAINING: "bg-yellow-100 text-yellow-800",
-  EXEMPTED: "bg-purple-100 text-purple-800",
-};
-
-const CATEGORY_COLORS: Record<string, string> = {
-  electrical: "bg-amber-100 text-amber-800",
-  hvac: "bg-cyan-100 text-cyan-800",
-  automotive: "bg-red-100 text-red-800",
-  general: "bg-gray-100 text-gray-800",
-};
 
 export default async function HomePage() {
   const supabase = await createClient();
@@ -168,7 +150,7 @@ export default async function HomePage() {
               </div>
             </div>
 
-            {/* Right: Live Stats */}
+            {/* Right: Live Stats + Recent Jobs */}
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-3">
                 {stats.map((s) => (
@@ -180,147 +162,43 @@ export default async function HomePage() {
                 ))}
               </div>
 
-              {/* For who */}
-              <div className="rounded-xl bg-white/10 backdrop-blur p-4 space-y-3">
-                <p className="text-sm font-semibold text-blue-100">สำหรับใคร?</p>
-                {[
-                  { role: "นักศึกษาช่าง", desc: "รับงาน สร้างประวัติ ได้ NFT ใบรับรอง" },
-                  { role: "ผู้ว่าจ้าง/หน่วยงาน", desc: "ลงงาน จ่ายผ่าน Escrow ประเมินช่างได้" },
-                  { role: "อาจารย์", desc: "ประเมินทักษะ ดูแลคุณภาพ เลื่อนระดับ สร้างงานจ้างเทียม" },
-                  { role: "คณะทำงานใต้ร่มพระบารมี", desc: "ฝึกอบรม ประเมินเบื้องต้น รับรอง Lv.2 ยืนยันผู้ใช้" },
-                  { role: "คณะทำงาน มทร.ล้านนา", desc: "ผู้ว่าจ้างเทียม+ผู้ประเมินทักษะ สร้างงานทดสอบ" },
-                  { role: "ผู้บริจาค", desc: "บริจาคกองทุน ติดตามการใช้เงินแบบ Real-time" },
-                ].map((r) => (
-                  <div key={r.role} className="flex items-start gap-2">
-                    <CheckCircle className="size-4 text-green-300 mt-0.5 shrink-0" />
-                    <div>
-                      <span className="text-sm font-medium">{r.role}</span>
-                      <span className="text-xs text-blue-200 ml-1">— {r.desc}</span>
-                    </div>
+              {/* Recent Jobs in Hero */}
+              {recentJobs && recentJobs.length > 0 ? (
+                <div className="rounded-xl bg-white/10 backdrop-blur p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-blue-100">งานล่าสุด</p>
+                    <Link href="/login" className="text-[11px] text-blue-200 hover:text-white">ดูทั้งหมด →</Link>
                   </div>
-                ))}
-              </div>
+                  {recentJobs.slice(0, 4).map((job) => (
+                    <Link key={job.id} href={`/jobs/${job.id}`} className="block rounded-lg bg-white/10 hover:bg-white/20 transition-colors p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{job.title}</div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className="inline-flex rounded-full bg-white/20 px-2 py-0.5 text-[10px]">{JOB_TYPE_LABELS[job.type] ?? job.type}</span>
+                            <span className="text-[10px] text-blue-200 flex items-center gap-0.5"><MapPin className="size-3" />{job.campus}</span>
+                          </div>
+                        </div>
+                        {job.pay_amount > 0 && (
+                          <span className="text-sm font-bold text-green-300 shrink-0">{job.pay_amount.toLocaleString()} TRX</span>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl bg-white/10 backdrop-blur p-4 text-center">
+                  <Briefcase className="size-8 mx-auto text-blue-300/50 mb-2" />
+                  <p className="text-sm text-blue-200">ยังไม่มีงานเปิดรับ</p>
+                  <p className="text-xs text-blue-300 mt-1">ผู้ว่าจ้างสามารถลงงานได้เลย</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </header>
 
-      <main id="how-it-works" className="flex-1 max-w-6xl mx-auto px-4 py-10 space-y-14">
-
-        {/* How It Works */}
-        <section>
-          <h2 className="text-2xl font-bold text-center mb-2 text-foreground">
-            ขั้นตอนการใช้งาน
-          </h2>
-          <p className="text-sm text-muted-foreground text-center mb-8">
-            เส้นทางพัฒนาจากนักศึกษาช่างสู่ช่างชำนาญการ
-          </p>
-          <div className="grid md:grid-cols-5 gap-3">
-            {[
-              { step: 1, icon: UserPlus, title: "ลงทะเบียน", desc: "สมัครบัญชี เลือกบทบาท", color: "from-gray-500 to-gray-600" },
-              { step: 2, icon: FileCheck, title: "ผ่านฝึกอบรม", desc: "อบรมจากใต้ร่มพระบารมี", color: "from-amber-500 to-orange-600" },
-              { step: 3, icon: Wrench, title: "รับงาน", desc: "งานฝึก/จิตอาสา/จ้าง", color: "from-blue-500 to-indigo-600" },
-              { step: 4, icon: Star, title: "ถูกประเมิน", desc: "อาจารย์+ผู้จ้าง+Mentor", color: "from-yellow-500 to-amber-600" },
-              { step: 5, icon: BadgeCheck, title: "NFT Credential", desc: "ใบรับรองบน Blockchain", color: "from-green-500 to-emerald-600" },
-            ].map((s, i) => (
-              <div key={s.step} className="flex flex-col items-center text-center">
-                <div className={cn("flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br text-white mb-3 shadow-lg", s.color)}>
-                  <s.icon className="size-7" />
-                </div>
-                <div className="font-bold text-sm text-foreground mb-1">
-                  <span className="text-muted-foreground">{s.step}.</span> {s.title}
-                </div>
-                <p className="text-xs text-muted-foreground">{s.desc}</p>
-                {i < 4 && (
-                  <ArrowRight className="size-4 text-muted-foreground/40 mt-2 hidden md:block rotate-0" />
-                )}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Credential Levels */}
-        <section>
-          <h2 className="text-2xl font-bold text-center mb-2 text-foreground">
-            5 ระดับ Credential
-          </h2>
-          <p className="text-sm text-muted-foreground text-center mb-6">
-            ใบรับรองทักษะช่างบน Blockchain — ยิ่งระดับสูง ยิ่งรับงานได้มาก
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            {[
-              { lv: 1, name: "Registered", th: "ลงทะเบียน", by: "ระบบอัตโนมัติ", jobs: "สังเกตการณ์", gradient: "from-gray-400 to-gray-500", ring: "ring-gray-300" },
-              { lv: 2, name: "Project Cert.", th: "ผ่านฝึกอบรม", by: "กลุ่มใต้ร่มพระบารมี", jobs: "ฝึกทักษะ+จิตอาสา", gradient: "from-amber-500 to-orange-600", ring: "ring-amber-300" },
-              { lv: 3, name: "Teacher Cert.", th: "อาจารย์รับรอง", by: "มทร.ล้านนา", jobs: "งานจ้างได้", gradient: "from-blue-500 to-indigo-600", ring: "ring-blue-300" },
-              { lv: 4, name: "National Cert.", th: "สถาบันชาติรับรอง", by: "กรมฝีมือแรงงาน/สคช.", jobs: "ทุกประเภท+Mentor", gradient: "from-yellow-400 to-amber-500", ring: "ring-yellow-400" },
-              { lv: 5, name: "Master Tech.", th: "ช่างชำนาญการ", by: "ผลงานสะสม", jobs: "รับเหมา+สอน+รับรอง", gradient: "from-purple-500 to-fuchsia-600", ring: "ring-purple-400" },
-            ].map((c) => (
-              <Card key={c.lv} className={cn("overflow-hidden ring-1", c.ring)}>
-                <div className={cn("h-2 bg-gradient-to-r", c.gradient)} />
-                <CardContent className="pt-3 pb-3 text-center space-y-1">
-                  <div className={cn("inline-flex size-10 items-center justify-center rounded-full bg-gradient-to-br text-white font-bold text-sm mx-auto", c.gradient)}>
-                    {c.lv}
-                  </div>
-                  <div className="font-bold text-sm text-foreground">{c.name}</div>
-                  <div className="text-xs text-muted-foreground">{c.th}</div>
-                  <div className="text-[10px] text-muted-foreground border-t pt-1 mt-1">
-                    รับรอง: {c.by}
-                  </div>
-                  <div className="text-[10px] font-medium text-foreground">
-                    {c.jobs}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        {/* Recent Jobs */}
-        {recentJobs && recentJobs.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-foreground">งานที่เปิดรับล่าสุด</h2>
-                <p className="text-sm text-muted-foreground mt-1">งานซ่อมบำรุงที่รอนักศึกษาช่างมารับงาน</p>
-              </div>
-              <Link href="/login">
-                <Button variant="outline" size="sm">ดูทั้งหมด</Button>
-              </Link>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recentJobs.map((job) => (
-                <Link key={job.id} href={`/jobs/${job.id}`}>
-                <Card className="hover:ring-2 hover:ring-blue-200 transition-all cursor-pointer">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base leading-snug text-foreground">{job.title}</CardTitle>
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", BADGE_COLORS[job.type] ?? "")}>
-                        {JOB_TYPE_LABELS[job.type] ?? job.type}
-                      </span>
-                      <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium", CATEGORY_COLORS[job.job_category] ?? "")}>
-                        {JOB_CATEGORY_LABELS[job.job_category] ?? job.job_category}
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <p className="text-sm text-muted-foreground line-clamp-2">{job.description}</p>
-                    <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1"><MapPin className="size-3" />{job.location} ({job.campus})</span>
-                      <span className="flex items-center gap-1"><Clock className="size-3" />กำหนดส่ง: {new Date(job.deadline).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}</span>
-                      {job.pay_amount > 0 && (
-                        <span className="flex items-center gap-1 text-green-700 font-medium"><Wallet className="size-3" />{job.pay_amount.toLocaleString()} TRX</span>
-                      )}
-                    </div>
-                    <div className="pt-2 border-t text-xs text-muted-foreground">
-                      โดย: {(job.employer as { name: string })?.name ?? "ไม่ระบุ"}
-                    </div>
-                  </CardContent>
-                </Card>
-                </Link>
-              ))}
-            </div>
-          </section>
-        )}
+      <main className="flex-1 max-w-6xl mx-auto px-4 py-10 space-y-14">
 
         {/* Top Rated Students */}
         {topStudents && topStudents.length > 0 && (
@@ -457,10 +335,11 @@ export default async function HomePage() {
         <div className="max-w-6xl mx-auto px-4 text-center text-sm text-muted-foreground space-y-2">
           <p className="font-medium text-foreground">กลุ่มใต้ร่มพระบารมี — มหาวิทยาลัยเทคโนโลยีราชมงคลล้านนา</p>
           <p>Powered by Next.js, Supabase &amp; TRON Blockchain (Nile Testnet)</p>
-          <div className="flex justify-center gap-4 pt-2">
-            <Link href="/admin/dashboard" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-              Admin
-            </Link>
+          <div className="flex justify-center gap-6 pt-2">
+            <Link href="/about" className="text-xs text-muted-foreground hover:text-foreground transition-colors">เกี่ยวกับระบบ</Link>
+            <Link href="/login" className="text-xs text-muted-foreground hover:text-foreground transition-colors">เข้าสู่ระบบ</Link>
+            <Link href="/register" className="text-xs text-muted-foreground hover:text-foreground transition-colors">ลงทะเบียน</Link>
+            <Link href="/admin/dashboard" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Admin</Link>
           </div>
         </div>
       </footer>
