@@ -114,12 +114,12 @@ export default function StudentProfilePage() {
             <div>
               <div className="font-bold text-2xl">Level {credConfig.num}</div>
               <div className="text-lg opacity-90">{credConfig.name}</div>
-              {credential?.specialization && (
-                <div className="text-sm opacity-80 mt-1">สาขา: {credential.specialization as string}</div>
-              )}
-              {credential?.certificate_ref && (
-                <div className="text-sm opacity-80">เลขที่: {credential.certificate_ref as string}</div>
-              )}
+              {credential?.specialization ? (
+                <div className="text-sm opacity-80 mt-1">สาขา: {String(credential.specialization)}</div>
+              ) : null}
+              {credential?.certificate_ref ? (
+                <div className="text-sm opacity-80">เลขที่: {String(credential.certificate_ref)}</div>
+              ) : null}
             </div>
           </div>
         </CardContent>
