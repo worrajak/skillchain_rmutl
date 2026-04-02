@@ -362,8 +362,8 @@ FROM auth.users au
 LEFT JOIN public.users pu ON pu.id = au.id
 WHERE pu.id IS NULL;
 
--- ให้ user ที่มีอยู่แล้วเป็น APPROVED
-UPDATE users SET approval_status = 'APPROVED' WHERE approval_status = 'PENDING';
+-- หมายเหตุ: user ใหม่จะเป็น PENDING ต้องให้ admin approve
+-- ถ้าต้องการ approve ทุกคนที่มีอยู่: UPDATE users SET approval_status = 'APPROVED';
 
 -- ==================== 7. VIEWS ====================
 DROP VIEW IF EXISTS student_current_credential;
