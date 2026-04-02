@@ -412,3 +412,16 @@ SELECT u.id AS employer_id, u.name,
   ROUND(COALESCE(AVG(sr.score_safety),0)::NUMERIC,2) AS avg_safety
 FROM users u LEFT JOIN student_reviews sr ON sr.employer_id = u.id
 WHERE u.role = 'employer' GROUP BY u.id, u.name;
+
+-- ==================== 8. RLS POLICIES (Pilot Phase — เปิดหมด) ====================
+-- เปิด RLS + allow all สำหรับทุก table
+DO $$
+DECLARE t TEXT;
+BEGIN
+  FOR t IN SELECT tablename FROM pg_tables WHERE schemaname = 'public'
+  LOOP
+    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', t);
+    EXECUTE format('DROP POLICY IF EXISTS "allow_all" ON public.%I', t);
+    EXECUTE format('CREATE POLICY "allow_all" ON public.%I FOR ALL USING (true) WITH CHECK (true)', t);
+  END LOOP;
+END $$;
