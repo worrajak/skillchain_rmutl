@@ -8,18 +8,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Briefcase,
   Users,
   CheckCircle,
-  Wallet,
   Award,
   MapPin,
   Star,
   Trophy,
   Shield,
-  Zap,
   Wrench,
 } from "lucide-react";
 
@@ -90,21 +87,6 @@ export default async function HomePage() {
         </div>
 
         <div className="relative max-w-6xl mx-auto px-4 py-10 md:py-14">
-          {/* Top bar */}
-          <div className="flex items-center justify-between mb-8">
-            <Badge variant="secondary" className="text-sm font-medium">
-              Pilot Phase — มทร.ล้านนา 2569
-            </Badge>
-            <div className="flex gap-3">
-              <Link href="/login">
-                <Button size="sm" variant="secondary" className="font-semibold">เข้าสู่ระบบ</Button>
-              </Link>
-              <Link href="/register">
-                <Button size="sm" className="font-semibold bg-white text-blue-700 hover:bg-blue-50">ลงทะเบียน</Button>
-              </Link>
-            </div>
-          </div>
-
           {/* Main content — 2 columns */}
           <div className="grid md:grid-cols-2 gap-10 items-center">
             {/* Left: Message */}
@@ -277,57 +259,6 @@ export default async function HomePage() {
           </section>
         )}
 
-        {/* Features Grid */}
-        <section>
-          <h2 className="text-2xl font-bold text-center mb-2 text-foreground">ระบบครบวงจร</h2>
-          <p className="text-sm text-muted-foreground text-center mb-6">โปร่งใส ตรวจสอบได้ ทุกขั้นตอนอยู่บน Blockchain</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {[
-              { icon: Briefcase, title: "Job Board", desc: "4 ประเภทงาน: จ้าง/จิตอาสา/ฝึกทักษะ/ยกเว้นค่าบริการ", color: "text-blue-600", bg: "bg-blue-50" },
-              { icon: Wallet, title: "Escrow Payment", desc: "Smart Contract จ่ายอัตโนมัติเมื่องานเสร็จ", color: "text-green-600", bg: "bg-green-50" },
-              { icon: Award, title: "NFT Credential", desc: "ใบรับรอง 5 ระดับบน Blockchain แก้ไขไม่ได้", color: "text-purple-600", bg: "bg-purple-50" },
-              { icon: Users, title: "Mentorship", desc: "พี่เลี้ยงรุ่นพี่กำกับดูแลพร้อมประเมิน", color: "text-orange-600", bg: "bg-orange-50" },
-              { icon: Shield, title: "Gate Control", desc: "ตรวจสอบสิทธิ์รับงานตาม Credential Level", color: "text-red-600", bg: "bg-red-50" },
-              { icon: Zap, title: "Multi-source Rating", desc: "อาจารย์ + ผู้จ้าง + Mentor ประเมินครบวงจร", color: "text-yellow-600", bg: "bg-yellow-50" },
-            ].map((f) => (
-              <Card key={f.title} className="hover:shadow-md transition-shadow">
-                <CardContent className="flex items-start gap-3 pt-4 pb-4">
-                  <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-xl", f.bg)}>
-                    <f.icon className={cn("size-5", f.color)} />
-                  </div>
-                  <div>
-                    <div className="font-semibold text-sm text-foreground">{f.title}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{f.desc}</div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        {/* CTA */}
-        <section className="text-center py-8">
-          <Card className="bg-gradient-to-br from-blue-600 to-indigo-800 text-white border-0">
-            <CardContent className="py-10 space-y-4">
-              <h2 className="text-2xl md:text-3xl font-bold">พร้อมเริ่มต้นแล้วหรือยัง?</h2>
-              <p className="text-blue-100 max-w-xl mx-auto">
-                ลงทะเบียนวันนี้ เริ่มสร้างประวัติทักษะช่างบน Blockchain ที่โปร่งใส ตรวจสอบได้
-              </p>
-              <div className="flex gap-4 justify-center pt-2">
-                <Link href="/register">
-                  <Button size="lg" className="bg-white text-blue-700 hover:bg-blue-50 font-semibold px-8">
-                    ลงทะเบียนเลย
-                  </Button>
-                </Link>
-                <Link href="/login">
-                  <Button size="lg" variant="outline" className="text-white border-2 border-white bg-white/10 hover:bg-white/20 font-semibold px-8">
-                    เข้าสู่ระบบ
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
       </main>
 
       {/* Footer */}

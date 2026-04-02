@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
+import { Navbar } from "@/components/navbar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,6 +32,7 @@ export default function RootLayout({
       style={{ fontFamily: "var(--font-geist-sans), sans-serif" }}
     >
       <body className="min-h-full flex flex-col">
+        <Navbar />
         {children}
         <Toaster />
       </body>
