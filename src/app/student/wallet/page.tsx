@@ -68,11 +68,14 @@ export default function StudentWalletPage() {
                 <p className="text-sm text-green-800 font-medium mb-1">เชื่อมต่อแล้ว</p>
                 <p className="text-xs font-mono text-green-700 break-all">{walletAddress}</p>
               </div>
-              <Button variant="outline" size="sm" className="w-full" asChild>
-                <a href={`https://nile.tronscan.org/#/address/${walletAddress}`} target="_blank" rel="noopener noreferrer">
-                  ดูบน TronScan <ExternalLink className="size-3 ml-1" />
-                </a>
-              </Button>
+              <a
+                href={`https://nile.tronscan.org/#/address/${walletAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1 w-full rounded-lg border px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
+              >
+                ดูบน TronScan <ExternalLink className="size-3" />
+              </a>
             </div>
           ) : (
             <div className="text-center space-y-4 py-4">
