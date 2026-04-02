@@ -148,7 +148,7 @@ export default async function HomePage() {
                           </div>
                         </div>
                         {job.pay_amount > 0 && (
-                          <span className="text-sm font-bold text-green-300 shrink-0">{job.pay_amount.toLocaleString()} TRX</span>
+                          <span className="text-sm font-bold text-green-300 shrink-0">{job.pay_amount.toLocaleString()} TRPB</span>
                         )}
                       </div>
                     </Link>

@@ -126,7 +126,7 @@ export default function EmployerDashboardPage() {
                       {STATUS_LABELS[String(j.status)]?.label ?? j.status}
                     </span>
                     {Number(j.pay_amount) > 0 && (
-                      <div className="text-xs text-green-700 font-medium mt-0.5">{Number(j.pay_amount).toLocaleString()} TRX</div>
+                      <div className="text-xs text-green-700 font-medium mt-0.5">{Number(j.pay_amount).toLocaleString()} TRPB</div>
                     )}
                   </div>
                 </div>

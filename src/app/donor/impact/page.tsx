@@ -36,7 +36,7 @@ export default function DonorImpactPage() {
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin size-8 border-4 border-pink-500 border-t-transparent rounded-full" /></div>;
 
   const cards = [
-    { label: "บริจาคทั้งหมด", value: `${stats.totalDonated.toLocaleString()} TRX`, icon: Heart, color: "text-pink-600", bg: "bg-pink-100" },
+    { label: "บริจาคทั้งหมด", value: `${stats.totalDonated.toLocaleString()} TRPB`, icon: Heart, color: "text-pink-600", bg: "bg-pink-100" },
     { label: "ผู้บริจาค", value: stats.totalDonors, icon: Users, color: "text-purple-600", bg: "bg-purple-100" },
     { label: "นักศึกษาที่ได้รับประโยชน์", value: stats.studentsHelped, icon: Users, color: "text-blue-600", bg: "bg-blue-100" },
     { label: "งานสำเร็จ", value: stats.jobsCompleted, icon: Briefcase, color: "text-green-600", bg: "bg-green-100" },

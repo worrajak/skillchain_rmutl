@@ -143,7 +143,7 @@ export default function StudentJobsPage() {
                   <span className="flex items-center gap-1"><MapPin className="size-3" />{job.location as string} ({job.campus as string})</span>
                   <span className="flex items-center gap-1"><Clock className="size-3" />กำหนดส่ง: {new Date(job.deadline as string).toLocaleDateString("th-TH")}</span>
                   {(job.pay_amount as number) > 0 && (
-                    <span className="flex items-center gap-1 text-green-700 font-medium"><Wallet className="size-3" />{(job.pay_amount as number).toLocaleString()} TRX</span>
+                    <span className="flex items-center gap-1 text-green-700 font-medium"><Wallet className="size-3" />{(job.pay_amount as number).toLocaleString()} TRPB</span>
                   )}
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t">

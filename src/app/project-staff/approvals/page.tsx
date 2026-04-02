@@ -69,7 +69,7 @@ export default function StaffApprovalsPage() {
                       </div>
                       <div className="text-right">
                         <div className="font-medium text-sm text-foreground">{String(job?.title)}</div>
-                        <div className="text-xs text-muted-foreground">{String(job?.type)} · {String(job?.location)} · {Number(job?.pay_amount) > 0 ? `${Number(job?.pay_amount)} TRX` : "ไม่มีค่าจ้าง"}</div>
+                        <div className="text-xs text-muted-foreground">{String(job?.type)} · {String(job?.location)} · {Number(job?.pay_amount) > 0 ? `${Number(job?.pay_amount)} TRPB` : "ไม่มีค่าจ้าง"}</div>
                       </div>
                     </div>
                     <Textarea placeholder="หมายเหตุ (ไม่บังคับ)" value={reviewNote} onChange={(e) => setReviewNote(e.target.value)} rows={2} />

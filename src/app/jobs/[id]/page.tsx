@@ -98,7 +98,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                 {job.pay_amount > 0 && (
                   <div className="flex items-center gap-2">
                     <Wallet className="size-4 text-green-600" />
-                    <div><div className="text-muted-foreground text-xs">ค่าจ้าง</div><div className="text-green-700 font-bold">{job.pay_amount.toLocaleString()} TRX</div></div>
+                    <div><div className="text-muted-foreground text-xs">ค่าจ้าง</div><div className="text-green-700 font-bold">{job.pay_amount.toLocaleString()} TRPB</div></div>
                   </div>
                 )}
               </CardContent>

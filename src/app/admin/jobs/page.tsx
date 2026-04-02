@@ -200,7 +200,7 @@ export default function AdminJobsPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-sm">
-                        {job.pay_amount > 0 ? `${job.pay_amount.toLocaleString()} TRX` : "-"}
+                        {job.pay_amount > 0 ? `${job.pay_amount.toLocaleString()} TRPB` : "-"}
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {job.employer?.name ?? "-"}
@@ -278,7 +278,7 @@ export default function AdminJobsPage() {
                 <div><span className="text-muted-foreground">หมวด:</span> {CATEGORY_LABELS[detailJob.job_category]}</div>
                 <div><span className="text-muted-foreground">สถานที่:</span> {detailJob.location}</div>
                 <div><span className="text-muted-foreground">วิทยาเขต:</span> {detailJob.campus}</div>
-                <div><span className="text-muted-foreground">ค่าจ้าง:</span> {detailJob.pay_amount > 0 ? `${detailJob.pay_amount} TRX` : "-"}</div>
+                <div><span className="text-muted-foreground">ค่าจ้าง:</span> {detailJob.pay_amount > 0 ? `${detailJob.pay_amount} TRPB` : "-"}</div>
                 <div><span className="text-muted-foreground">กำหนดส่ง:</span> {new Date(detailJob.deadline).toLocaleDateString("th-TH")}</div>
                 <div><span className="text-muted-foreground">ผู้ว่าจ้าง:</span> {detailJob.employer?.name ?? "-"}</div>
                 <div><span className="text-muted-foreground">นักศึกษา:</span> {detailJob.student?.name ?? "-"}</div>

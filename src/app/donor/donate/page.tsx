@@ -62,7 +62,7 @@ export default function DonatePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-foreground">จำนวนเงิน (TRX)</Label>
+              <Label className="text-foreground">จำนวนเงิน (TRPB)</Label>
               <Input type="number" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} min="1" required />
               <div className="flex gap-2">
                 {[100, 500, 1000, 5000].map((v) => (

@@ -76,7 +76,7 @@ export default function EmployerJobsPage() {
                       <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", STATUS_LABELS[String(j.status)]?.color ?? "")}>
                         {STATUS_LABELS[String(j.status)]?.label ?? j.status}
                       </span>
-                      {Number(j.pay_amount) > 0 && <span className="text-xs text-green-700 font-medium">{Number(j.pay_amount).toLocaleString()} TRX</span>}
+                      {Number(j.pay_amount) > 0 && <span className="text-xs text-green-700 font-medium">{Number(j.pay_amount).toLocaleString()} TRPB</span>}
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">

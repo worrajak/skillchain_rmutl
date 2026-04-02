@@ -34,7 +34,7 @@ export default function DonorAuditPage() {
         <CardContent className="flex items-center gap-4 pt-6 pb-6">
           <Heart className="size-10" />
           <div>
-            <div className="text-3xl font-bold">{totalAmount.toLocaleString()} TRX</div>
+            <div className="text-3xl font-bold">{totalAmount.toLocaleString()} TRPB</div>
             <div className="text-sm opacity-90">บริจาคทั้งหมด ({donations.length} ครั้ง)</div>
           </div>
         </CardContent>
@@ -61,7 +61,7 @@ export default function DonorAuditPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-foreground">{Number(d.amount).toLocaleString()} TRX</div>
+                    <div className="font-bold text-foreground">{Number(d.amount).toLocaleString()} TRPB</div>
                     {d.nft_tx_hash ? (
                       <div className="text-[10px] text-green-600 font-mono">{String(d.nft_tx_hash).slice(0, 12)}...</div>
                     ) : (

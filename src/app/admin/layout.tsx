@@ -30,6 +30,7 @@ const navItems = [
   { href: "/admin/credentials", label: "Credential", icon: Award },
   { href: "/admin/reviews", label: "การประเมิน", icon: Star },
   { href: "/admin/tier", label: "Student Tier", icon: Shield },
+  { href: "/admin/fees", label: "ค่าธรรมเนียม TRPB", icon: Star },
   { href: "/admin/reports", label: "รายงาน", icon: BarChart3 },
 ];
 

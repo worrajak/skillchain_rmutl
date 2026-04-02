@@ -195,7 +195,7 @@ export default function NewJobPage() {
             </div>
             {jobType === "PAID" && (
               <div className="space-y-2">
-                <Label className="text-foreground">ค่าจ้าง (TRX)</Label>
+                <Label className="text-foreground">ค่าจ้าง (TRPB)</Label>
                 <Input type="number" placeholder="0" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} min="0" />
               </div>
             )}

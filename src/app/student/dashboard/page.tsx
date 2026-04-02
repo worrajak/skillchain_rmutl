@@ -269,7 +269,7 @@ export default function StudentDashboardPage() {
                     </span>
                     {(job.pay_amount as number) > 0 && (
                       <div className="text-xs text-green-700 font-medium mt-0.5">
-                        {(job.pay_amount as number).toLocaleString()} TRX
+                        {(job.pay_amount as number).toLocaleString()} TRPB
                       </div>
                     )}
                   </div>
