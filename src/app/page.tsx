@@ -100,66 +100,112 @@ export default async function HomePage() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Hero */}
+      {/* Hero — Content-Rich */}
       <header className="relative bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 text-white overflow-hidden">
-        {/* Background decoration */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-10 left-10 size-40 rounded-full border-2 border-white" />
           <div className="absolute bottom-10 right-20 size-60 rounded-full border-2 border-white" />
-          <div className="absolute top-1/2 left-1/3 size-20 rounded-full border border-white" />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 py-16 md:py-20">
-          <div className="text-center">
-            <Badge variant="secondary" className="mb-4 text-sm font-medium">
+        <div className="relative max-w-6xl mx-auto px-4 py-10 md:py-14">
+          {/* Top bar */}
+          <div className="flex items-center justify-between mb-8">
+            <Badge variant="secondary" className="text-sm font-medium">
               Pilot Phase — มทร.ล้านนา 2569
             </Badge>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 tracking-tight">
-              SkillChain
-            </h1>
-            <p className="text-xl md:text-2xl font-light text-blue-100 mb-2">
-              มหาวิทยาลัยเทคโนโลยีราชมงคลล้านนา
-            </p>
-            <p className="text-base md:text-lg text-blue-200 max-w-2xl mx-auto mb-8">
-              ระบบจัดการงานจ้างนักศึกษาช่างบน TRON Blockchain
-              พร้อม Escrow Payment, NFT Credential และการฝึกทักษะแบบมีพี่เลี้ยง
-            </p>
-            <div className="flex gap-4 justify-center">
+            <div className="flex gap-3">
               <Link href="/login">
-                <Button size="lg" variant="secondary" className="text-base px-8 py-3 font-semibold">
-                  เข้าสู่ระบบ
-                </Button>
+                <Button size="sm" variant="secondary" className="font-semibold">เข้าสู่ระบบ</Button>
               </Link>
               <Link href="/register">
-                <Button size="lg" className="text-base px-8 py-3 font-semibold bg-white text-blue-700 hover:bg-blue-50">
-                  ลงทะเบียน
-                </Button>
+                <Button size="sm" className="font-semibold bg-white text-blue-700 hover:bg-blue-50">ลงทะเบียน</Button>
               </Link>
+            </div>
+          </div>
+
+          {/* Main content — 2 columns */}
+          <div className="grid md:grid-cols-2 gap-10 items-center">
+            {/* Left: Message */}
+            <div className="space-y-5">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
+                จ้างช่างนักศึกษา
+                <br />
+                <span className="text-blue-200">โปร่งใส ตรวจสอบได้</span>
+              </h1>
+              <p className="text-base text-blue-100 leading-relaxed">
+                SkillChain เชื่อมต่อ<strong>ผู้ว่าจ้าง</strong>กับ<strong>นักศึกษาช่าง มทร.ล้านนา</strong>
+                ผ่านระบบ Blockchain — ทุกงาน ทุกการจ่ายเงิน ทุกการประเมิน บันทึกบน TRON
+                แก้ไขย้อนหลังไม่ได้ ตรวจสอบได้ตลอด
+              </p>
+
+              {/* Key Value Props */}
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { icon: Shield, text: "Escrow จ่ายเมื่องานเสร็จ" },
+                  { icon: Award, text: "NFT ใบรับรองทักษะ 5 ระดับ" },
+                  { icon: Star, text: "ประเมิน 3 ฝ่าย เฉพาะงาน" },
+                  { icon: Users, text: "ระบบพี่เลี้ยงดูแลน้อง" },
+                ].map((v) => (
+                  <div key={v.text} className="flex items-center gap-2 text-sm text-blue-100">
+                    <v.icon className="size-4 text-blue-300 shrink-0" />
+                    <span>{v.text}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA */}
+              <div className="flex gap-3 pt-2">
+                <Link href="/register">
+                  <Button size="lg" className="font-semibold bg-white text-blue-700 hover:bg-blue-50 px-6">
+                    ลงทะเบียนเลย
+                  </Button>
+                </Link>
+                <Link href="#how-it-works">
+                  <Button size="lg" variant="outline" className="font-semibold text-white border-white/40 bg-white/10 hover:bg-white/20 px-6">
+                    ดูขั้นตอน
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Right: Live Stats */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                {stats.map((s) => (
+                  <div key={s.label} className="rounded-xl bg-white/10 backdrop-blur p-3 text-center">
+                    <s.icon className="size-5 mx-auto mb-1 text-blue-200" />
+                    <div className="text-2xl font-bold">{s.value}</div>
+                    <div className="text-[11px] text-blue-200">{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* For who */}
+              <div className="rounded-xl bg-white/10 backdrop-blur p-4 space-y-3">
+                <p className="text-sm font-semibold text-blue-100">สำหรับใคร?</p>
+                {[
+                  { role: "นักศึกษาช่าง", desc: "รับงาน สร้างประวัติ ได้ NFT ใบรับรอง" },
+                  { role: "ผู้ว่าจ้าง/หน่วยงาน", desc: "ลงงาน จ่ายผ่าน Escrow ประเมินช่างได้" },
+                  { role: "อาจารย์/คณะทำงาน", desc: "ประเมินทักษะ ดูแลคุณภาพ เลื่อนระดับ นศ." },
+                  { role: "ผู้บริจาค", desc: "บริจาคกองทุน ติดตามการใช้เงินแบบ Real-time" },
+                ].map((r) => (
+                  <div key={r.role} className="flex items-start gap-2">
+                    <CheckCircle className="size-4 text-green-300 mt-0.5 shrink-0" />
+                    <div>
+                      <span className="text-sm font-medium">{r.role}</span>
+                      <span className="text-xs text-blue-200 ml-1">— {r.desc}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Stats Bar */}
-      <section className="border-b bg-card shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-6">
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-            {stats.map((s) => (
-              <div key={s.label} className="flex flex-col items-center gap-1.5 text-center">
-                <div className={cn("flex size-10 items-center justify-center rounded-xl", s.bg)}>
-                  <s.icon className={cn("size-5", s.color)} />
-                </div>
-                <span className="text-2xl font-bold text-foreground">{s.value}</span>
-                <span className="text-[11px] text-muted-foreground leading-tight">{s.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <main id="how-it-works" className="flex-1 max-w-6xl mx-auto px-4 py-10 space-y-14">
 
-      <main className="flex-1 max-w-6xl mx-auto px-4 py-10 space-y-14">
-
-        {/* How It Works (แสดงเสมอ — มีประโยชน์สำหรับผู้เยี่ยมชมใหม่) */}
+        {/* How It Works */}
         <section>
           <h2 className="text-2xl font-bold text-center mb-2 text-foreground">
             ขั้นตอนการใช้งาน
