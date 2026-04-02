@@ -22,7 +22,8 @@ export default function StudentWalletPage() {
     setConnecting(true);
 
     // Check TronLink
-    const tronWeb = (window as Record<string, unknown>).tronWeb as Record<string, unknown> | undefined;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const tronWeb = (window as any).tronWeb as Record<string, any> | undefined;
     if (!tronWeb || !tronWeb.defaultAddress) {
       toast.error("กรุณาติดตั้ง TronLink extension ก่อน");
       setConnecting(false);
