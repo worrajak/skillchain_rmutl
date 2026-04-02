@@ -44,16 +44,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-muted px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">SkillChain มทร.ล้านนา</CardTitle>
+          <CardTitle className="text-2xl text-foreground">SkillChain มทร.ล้านนา</CardTitle>
           <CardDescription>เข้าสู่ระบบเพื่อเริ่มต้นใช้งาน</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">อีเมล</Label>
+              <Label htmlFor="email" className="text-foreground">อีเมล</Label>
               <Input
                 id="email"
                 type="email"
@@ -64,7 +64,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">รหัสผ่าน</Label>
+              <Label htmlFor="password" className="text-foreground">รหัสผ่าน</Label>
               <Input
                 id="password"
                 type="password"

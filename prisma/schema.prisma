@@ -43,6 +43,16 @@ model User {
   evaluations_received Evaluation[]   @relation("StudentEvaluations")
   donations            DonationFund[]
   behavior_logs        BehaviorLog[]
+  // Reviews
+  employer_given_reviews        EmployerReview[] @relation("EmployerGivenReviews")
+  student_received_employer_reviews EmployerReview[] @relation("StudentReceivedEmployerReviews")
+  student_given_reviews         StudentReview[]  @relation("StudentGivenReviews")
+  employer_received_student_reviews StudentReview[] @relation("EmployerReceivedStudentReviews")
+  mentor_given_reviews          MentorReview[]   @relation("MentorGivenReviews")
+  trainee_received_reviews      MentorReview[]   @relation("TraineeReceivedReviews")
+  // Credentials
+  student_credentials           StudentCredential[] @relation("StudentCredentials")
+  certifier_credentials         StudentCredential[] @relation("CertifierCredentials")
 
   @@map("users")
 }
@@ -73,6 +83,53 @@ enum BadgeLevel {
   BASIC
   TRUSTED
   ELITE
+}
+
+// ==================== Credential System (5 Levels) ====================
+
+enum CredentialLevel {
+  LEVEL_1  // Registered
+  LEVEL_2  // Project Certified (ใต้ร่มพระบารมี)
+  LEVEL_3  // Teacher Certified (อาจารย์ มทร.ล้านนา)
+  LEVEL_4  // National Certified (กรมฝีมือแรงงาน/สคช.)
+  LEVEL_5  // Master Technician (รับเหมา+สอน+รับรองผู้อื่น)
+}
+
+enum CertifyingBody {
+  SYSTEM           // ระบบอัตโนมัติ
+  PROJECT_BARAMEE  // กลุ่มใต้ร่มพระบารมี
+  RMUTL_TEACHER    // อาจารย์ มทร.ล้านนา
+  DSD              // กรมพัฒนาฝีมือแรงงาน
+  TPQI             // สถาบันคุณวุฒิวิชาชีพ
+  MASTER_TECH      // Master Technician (Lv.5 รับรอง)
+}
+
+enum EvalPhase {
+  PRE_WORK     // ก่อนเริ่มงาน
+  IN_PROGRESS  // ระหว่างทำงาน
+  POST_WORK    // หลังงานเสร็จ
+}
+
+model StudentCredential {
+  id                  String          @id @default(uuid())
+  student_id          String
+  credential_level    CredentialLevel @default(LEVEL_1)
+  certified_by        CertifyingBody  @default(SYSTEM)
+  certified_by_user_id String?
+  certificate_ref     String?
+  specialization      String?
+  issued_at           DateTime        @default(now())
+  expires_at          DateTime?
+  nft_tx_hash         String?
+  is_active           Boolean         @default(true)
+  created_at          DateTime        @default(now())
+
+  student       User  @relation("StudentCredentials", fields: [student_id], references: [id])
+  certified_by_user User? @relation("CertifierCredentials", fields: [certified_by_user_id], references: [id])
+
+  @@index([student_id])
+  @@index([credential_level])
+  @@map("student_credentials")
 }
 
 model StudentQualification {
@@ -155,16 +212,22 @@ model Job {
   employer_id   String
   student_id    String?
   mentor_id     String?
-  escrow_tx     String?
-  created_at    DateTime    @default(now())
-  updated_at    DateTime    @updatedAt
+  escrow_tx          String?
+  eval_window_start  DateTime?
+  eval_window_end    DateTime?
+  eval_window_days   Int         @default(7)
+  created_at         DateTime    @default(now())
+  updated_at         DateTime    @updatedAt
 
   // Relations
   employer    User         @relation("EmployerJobs", fields: [employer_id], references: [id])
   student     User?        @relation("StudentJobs", fields: [student_id], references: [id])
   mentor      User?        @relation("MentorJobs", fields: [mentor_id], references: [id])
-  evaluations Evaluation[]
-  behavior_logs BehaviorLog[]
+  evaluations      Evaluation[]
+  behavior_logs    BehaviorLog[]
+  employer_reviews EmployerReview[]
+  student_reviews  StudentReview[]
+  mentor_reviews   MentorReview[]
 
   @@index([status])
   @@index([type])
@@ -187,7 +250,10 @@ model Evaluation {
   score_tool     Float    // 10%
   weighted_score Float
   comment        String?
+  eval_phase     EvalPhase @default(POST_WORK)
   nft_tx_hash    String?
+  on_chain_tx    String?
+  content_hash   String?
   created_at     DateTime @default(now())
 
   job     Job  @relation(fields: [job_id], references: [id])
@@ -212,6 +278,84 @@ model DonationFund {
   donor User @relation(fields: [donor_id], references: [id])
 
   @@map("donation_funds")
+}
+
+// ==================== Reviews (Multi-source Rating) ====================
+
+model EmployerReview {
+  id                String   @id @default(uuid())
+  job_id            String
+  employer_id       String
+  student_id        String
+  score_quality     Int      // 1-5 stars
+  score_punctuality Int      // 1-5 stars
+  score_attitude    Int      // 1-5 stars
+  overall_rating    Float
+  comment           String?
+  eval_phase        EvalPhase @default(POST_WORK)
+  on_chain_tx       String?
+  content_hash      String?
+  created_at        DateTime @default(now())
+
+  job      Job  @relation(fields: [job_id], references: [id])
+  employer User @relation("EmployerGivenReviews", fields: [employer_id], references: [id])
+  student  User @relation("StudentReceivedEmployerReviews", fields: [student_id], references: [id])
+
+  @@unique([job_id, employer_id, student_id])
+  @@index([student_id])
+  @@index([employer_id])
+  @@map("employer_reviews")
+}
+
+model StudentReview {
+  id              String   @id @default(uuid())
+  job_id          String
+  student_id      String
+  employer_id     String
+  score_clarity   Int      // 1-5 stars
+  score_payment   Int      // 1-5 stars
+  score_safety    Int      // 1-5 stars
+  overall_rating  Float
+  comment         String?
+  eval_phase      EvalPhase @default(POST_WORK)
+  on_chain_tx     String?
+  content_hash    String?
+  created_at      DateTime @default(now())
+
+  job      Job  @relation(fields: [job_id], references: [id])
+  student  User @relation("StudentGivenReviews", fields: [student_id], references: [id])
+  employer User @relation("EmployerReceivedStudentReviews", fields: [employer_id], references: [id])
+
+  @@unique([job_id, student_id, employer_id])
+  @@index([employer_id])
+  @@index([student_id])
+  @@map("student_reviews")
+}
+
+model MentorReview {
+  id                    String   @id @default(uuid())
+  job_id                String
+  mentor_id             String
+  trainee_id            String
+  score_effort          Int      // 1-4 rubric
+  score_safety          Int      // 1-4 rubric
+  score_skill_dev       Int      // 1-4 rubric
+  weighted_score        Float
+  comment               String?
+  eval_phase            EvalPhase @default(POST_WORK)
+  on_chain_tx           String?
+  content_hash          String?
+  recommend_promotion   Boolean  @default(false)
+  created_at            DateTime @default(now())
+
+  job     Job  @relation(fields: [job_id], references: [id])
+  mentor  User @relation("MentorGivenReviews", fields: [mentor_id], references: [id])
+  trainee User @relation("TraineeReceivedReviews", fields: [trainee_id], references: [id])
+
+  @@unique([job_id, mentor_id, trainee_id])
+  @@index([trainee_id])
+  @@index([mentor_id])
+  @@map("mentor_reviews")
 }
 
 // ==================== Behavior Log ====================

@@ -26,6 +26,34 @@ export type AvailabilityStatus = "available" | "busy" | "unavailable";
 
 export type ExemptionType = "A" | "B" | "C";
 
+// Credential System (5 Levels)
+export type CredentialLevel = "LEVEL_1" | "LEVEL_2" | "LEVEL_3" | "LEVEL_4" | "LEVEL_5";
+
+export type CertifyingBody =
+  | "SYSTEM"
+  | "PROJECT_BARAMEE"
+  | "RMUTL_TEACHER"
+  | "DSD"
+  | "TPQI"
+  | "MASTER_TECH";
+
+export type EvalPhase = "PRE_WORK" | "IN_PROGRESS" | "POST_WORK";
+
+export const CREDENTIAL_LABELS: Record<CredentialLevel, { en: string; th: string; nft: string }> = {
+  LEVEL_1: { en: "Registered", th: "ลงทะเบียน", nft: "none" },
+  LEVEL_2: { en: "Project Certified", th: "ผ่านฝึกอบรมโครงการ", nft: "bronze" },
+  LEVEL_3: { en: "Teacher Certified", th: "อาจารย์รับรอง", nft: "silver" },
+  LEVEL_4: { en: "National Certified", th: "สถาบันระดับชาติรับรอง", nft: "gold" },
+  LEVEL_5: { en: "Master Technician", th: "ช่างชำนาญการ", nft: "diamond" },
+};
+
+export const JOB_TYPE_REQUIRED_LEVEL: Record<JobType, CredentialLevel> = {
+  TRAINING: "LEVEL_2",
+  VOLUNTEER: "LEVEL_2",
+  PAID: "LEVEL_3",
+  EXEMPTED: "LEVEL_3",
+};
+
 export type DonorTier = "friend" | "supporter" | "patron" | "benefactor";
 
 // --- Main Entities ---
@@ -127,6 +155,88 @@ export interface DonationFund {
   restriction_note: string | null;
   nft_tx_hash: string | null;
   created_at: string;
+}
+
+// --- Credentials ---
+
+export interface StudentCredential {
+  id: string;
+  student_id: string;
+  credential_level: CredentialLevel;
+  certified_by: CertifyingBody;
+  certified_by_user_id: string | null;
+  certificate_ref: string | null;
+  specialization: string | null;
+  issued_at: string;
+  expires_at: string | null;
+  nft_tx_hash: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+// --- Reviews ---
+
+export interface EmployerReview {
+  id: string;
+  job_id: string;
+  employer_id: string;
+  student_id: string;
+  score_quality: number;     // 1-5
+  score_punctuality: number; // 1-5
+  score_attitude: number;    // 1-5
+  overall_rating: number;
+  comment: string | null;
+  created_at: string;
+}
+
+export interface StudentReview {
+  id: string;
+  job_id: string;
+  student_id: string;
+  employer_id: string;
+  score_clarity: number;  // 1-5
+  score_payment: number;  // 1-5
+  score_safety: number;   // 1-5
+  overall_rating: number;
+  comment: string | null;
+  created_at: string;
+}
+
+export interface MentorReview {
+  id: string;
+  job_id: string;
+  mentor_id: string;
+  trainee_id: string;
+  score_effort: number;     // 1-4
+  score_safety: number;     // 1-4
+  score_skill_dev: number;  // 1-4
+  weighted_score: number;
+  comment: string | null;
+  recommend_promotion: boolean;
+  created_at: string;
+}
+
+export interface StudentRatingSummary {
+  student_id: string;
+  name: string;
+  campus: string;
+  avg_teacher_score: number;
+  teacher_review_count: number;
+  avg_employer_rating: number;
+  employer_review_count: number;
+  avg_mentor_score: number;
+  mentor_review_count: number;
+  combined_score: number;
+}
+
+export interface EmployerRatingSummary {
+  employer_id: string;
+  name: string;
+  avg_rating: number;
+  review_count: number;
+  avg_clarity: number;
+  avg_payment: number;
+  avg_safety: number;
 }
 
 export interface BehaviorLog {

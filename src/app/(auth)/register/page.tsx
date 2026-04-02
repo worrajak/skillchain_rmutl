@@ -78,10 +78,10 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-muted px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl">ลงทะเบียน SkillChain</CardTitle>
+          <CardTitle className="text-2xl text-foreground">ลงทะเบียน SkillChain</CardTitle>
           <CardDescription>
             สร้างบัญชีเพื่อเข้าใช้งานระบบ
           </CardDescription>
@@ -89,7 +89,7 @@ export default function RegisterPage() {
         <CardContent>
           <form onSubmit={handleRegister} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="name">ชื่อ-นามสกุล</Label>
+              <Label htmlFor="name" className="text-foreground">ชื่อ-นามสกุล</Label>
               <Input
                 id="name"
                 placeholder="ชื่อ นามสกุล"
@@ -99,7 +99,7 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">อีเมล</Label>
+              <Label htmlFor="email" className="text-foreground">อีเมล</Label>
               <Input
                 id="email"
                 type="email"
@@ -110,7 +110,7 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">รหัสผ่าน</Label>
+              <Label htmlFor="password" className="text-foreground">รหัสผ่าน</Label>
               <Input
                 id="password"
                 type="password"
@@ -122,7 +122,7 @@ export default function RegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>บทบาท</Label>
+              <Label className="text-foreground">บทบาท</Label>
               <Select value={role} onValueChange={(v) => v && setRole(v)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -138,7 +138,7 @@ export default function RegisterPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>วิทยาเขต</Label>
+              <Label className="text-foreground">วิทยาเขต</Label>
               <Select value={campus} onValueChange={(v) => v && setCampus(v)}>
                 <SelectTrigger>
                   <SelectValue />
