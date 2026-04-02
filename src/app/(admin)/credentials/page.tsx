@@ -227,7 +227,7 @@ export default function AdminCredentialsPage() {
           <div className="space-y-4">
             <div className="space-y-2">
               <Label className="text-foreground">นักศึกษา</Label>
-              <Select value={form.student_id} onValueChange={(v) => setForm({ ...form, student_id: v })}>
+              <Select value={form.student_id} onValueChange={(v) => v && setForm({ ...form, student_id: v })}>
                 <SelectTrigger><SelectValue placeholder="เลือกนักศึกษา" /></SelectTrigger>
                 <SelectContent>
                   {students.map((s) => (
@@ -238,7 +238,7 @@ export default function AdminCredentialsPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-foreground">ระดับ Credential</Label>
-              <Select value={form.credential_level} onValueChange={(v) => setForm({ ...form, credential_level: v })}>
+              <Select value={form.credential_level} onValueChange={(v) => v && setForm({ ...form, credential_level: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(LEVEL_LABELS).map(([k, v]) => (
@@ -249,7 +249,7 @@ export default function AdminCredentialsPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-foreground">รับรองโดย</Label>
-              <Select value={form.certified_by} onValueChange={(v) => setForm({ ...form, certified_by: v })}>
+              <Select value={form.certified_by} onValueChange={(v) => v && setForm({ ...form, certified_by: v })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(CERTIFYING_LABELS).map(([k, v]) => (
