@@ -149,7 +149,7 @@ export default async function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="text-white border-white hover:bg-white/10"
+                className="text-white border-2 border-white bg-white/15 hover:bg-white/25"
               >
                 ลงทะเบียน
               </Button>
