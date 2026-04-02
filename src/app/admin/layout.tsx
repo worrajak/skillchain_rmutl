@@ -15,13 +15,16 @@ import {
   Menu,
   X,
   UserCheck,
+  AlertTriangle,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/approvals", label: "ยืนยันผู้ใช้", icon: UserCheck },
+  { href: "/admin/disputes", label: "ข้อพิพาท", icon: AlertTriangle },
   { href: "/admin/users", label: "ผู้ใช้งาน", icon: Users },
   { href: "/admin/jobs", label: "งาน", icon: Briefcase },
   { href: "/admin/credentials", label: "Credential", icon: Award },
@@ -118,9 +121,10 @@ export default function AdminLayout({
           >
             <Menu className="size-5" />
           </Button>
-          <h1 className="text-lg font-semibold text-foreground">
+          <h1 className="text-lg font-semibold text-foreground flex-1">
             {navItems.find((i) => pathname.startsWith(i.href))?.label ?? "Admin"}
           </h1>
+          <NotificationBell />
         </header>
 
         {/* Content */}

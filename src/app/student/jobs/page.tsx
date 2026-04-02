@@ -72,21 +72,27 @@ export default function StudentJobsPage() {
   async function handleApply(jobId: string) {
     if (!userId) { toast.error("กรุณาเข้าสู่ระบบ"); return; }
 
-    // Check credential eligibility
-    const job = jobs.find((j) => j.id === jobId);
-    if (!job) return;
-
+    // ส่งคำขอรับงาน → รอ project_staff อนุมัติ (ไม่ได้ assign ตรง)
     const { error } = await supabase
-      .from("jobs")
-      .update({ student_id: userId, status: "ASSIGNED" })
-      .eq("id", jobId)
-      .eq("status", "OPEN");
+      .from("job_assignment_requests")
+      .insert({ job_id: jobId, student_id: userId });
 
     if (error) {
-      toast.error("สมัครไม่สำเร็จ: " + error.message);
+      if (error.code === "23505") {
+        toast.error("คุณส่งคำขอรับงานนี้ไปแล้ว");
+      } else {
+        toast.error("ส่งคำขอไม่สำเร็จ: " + error.message);
+      }
     } else {
-      toast.success("สมัครงานสำเร็จ!");
-      setJobs(jobs.filter((j) => j.id !== jobId));
+      toast.success("ส่งคำขอรับงานแล้ว — รอคณะทำงานอนุมัติ");
+      // แจ้ง staff
+      const { data: staffUsers } = await supabase.from("users").select("id")
+        .in("role", ["project_staff", "admin", "superadmin"]).eq("approval_status", "APPROVED");
+      if (staffUsers) {
+        await supabase.from("notifications").insert(
+          staffUsers.map((s) => ({ user_id: s.id, type: "assignment_request", title: "คำขอรับงานใหม่", body: "นักศึกษาส่งคำขอรับงาน รอการอนุมัติ", link: "/project-staff/approvals" }))
+        );
+      }
     }
   }
 
@@ -145,7 +151,7 @@ export default function StudentJobsPage() {
                     โดย: {(job.employer as { name: string })?.name ?? "ไม่ระบุ"}
                   </span>
                   <Button size="sm" onClick={() => handleApply(job.id as string)}>
-                    สมัครงาน
+                    ส่งคำขอรับงาน
                   </Button>
                 </div>
               </CardContent>
