@@ -135,7 +135,7 @@ export default async function HomePage() {
                 <div className="rounded-xl bg-white/10 backdrop-blur p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold text-blue-100">งานล่าสุด</p>
-                    <Link href="/login" className="text-[11px] text-blue-200 hover:text-white">ดูทั้งหมด →</Link>
+                    <Link href="/jobs" className="text-[11px] text-blue-200 hover:text-white">ดูทั้งหมด →</Link>
                   </div>
                   {recentJobs.slice(0, 4).map((job) => (
                     <Link key={job.id} href={`/jobs/${job.id}`} className="block rounded-lg bg-white/10 hover:bg-white/20 transition-colors p-3">
