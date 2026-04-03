@@ -95,6 +95,18 @@ export default async function HomePage() {
                 <br />
                 <span className="text-blue-200">โปร่งใส ตรวจสอบได้</span>
               </h1>
+
+              {/* TRPB Token Badge */}
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/15 backdrop-blur border border-white/20 px-4 py-2">
+                  <span className="text-lg font-bold text-yellow-300">1 TRPB = 1 อาสา</span>
+                </div>
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-green-500/20 border border-green-400/30 px-3 py-1.5">
+                  <span className="size-2 rounded-full bg-green-400 animate-pulse" />
+                  <span className="text-xs font-medium text-green-300">TRON Nile Testnet</span>
+                </div>
+              </div>
+
               <p className="text-base text-blue-100 leading-relaxed">
                 SkillChain เชื่อมต่อ<strong>ผู้ว่าจ้าง</strong>กับ<strong>นักศึกษาช่าง มทร.ล้านนา</strong>
                 ผ่านระบบ Blockchain — ทุกงาน ทุกการจ่ายเงิน ทุกการประเมิน บันทึกบน TRON
