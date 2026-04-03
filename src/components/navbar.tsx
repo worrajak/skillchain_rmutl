@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Wrench } from "lucide-react";
 import { useState } from "react";
+import { TrpbBalance } from "@/components/trpb-balance";
 
 const navLinks = [
   { href: "/", label: "หน้าหลัก" },
@@ -57,6 +58,7 @@ export function Navbar() {
 
         {/* Desktop CTA */}
         <div className="hidden md:flex items-center gap-2">
+          <TrpbBalance />
           <Link href="/login">
             <Button variant="ghost" size="sm">เข้าสู่ระบบ</Button>
           </Link>

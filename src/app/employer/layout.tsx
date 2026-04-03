@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { LayoutDashboard, Briefcase, PlusCircle, Users, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { TrpbBalance } from "@/components/trpb-balance";
 
 const navItems = [
   { href: "/employer/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -57,9 +58,10 @@ export default function EmployerLayout({ children }: { children: React.ReactNode
       <div className="flex-1 flex flex-col min-w-0">
         <header className="sticky top-0 z-30 flex items-center gap-4 border-b bg-card px-4 py-3 lg:px-6">
           <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setOpen(true)}><Menu className="size-5" /></Button>
-          <h1 className="text-lg font-semibold text-foreground">
+          <h1 className="text-lg font-semibold text-foreground flex-1">
             {navItems.find((i) => pathname.startsWith(i.href))?.label ?? "ผู้จ้าง"}
           </h1>
+          <TrpbBalance />
         </header>
         <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>

@@ -7,6 +7,7 @@ import { LayoutDashboard, Heart, FileSearch, TrendingUp, LogOut, Menu, X } from 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { TrpbBalance } from "@/components/trpb-balance";
 
 const navItems = [
   { href: "/donor/donate", label: "บริจาค", icon: Heart },
@@ -55,6 +56,7 @@ export default function DonorLayout({ children }: { children: React.ReactNode })
           <h1 className="text-lg font-semibold text-foreground flex-1">
             {navItems.find((i) => pathname === i.href)?.label ?? "ผู้บริจาค"}
           </h1>
+          <TrpbBalance />
           <NotificationBell />
         </header>
         <main className="flex-1 p-4 lg:p-6">{children}</main>

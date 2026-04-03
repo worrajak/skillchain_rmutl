@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { ClipboardCheck, Clock, LogOut, Menu, X, GraduationCap, PlusCircle, Users, Award } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { TrpbBalance } from "@/components/trpb-balance";
 
 const navItems = [
   { href: "/teacher/evaluation", label: "ประเมินผลงาน", icon: ClipboardCheck },
@@ -60,9 +61,10 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
           <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setOpen(true)}>
             <Menu className="size-5" />
           </Button>
-          <h1 className="text-lg font-semibold text-foreground">
+          <h1 className="text-lg font-semibold text-foreground flex-1">
             {navItems.find((i) => pathname.startsWith(i.href))?.label ?? "อาจารย์"}
           </h1>
+          <TrpbBalance />
         </header>
         <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>

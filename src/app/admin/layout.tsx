@@ -20,6 +20,7 @@ import {
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { TrpbBalance } from "@/components/trpb-balance";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -125,6 +126,7 @@ export default function AdminLayout({
           <h1 className="text-lg font-semibold text-foreground flex-1">
             {navItems.find((i) => pathname.startsWith(i.href))?.label ?? "Admin"}
           </h1>
+          <TrpbBalance />
           <NotificationBell />
         </header>
 

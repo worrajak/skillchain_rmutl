@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { TrpbBalance } from "@/components/trpb-balance";
 
 const navItems = [
   { href: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -71,9 +72,10 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
           <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setOpen(true)}>
             <Menu className="size-5" />
           </Button>
-          <h1 className="text-lg font-semibold text-foreground">
+          <h1 className="text-lg font-semibold text-foreground flex-1">
             {navItems.find((i) => pathname.startsWith(i.href))?.label ?? "นักศึกษา"}
           </h1>
+          <TrpbBalance />
         </header>
         <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>

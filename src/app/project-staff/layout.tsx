@@ -7,6 +7,7 @@ import { LayoutDashboard, UserCheck, AlertTriangle, FileCheck, LogOut, Menu, X, 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { TrpbBalance } from "@/components/trpb-balance";
 
 const navItems = [
   { href: "/project-staff/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -56,6 +57,7 @@ export default function ProjectStaffLayout({ children }: { children: React.React
           <h1 className="text-lg font-semibold text-foreground flex-1">
             {navItems.find((i) => pathname.startsWith(i.href))?.label ?? "คณะทำงาน"}
           </h1>
+          <TrpbBalance />
           <NotificationBell />
         </header>
         <main className="flex-1 p-4 lg:p-6">{children}</main>

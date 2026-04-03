@@ -94,6 +94,73 @@ export default async function AboutPage() {
           </div>
         </section>
 
+        {/* TRPB On-Chain Info */}
+        <section>
+          <h2 className="text-2xl font-bold text-center mb-2 text-foreground">TRPB Coin — On-Chain</h2>
+          <p className="text-sm text-muted-foreground text-center mb-6">ข้อมูลเหรียญ TRPB บน TRON {TRON_CONFIG.network === "nile" ? "Nile Testnet" : "Mainnet"} แบบ Real-time</p>
+
+          <div className="grid md:grid-cols-3 gap-4 mb-4">
+            <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
+              <CardContent className="pt-4 pb-4 text-center space-y-1">
+                <Coins className="size-8 mx-auto text-yellow-600" />
+                <div className="text-2xl font-bold text-foreground">1 TRPB = 1 อาสา</div>
+                <div className="text-xs text-muted-foreground">อัตราคงที่ กำหนดโดยคณะทำงาน</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-4 text-center space-y-1">
+                <Database className="size-8 mx-auto text-blue-600" />
+                <div className="text-2xl font-bold text-foreground">
+                  {onChain ? onChain.totalSupply.toLocaleString() : "1,000,000"} <span className="text-base font-normal text-muted-foreground">TRPB</span>
+                </div>
+                <div className="text-xs text-muted-foreground">Total Supply (on-chain)</div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-4 text-center space-y-1">
+                <Wallet className="size-8 mx-auto text-green-600" />
+                <div className="text-2xl font-bold text-foreground">
+                  {onChain ? onChain.deployerBalance.toLocaleString() : "-"} <span className="text-base font-normal text-muted-foreground">TRPB</span>
+                </div>
+                <div className="text-xs text-muted-foreground">คงเหลือใน Treasury</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Contract Addresses */}
+          <Card>
+            <CardContent className="pt-4 pb-4 space-y-3">
+              <div className="text-sm font-semibold text-foreground mb-2">Smart Contract Addresses</div>
+              {[
+                { label: "TRPB Token", addr: CONTRACTS.TRPB_TOKEN, type: "contract" as const },
+                { label: "Job Escrow", addr: CONTRACTS.JOB_ESCROW, type: "contract" as const },
+                { label: "Treasury Wallet", addr: "TU7VbEyrdZMmfMAqsNUmjmcG4CMBLtK7qj", type: "address" as const },
+              ].map((c) => (
+                <div key={c.label} className="flex items-center justify-between gap-2 rounded-lg bg-muted/50 px-3 py-2">
+                  <div>
+                    <div className="text-xs text-muted-foreground">{c.label}</div>
+                    <div className="text-xs font-mono text-foreground break-all">{c.addr || "ยังไม่ได้ตั้งค่า"}</div>
+                  </div>
+                  {c.addr && (
+                    <a
+                      href={`https://${TRON_CONFIG.network === "nile" ? "nile." : ""}tronscan.org/#/${c.type}/${c.addr}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 text-blue-600 hover:text-blue-800"
+                    >
+                      <ExternalLink className="size-4" />
+                    </a>
+                  )}
+                </div>
+              ))}
+              <div className="flex items-center gap-1.5 mt-2">
+                <span className="size-2 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-xs text-muted-foreground">TRON {TRON_CONFIG.network === "nile" ? "Nile Testnet" : "Mainnet"} — ข้อมูลอัปเดตทุก 60 วินาที</span>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+
         {/* 5 Credential Levels */}
         <section>
           <h2 className="text-2xl font-bold text-center mb-2 text-foreground">5 ระดับ Credential</h2>
@@ -170,73 +237,6 @@ export default async function AboutPage() {
               </Card>
             ))}
           </div>
-        </section>
-
-        {/* TRPB On-Chain Info */}
-        <section>
-          <h2 className="text-2xl font-bold text-center mb-2 text-foreground">TRPB Coin — On-Chain</h2>
-          <p className="text-sm text-muted-foreground text-center mb-6">ข้อมูลเหรียญ TRPB บน TRON {TRON_CONFIG.network === "nile" ? "Nile Testnet" : "Mainnet"} แบบ Real-time</p>
-
-          <div className="grid md:grid-cols-3 gap-4 mb-4">
-            <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
-              <CardContent className="pt-4 pb-4 text-center space-y-1">
-                <Coins className="size-8 mx-auto text-yellow-600" />
-                <div className="text-2xl font-bold text-foreground">1 TRPB = 1 อาสา</div>
-                <div className="text-xs text-muted-foreground">อัตราคงที่ กำหนดโดยคณะทำงาน</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 pb-4 text-center space-y-1">
-                <Database className="size-8 mx-auto text-blue-600" />
-                <div className="text-2xl font-bold text-foreground">
-                  {onChain ? onChain.totalSupply.toLocaleString() : "1,000,000"} <span className="text-base font-normal text-muted-foreground">TRPB</span>
-                </div>
-                <div className="text-xs text-muted-foreground">Total Supply (on-chain)</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-4 pb-4 text-center space-y-1">
-                <Wallet className="size-8 mx-auto text-green-600" />
-                <div className="text-2xl font-bold text-foreground">
-                  {onChain ? onChain.deployerBalance.toLocaleString() : "-"} <span className="text-base font-normal text-muted-foreground">TRPB</span>
-                </div>
-                <div className="text-xs text-muted-foreground">คงเหลือใน Treasury</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Contract Addresses */}
-          <Card>
-            <CardContent className="pt-4 pb-4 space-y-3">
-              <div className="text-sm font-semibold text-foreground mb-2">Smart Contract Addresses</div>
-              {[
-                { label: "TRPB Token", addr: CONTRACTS.TRPB_TOKEN, type: "contract" as const },
-                { label: "Job Escrow", addr: CONTRACTS.JOB_ESCROW, type: "contract" as const },
-                { label: "Treasury Wallet", addr: "TU7VbEyrdZMmfMAqsNUmjmcG4CMBLtK7qj", type: "address" as const },
-              ].map((c) => (
-                <div key={c.label} className="flex items-center justify-between gap-2 rounded-lg bg-muted/50 px-3 py-2">
-                  <div>
-                    <div className="text-xs text-muted-foreground">{c.label}</div>
-                    <div className="text-xs font-mono text-foreground break-all">{c.addr || "ยังไม่ได้ตั้งค่า"}</div>
-                  </div>
-                  {c.addr && (
-                    <a
-                      href={`https://${TRON_CONFIG.network === "nile" ? "nile." : ""}tronscan.org/#/${c.type}/${c.addr}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="shrink-0 text-blue-600 hover:text-blue-800"
-                    >
-                      <ExternalLink className="size-4" />
-                    </a>
-                  )}
-                </div>
-              ))}
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className="size-2 rounded-full bg-green-500 animate-pulse" />
-                <span className="text-xs text-muted-foreground">TRON {TRON_CONFIG.network === "nile" ? "Nile Testnet" : "Mainnet"} — ข้อมูลอัปเดตทุก 60 วินาที</span>
-              </div>
-            </CardContent>
-          </Card>
         </section>
 
         {/* CTA */}
