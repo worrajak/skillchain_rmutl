@@ -25,7 +25,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
 
   const { data: job } = await supabase
     .from("jobs")
-    .select("*, employer:users!jobs_employer_id_fkey(name, email, organization, campus), student:users!jobs_student_id_fkey(name, email), staff_supervisor:users!jobs_approved_by_staff_fkey(name)")
+    .select("*, employer:users!jobs_employer_id_fkey(name, email, organization, campus), student:users!jobs_student_id_fkey(name, email)")
     .eq("id", id)
     .single();
 
@@ -41,6 +41,13 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
         </Card>
       </div>
     );
+  }
+
+  // Get staff supervisor name separately (FK may not exist)
+  let staffSupervisorName: string | null = null;
+  if (job.approved_by_staff) {
+    const { data: staff } = await supabase.from("users").select("name").eq("id", job.approved_by_staff).single();
+    staffSupervisorName = staff?.name ?? null;
   }
 
   const employer = job.employer as { name: string; email: string; organization: string | null; campus: string } | null;
@@ -67,7 +74,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             <Badge variant="outline">{TYPE_TH[job.type] ?? job.type}</Badge>
             <Badge variant="outline">{CAT_TH[job.job_category] ?? job.job_category}</Badge>
             {job.is_mentorship && <Badge variant="outline">ต้องมี Mentor</Badge>}
-            <StaffSupervisorBadge name={(job.staff_supervisor as { name: string } | null)?.name} />
+            <StaffSupervisorBadge name={staffSupervisorName} />
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">{job.title}</h1>
         </div>

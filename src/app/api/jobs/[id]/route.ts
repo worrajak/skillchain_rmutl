@@ -5,12 +5,34 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data, error } = await supabase
+
+  // Try with staff_supervisor join first, fallback without it
+  let { data, error } = await supabase
     .from("jobs")
     .select("*, employer:users!jobs_employer_id_fkey(name, email), student:users!jobs_student_id_fkey(name, email), staff_supervisor:users!jobs_approved_by_staff_fkey(name)")
     .eq("id", id)
     .single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 404 });
+
+  if (error) {
+    // Fallback: query without staff_supervisor join (FK may not exist yet)
+    const result = await supabase
+      .from("jobs")
+      .select("*, employer:users!jobs_employer_id_fkey(name, email), student:users!jobs_student_id_fkey(name, email)")
+      .eq("id", id)
+      .single();
+    data = result.data;
+    error = result.error;
+
+    // If still error, it's a real 404
+    if (error) return NextResponse.json({ error: error.message }, { status: 404 });
+
+    // Try to get staff name separately
+    if (data?.approved_by_staff) {
+      const { data: staff } = await supabase.from("users").select("name").eq("id", data.approved_by_staff).single();
+      (data as Record<string, unknown>).staff_supervisor = staff;
+    }
+  }
+
   return NextResponse.json(data);
 }
 

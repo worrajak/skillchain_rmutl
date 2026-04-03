@@ -64,11 +64,21 @@ export default function StudentDashboardPage() {
     if (!authUser) return;
     const { data: jobs } = await supabase
       .from("jobs")
-      .select("id, title, status, type, pay_amount, deadline, created_at, employer_id, work_start_date, work_end_date, schedule_proposed_by, schedule_confirmed, approved_by_staff, staff_confirmed_completion, employer_confirmed_completion, staff_supervisor:users!jobs_approved_by_staff_fkey(name)")
+      .select("id, title, status, type, pay_amount, deadline, created_at, employer_id, work_start_date, work_end_date, schedule_proposed_by, schedule_confirmed, approved_by_staff, staff_confirmed_completion, employer_confirmed_completion")
       .eq("student_id", authUser.id)
       .order("created_at", { ascending: false })
       .limit(5);
-    setMyJobs(jobs ?? []);
+    const jobList = jobs ?? [];
+    // Fetch staff names separately
+    const staffIds = [...new Set(jobList.filter((j) => j.approved_by_staff).map((j) => j.approved_by_staff as string))];
+    if (staffIds.length > 0) {
+      const { data: staffUsers } = await supabase.from("users").select("id, name").in("id", staffIds);
+      const staffMap = new Map((staffUsers ?? []).map((s) => [s.id, s.name]));
+      for (const j of jobList) {
+        (j as Record<string, unknown>).staff_supervisor = j.approved_by_staff ? { name: staffMap.get(j.approved_by_staff as string) ?? null } : null;
+      }
+    }
+    setMyJobs(jobList);
   }
 
   useEffect(() => {
@@ -97,14 +107,21 @@ export default function StudentDashboardPage() {
         .single();
       if (cred) setCredential(cred.credential_level);
 
-      // Get my jobs (with staff supervisor + schedule)
+      // Get my jobs (with schedule fields)
       const { data: jobs } = await supabase
         .from("jobs")
-        .select("id, title, status, type, pay_amount, deadline, created_at, employer_id, work_start_date, work_end_date, schedule_proposed_by, schedule_confirmed, approved_by_staff, staff_confirmed_completion, employer_confirmed_completion, staff_supervisor:users!jobs_approved_by_staff_fkey(name)")
+        .select("id, title, status, type, pay_amount, deadline, created_at, employer_id, work_start_date, work_end_date, schedule_proposed_by, schedule_confirmed, approved_by_staff, staff_confirmed_completion, employer_confirmed_completion")
         .eq("student_id", authUser.id)
         .order("created_at", { ascending: false })
         .limit(5);
-      setMyJobs(jobs ?? []);
+      const jobList = jobs ?? [];
+      const sIds = [...new Set(jobList.filter((j) => j.approved_by_staff).map((j) => j.approved_by_staff as string))];
+      if (sIds.length > 0) {
+        const { data: su } = await supabase.from("users").select("id, name").in("id", sIds);
+        const sm = new Map((su ?? []).map((s) => [s.id, s.name]));
+        for (const j of jobList) (j as Record<string, unknown>).staff_supervisor = j.approved_by_staff ? { name: sm.get(j.approved_by_staff as string) ?? null } : null;
+      }
+      setMyJobs(jobList);
 
       // Get stats
       const [

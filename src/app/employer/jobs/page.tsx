@@ -31,10 +31,21 @@ export default function EmployerJobsPage() {
     if (!user) { setLoading(false); return; }
 
     const { data } = await supabase.from("jobs")
-      .select("*, student:users!jobs_student_id_fkey(name), staff_supervisor:users!jobs_approved_by_staff_fkey(name)")
+      .select("*, student:users!jobs_student_id_fkey(name)")
       .eq("employer_id", user.id)
       .order("created_at", { ascending: false });
-    setJobs(data ?? []);
+
+    // Fetch staff supervisor names separately
+    const jobList = data ?? [];
+    const staffIds = [...new Set(jobList.filter((j) => j.approved_by_staff).map((j) => j.approved_by_staff as string))];
+    if (staffIds.length > 0) {
+      const { data: staffUsers } = await supabase.from("users").select("id, name").in("id", staffIds);
+      const staffMap = new Map((staffUsers ?? []).map((s) => [s.id, s.name]));
+      for (const j of jobList) {
+        (j as Record<string, unknown>).staff_supervisor = j.approved_by_staff ? { name: staffMap.get(j.approved_by_staff as string) ?? null } : null;
+      }
+    }
+    setJobs(jobList);
     setLoading(false);
   }
 
