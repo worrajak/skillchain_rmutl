@@ -25,9 +25,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
-  // ถ้า approve → assign student to job
+  // ถ้า approve → assign student to job + บันทึก staff supervisor
   if (action === "APPROVED" && req) {
-    await supabase.from("jobs").update({ student_id: req.student_id, status: "ASSIGNED" }).eq("id", id);
+    // ดึงข้อมูลงานเพื่อหา employer_id
+    const { data: job } = await supabase.from("jobs").select("employer_id, title").eq("id", id).single();
+
+    await supabase.from("jobs").update({
+      student_id: req.student_id,
+      status: "ASSIGNED",
+      approved_by_staff: user.id,
+      staff_approval_at: new Date().toISOString(),
+    }).eq("id", id);
 
     // สร้าง chat room
     await supabase.from("job_chat_rooms").insert({ job_id: id }).select().single();
@@ -37,9 +45,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       user_id: req.student_id,
       type: "job_assigned",
       title: "ได้รับงานแล้ว!",
-      body: `คุณได้รับมอบหมายงาน — เข้าดูรายละเอียดได้เลย`,
-      link: `/student/jobs`,
+      body: `คุณได้รับมอบหมายงาน "${job?.title}" — กรุณาประสานวันทำงานกับผู้ว่าจ้าง`,
+      link: `/student/dashboard`,
     });
+
+    // แจ้ง employer ว่ามี นศ. แล้ว
+    if (job?.employer_id) {
+      await supabase.from("notifications").insert({
+        user_id: job.employer_id,
+        type: "job_assigned",
+        title: "นักศึกษาได้รับมอบหมายแล้ว",
+        body: `งาน "${job.title}" มีนักศึกษารับแล้ว — กรุณากำหนดวันทำงาน`,
+        link: `/employer/jobs/${id}`,
+      });
+    }
   }
 
   if (action === "REJECTED" && req) {

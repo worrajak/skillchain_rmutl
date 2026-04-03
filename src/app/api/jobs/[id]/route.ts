@@ -7,7 +7,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("jobs")
-    .select("*, employer:users!jobs_employer_id_fkey(name, email), student:users!jobs_student_id_fkey(name, email)")
+    .select("*, employer:users!jobs_employer_id_fkey(name, email), student:users!jobs_student_id_fkey(name, email), staff_supervisor:users!jobs_approved_by_staff_fkey(name)")
     .eq("id", id)
     .single();
   if (error) return NextResponse.json({ error: error.message }, { status: 404 });

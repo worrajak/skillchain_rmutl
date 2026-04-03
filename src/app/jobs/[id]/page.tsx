@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { MapPin, Clock, Wallet, User, Briefcase, ArrowLeft, Shield, Award } from "lucide-react";
+import { StaffSupervisorBadge } from "@/components/staff-supervisor-badge";
 
 const TYPE_TH: Record<string, string> = { PAID: "งานจ้าง", VOLUNTEER: "จิตอาสา", TRAINING: "ฝึกทักษะ", EXEMPTED: "ยกเว้นค่าบริการ" };
 const CAT_TH: Record<string, string> = { electrical: "ไฟฟ้า", hvac: "แอร์/เครื่องเย็น", automotive: "ยานยนต์", general: "ทั่วไป" };
@@ -24,7 +25,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
 
   const { data: job } = await supabase
     .from("jobs")
-    .select("*, employer:users!jobs_employer_id_fkey(name, email, organization, campus), student:users!jobs_student_id_fkey(name, email)")
+    .select("*, employer:users!jobs_employer_id_fkey(name, email, organization, campus), student:users!jobs_student_id_fkey(name, email), staff_supervisor:users!jobs_approved_by_staff_fkey(name)")
     .eq("id", id)
     .single();
 
@@ -66,6 +67,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             <Badge variant="outline">{TYPE_TH[job.type] ?? job.type}</Badge>
             <Badge variant="outline">{CAT_TH[job.job_category] ?? job.job_category}</Badge>
             {job.is_mentorship && <Badge variant="outline">ต้องมี Mentor</Badge>}
+            <StaffSupervisorBadge name={(job.staff_supervisor as { name: string } | null)?.name} />
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">{job.title}</h1>
         </div>

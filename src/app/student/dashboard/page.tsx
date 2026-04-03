@@ -23,7 +23,13 @@ import {
   UserCheck,
   AlertTriangle,
   ArrowRight,
+  Calendar,
+  Send,
+  XCircle,
 } from "lucide-react";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { StaffSupervisorBadge } from "@/components/staff-supervisor-badge";
 
 const CREDENTIAL_CONFIG: Record<string, { num: number; name: string; color: string; gradient: string; icon: typeof Award }> = {
   LEVEL_1: { num: 1, name: "ลงทะเบียน", color: "text-gray-600", gradient: "from-gray-400 to-gray-500", icon: UserCheck },
@@ -49,14 +55,28 @@ export default function StudentDashboardPage() {
   const [myJobs, setMyJobs] = useState<Record<string, unknown>[]>([]);
   const [stats, setStats] = useState({ total: 0, completed: 0, inProgress: 0, avgScore: 0, reviewCount: 0 });
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const supabase = createClient();
+
+  async function loadData() {
+    const { data: { user: authUser } } = await supabase.auth.getUser();
+    if (!authUser) return;
+    const { data: jobs } = await supabase
+      .from("jobs")
+      .select("id, title, status, type, pay_amount, deadline, created_at, employer_id, work_start_date, work_end_date, schedule_proposed_by, schedule_confirmed, approved_by_staff, staff_confirmed_completion, employer_confirmed_completion, staff_supervisor:users!jobs_approved_by_staff_fkey(name)")
+      .eq("student_id", authUser.id)
+      .order("created_at", { ascending: false })
+      .limit(5);
+    setMyJobs(jobs ?? []);
+  }
 
   useEffect(() => {
     async function load() {
       // Get current user
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) { setLoading(false); return; }
+      setUserId(authUser.id);
 
       // Get user profile
       const { data: profile } = await supabase
@@ -77,10 +97,10 @@ export default function StudentDashboardPage() {
         .single();
       if (cred) setCredential(cred.credential_level);
 
-      // Get my jobs
+      // Get my jobs (with staff supervisor + schedule)
       const { data: jobs } = await supabase
         .from("jobs")
-        .select("id, title, status, type, pay_amount, deadline, created_at")
+        .select("id, title, status, type, pay_amount, deadline, created_at, employer_id, work_start_date, work_end_date, schedule_proposed_by, schedule_confirmed, approved_by_staff, staff_confirmed_completion, employer_confirmed_completion, staff_supervisor:users!jobs_approved_by_staff_fkey(name)")
         .eq("student_id", authUser.id)
         .order("created_at", { ascending: false })
         .limit(5);
@@ -252,29 +272,67 @@ export default function StudentDashboardPage() {
         <CardContent>
           {myJobs.length > 0 ? (
             <div className="space-y-3">
-              {myJobs.map((job) => (
-                <div key={job.id as string} className="flex items-center justify-between rounded-lg border p-3">
-                  <div>
-                    <div className="font-medium text-sm text-foreground">{job.title as string}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">
-                      {job.type as string} — กำหนดส่ง {new Date(job.deadline as string).toLocaleDateString("th-TH")}
+              {myJobs.map((job) => {
+                const staffSup = job.staff_supervisor as { name: string } | null;
+                return (
+                  <div key={job.id as string} className="rounded-lg border p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-sm text-foreground">{job.title as string}</div>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", STATUS_LABELS[job.status as string]?.color ?? "bg-gray-100")}>
+                            {STATUS_LABELS[job.status as string]?.label ?? job.status}
+                          </span>
+                          <StaffSupervisorBadge name={staffSup?.name} />
+                          {(job.pay_amount as number) > 0 && (
+                            <span className="text-xs text-green-700 font-medium">{(job.pay_amount as number).toLocaleString()} TRPB</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <span className={cn(
-                      "inline-flex rounded-full px-2 py-0.5 text-xs font-medium",
-                      STATUS_LABELS[job.status as string]?.color ?? "bg-gray-100"
-                    )}>
-                      {STATUS_LABELS[job.status as string]?.label ?? job.status}
-                    </span>
-                    {(job.pay_amount as number) > 0 && (
-                      <div className="text-xs text-green-700 font-medium mt-0.5">
-                        {(job.pay_amount as number).toLocaleString()} TRPB
+
+                    {/* Work dates */}
+                    {String(job.work_start_date ?? "") !== "" && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Calendar className="size-3" />
+                        <span>{new Date(String(job.work_start_date)).toLocaleDateString("th-TH")} — {new Date(String(job.work_end_date)).toLocaleDateString("th-TH")}</span>
+                      </div>
+                    )}
+
+                    {/* Action: ASSIGNED — เสนอ/รอวันทำงาน */}
+                    {job.status === "ASSIGNED" && (
+                      <JobScheduleAction jobId={job.id as string} job={job} userId={userId} onUpdate={loadData} />
+                    )}
+
+                    {/* Action: IN_PROGRESS — ส่งงาน */}
+                    {job.status === "IN_PROGRESS" && (
+                      <JobSubmitAction jobId={job.id as string} onUpdate={loadData} />
+                    )}
+
+                    {/* Action: SUBMITTED — รอยืนยัน */}
+                    {job.status === "SUBMITTED" && (
+                      <div className="flex items-center gap-3 text-xs rounded-lg bg-yellow-50 p-2">
+                        <span className="text-yellow-800 font-medium">รอยืนยัน:</span>
+                        <span className="flex items-center gap-1">
+                          {job.staff_confirmed_completion ? <CheckCircle className="size-3 text-green-600" /> : <XCircle className="size-3 text-gray-300" />}
+                          Staff
+                        </span>
+                        <span className="flex items-center gap-1">
+                          {job.employer_confirmed_completion ? <CheckCircle className="size-3 text-green-600" /> : <XCircle className="size-3 text-gray-300" />}
+                          ผู้ว่าจ้าง
+                        </span>
+                      </div>
+                    )}
+
+                    {/* COMPLETED */}
+                    {job.status === "COMPLETED" && (
+                      <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg p-2">
+                        <CheckCircle className="size-3" />เสร็จสมบูรณ์ — พร้อมประเมิน
                       </div>
                     )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8">
@@ -288,5 +346,73 @@ export default function StudentDashboardPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// Sub-component: Propose/Confirm work schedule
+function JobScheduleAction({ jobId, job, userId, onUpdate }: { jobId: string; job: Record<string, unknown>; userId: string | null; onUpdate: () => void }) {
+  const [startDate, setStartDate] = useState(job.work_start_date as string ?? "");
+  const [endDate, setEndDate] = useState(job.work_end_date as string ?? "");
+  const [submitting, setSubmitting] = useState(false);
+  const isProposedByMe = job.schedule_proposed_by === userId;
+  const isProposedByOther = job.schedule_proposed_by && !isProposedByMe;
+
+  async function propose() {
+    if (!startDate || !endDate) { toast.error("เลือกวันเริ่มและวันจบ"); return; }
+    setSubmitting(true);
+    const res = await fetch(`/api/jobs/${jobId}/schedule`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ start_date: startDate, end_date: endDate }) });
+    const data = await res.json();
+    setSubmitting(false);
+    if (res.ok) { toast.success(data.message); onUpdate(); } else toast.error(data.error);
+  }
+  async function confirm() {
+    setSubmitting(true);
+    const res = await fetch(`/api/jobs/${jobId}/schedule`, { method: "PATCH" });
+    const data = await res.json();
+    setSubmitting(false);
+    if (res.ok) { toast.success(data.message); onUpdate(); } else toast.error(data.error);
+  }
+
+  if (isProposedByOther && job.work_start_date) {
+    return (
+      <div className="rounded-lg bg-blue-50 p-2 space-y-2">
+        <p className="text-xs text-blue-800">ผู้ว่าจ้างเสนอวัน: <strong>{new Date(job.work_start_date as string).toLocaleDateString("th-TH")} — {new Date(job.work_end_date as string).toLocaleDateString("th-TH")}</strong></p>
+        <Button size="sm" onClick={confirm} disabled={submitting} className="w-full">
+          <CheckCircle className="size-3 mr-1" />{submitting ? "กำลังยืนยัน..." : "ยืนยันวันทำงาน"}
+        </Button>
+      </div>
+    );
+  }
+  if (isProposedByMe) {
+    return <p className="text-xs text-yellow-700 bg-yellow-50 rounded-lg p-2">คุณเสนอวันทำงานแล้ว — รอผู้ว่าจ้างยืนยัน</p>;
+  }
+  return (
+    <div className="rounded-lg bg-muted/50 p-2 space-y-2">
+      <p className="text-xs text-muted-foreground">กำหนดวันทำงาน:</p>
+      <div className="flex gap-2">
+        <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="text-xs h-8" />
+        <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="text-xs h-8" />
+      </div>
+      <Button size="sm" onClick={propose} disabled={submitting} className="w-full">
+        <Send className="size-3 mr-1" />{submitting ? "กำลังส่ง..." : "เสนอวันทำงาน"}
+      </Button>
+    </div>
+  );
+}
+
+// Sub-component: Submit work
+function JobSubmitAction({ jobId, onUpdate }: { jobId: string; onUpdate: () => void }) {
+  const [submitting, setSubmitting] = useState(false);
+  async function handleSubmit() {
+    setSubmitting(true);
+    const res = await fetch(`/api/jobs/${jobId}/submit`, { method: "POST" });
+    const data = await res.json();
+    setSubmitting(false);
+    if (res.ok) { toast.success(data.message); onUpdate(); } else toast.error(data.error);
+  }
+  return (
+    <Button size="sm" variant="outline" onClick={handleSubmit} disabled={submitting} className="w-full border-cyan-300 text-cyan-700 hover:bg-cyan-50">
+      <Send className="size-3 mr-1" />{submitting ? "กำลังส่ง..." : "ส่งงาน"}
+    </Button>
   );
 }

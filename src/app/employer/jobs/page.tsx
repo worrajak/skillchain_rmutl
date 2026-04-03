@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Briefcase, PlusCircle, Eye, Trash2, MessageCircle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { StaffSupervisorBadge } from "@/components/staff-supervisor-badge";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   OPEN: { label: "เปิดรับ", color: "bg-green-100 text-green-800" },
@@ -30,7 +31,7 @@ export default function EmployerJobsPage() {
     if (!user) { setLoading(false); return; }
 
     const { data } = await supabase.from("jobs")
-      .select("*, student:users!jobs_student_id_fkey(name)")
+      .select("*, student:users!jobs_student_id_fkey(name), staff_supervisor:users!jobs_approved_by_staff_fkey(name)")
       .eq("employer_id", user.id)
       .order("created_at", { ascending: false });
     setJobs(data ?? []);
@@ -77,6 +78,7 @@ export default function EmployerJobsPage() {
                         {STATUS_LABELS[String(j.status)]?.label ?? j.status}
                       </span>
                       {Number(j.pay_amount) > 0 && <span className="text-xs text-green-700 font-medium">{Number(j.pay_amount).toLocaleString()} TRPB</span>}
+                      <StaffSupervisorBadge name={(j.staff_supervisor as { name: string } | null)?.name} />
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">
