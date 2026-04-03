@@ -2,6 +2,9 @@
 // Pilot Phase ใช้ Nile Testnet
 // Token: TRPB Coin (ใต้ร่มพระบารมี)
 
+import TRPBTokenABI from "./abi/TRPBToken.json";
+import JobEscrowABI from "./abi/JobEscrow.json";
+
 export const TRON_CONFIG = {
   fullHost: process.env.NEXT_PUBLIC_TRON_FULL_HOST || "https://nile.trongrid.io",
   network: process.env.NEXT_PUBLIC_TRON_NETWORK || "nile",
@@ -16,18 +19,14 @@ export const TRPB_TOKEN = {
   rateToTHB: 1,
 } as const;
 
-// Contract addresses (deploy แล้วจะเติม)
+// Contract addresses (deployed on Nile Testnet)
 export const CONTRACTS = {
   TRPB_TOKEN: process.env.NEXT_PUBLIC_TRPB_TOKEN_ADDRESS || "",
   JOB_ESCROW: process.env.NEXT_PUBLIC_JOB_ESCROW_ADDRESS || "",
-  SKILL_CREDENTIAL: process.env.NEXT_PUBLIC_SKILL_CREDENTIAL_ADDRESS || "",
-  STUDENT_REPUTATION: process.env.NEXT_PUBLIC_STUDENT_REPUTATION_ADDRESS || "",
-  DONATION_FUND: process.env.NEXT_PUBLIC_DONATION_FUND_ADDRESS || "",
-  MENTORSHIP_MANAGER: process.env.NEXT_PUBLIC_MENTORSHIP_MANAGER_ADDRESS || "",
-  BEHAVIOR_LOG: process.env.NEXT_PUBLIC_BEHAVIOR_LOG_ADDRESS || "",
-  AGREEMENT_REGISTRY: process.env.NEXT_PUBLIC_AGREEMENT_REGISTRY_ADDRESS || "",
-  DISPUTE_REGISTRY: process.env.NEXT_PUBLIC_DISPUTE_REGISTRY_ADDRESS || "",
 } as const;
+
+// ABIs
+export { TRPBTokenABI, JobEscrowABI };
 
 // Fee structure (basis points, 1 bp = 0.01%)
 export const DEFAULT_FEES = {
@@ -64,19 +63,132 @@ export function formatTRPB(amount: number): string {
   return `${amount.toLocaleString()} TRPB`;
 }
 
-// Helper: ตรวจว่า TronLink ติดตั้งแล้วหรือยัง
-export function isTronLinkInstalled(): boolean {
-  if (typeof window === "undefined") return false;
-  return !!(window as unknown as { tronWeb?: unknown }).tronWeb;
+// แปลง TRPB จำนวนเต็ม → หน่วย on-chain (6 decimals)
+export function toOnChainAmount(amount: number): number {
+  return Math.round(amount * 10 ** TRPB_TOKEN.decimals);
 }
 
-// Helper: ขอ connect TronLink wallet
-export async function connectTronLink(): Promise<string | null> {
-  if (!isTronLinkInstalled()) {
-    throw new Error("กรุณาติดตั้ง TronLink Extension ก่อนใช้งาน");
-  }
-  const tronWeb = (window as unknown as { tronWeb: { defaultAddress: { base58: string } } }).tronWeb;
-  const address = tronWeb.defaultAddress.base58;
+// แปลงจาก on-chain → จำนวนเต็ม
+export function fromOnChainAmount(raw: number | string): number {
+  return Number(raw) / 10 ** TRPB_TOKEN.decimals;
+}
+
+// TronScan link helper
+export function getTronScanUrl(addressOrTx: string, type: "address" | "transaction" | "contract" = "address"): string {
+  const base = TRON_CONFIG.network === "nile"
+    ? "https://nile.tronscan.org/#"
+    : "https://tronscan.org/#";
+  return `${base}/${type}/${addressOrTx}`;
+}
+
+// ===== TronLink Wallet Helpers =====
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function getTronWeb(): any {
+  if (typeof window === "undefined") return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (window as any).tronWeb ?? null;
+}
+
+export function isTronLinkInstalled(): boolean {
+  return !!getTronWeb();
+}
+
+export function connectTronLink(): string {
+  const tronWeb = getTronWeb();
+  if (!tronWeb) throw new Error("กรุณาติดตั้ง TronLink Extension ก่อนใช้งาน");
+  const address = tronWeb.defaultAddress?.base58;
   if (!address) throw new Error("กรุณาเชื่อมต่อ TronLink Wallet");
   return address;
+}
+
+// ===== On-Chain Contract Calls =====
+
+/** Get TRPB token contract instance (requires TronLink) */
+function getTRPBContract() {
+  const tronWeb = getTronWeb();
+  if (!tronWeb) throw new Error("TronLink ไม่พร้อมใช้งาน");
+  if (!CONTRACTS.TRPB_TOKEN) throw new Error("TRPB Token contract address ยังไม่ได้ตั้งค่า");
+  return tronWeb.contract(TRPBTokenABI, CONTRACTS.TRPB_TOKEN);
+}
+
+/** Get JobEscrow contract instance (requires TronLink) */
+function getEscrowContract() {
+  const tronWeb = getTronWeb();
+  if (!tronWeb) throw new Error("TronLink ไม่พร้อมใช้งาน");
+  if (!CONTRACTS.JOB_ESCROW) throw new Error("JobEscrow contract address ยังไม่ได้ตั้งค่า");
+  return tronWeb.contract(JobEscrowABI, CONTRACTS.JOB_ESCROW);
+}
+
+/** ดูยอด TRPB ของ address */
+export async function getBalance(address: string): Promise<number> {
+  const contract = getTRPBContract();
+  const raw = await contract.balanceOf(address).call();
+  return fromOnChainAmount(raw.toString());
+}
+
+/** ดู totalSupply ของ TRPB */
+export async function getTotalSupply(): Promise<number> {
+  const contract = getTRPBContract();
+  const raw = await contract.totalSupply().call();
+  return fromOnChainAmount(raw.toString());
+}
+
+/** โอน TRPB ไปยัง address อื่น */
+export async function transferTRPB(to: string, amount: number): Promise<string> {
+  const contract = getTRPBContract();
+  const tx = await contract.transfer(to, toOnChainAmount(amount)).send();
+  return tx; // txId
+}
+
+/** Approve ให้ Escrow contract หัก TRPB ได้ */
+export async function approveEscrow(amount: number): Promise<string> {
+  const contract = getTRPBContract();
+  const tx = await contract.approve(CONTRACTS.JOB_ESCROW, toOnChainAmount(amount)).send();
+  return tx;
+}
+
+/** ดู allowance ที่อนุมัติให้ Escrow */
+export async function getEscrowAllowance(ownerAddress: string): Promise<number> {
+  const contract = getTRPBContract();
+  const raw = await contract.allowance(ownerAddress, CONTRACTS.JOB_ESCROW).call();
+  return fromOnChainAmount(raw.toString());
+}
+
+/** สร้าง Escrow ฝากเงินค่าจ้าง (ต้อง approve ก่อน) */
+export async function createEscrow(
+  jobId: string,
+  studentAddress: string,
+  mentorAddress: string | null,
+  amount: number,
+): Promise<string> {
+  const contract = getEscrowContract();
+  const tronWeb = getTronWeb();
+
+  // Convert UUID to bytes32
+  const jobIdBytes32 = "0x" + jobId.replace(/-/g, "").padEnd(64, "0");
+  const mentorAddr = mentorAddress || tronWeb.address.toHex("T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb").replace(/^41/, "0x000000000000000000000000");
+
+  const tx = await contract.createEscrow(
+    jobIdBytes32,
+    studentAddress,
+    mentorAddress || "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb", // address(0) placeholder
+    toOnChainAmount(amount),
+  ).send();
+  return tx;
+}
+
+/** ดูข้อมูล Escrow ของงาน */
+export async function getEscrowInfo(jobId: string) {
+  const contract = getEscrowContract();
+  const jobIdBytes32 = "0x" + jobId.replace(/-/g, "").padEnd(64, "0");
+  const result = await contract.getEscrow(jobIdBytes32).call();
+  return {
+    employer: result.employer,
+    student: result.student,
+    mentor: result.mentor,
+    amount: fromOnChainAmount(result.amount.toString()),
+    released: result.released,
+    refunded: result.refunded,
+  };
 }
