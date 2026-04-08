@@ -121,12 +121,27 @@ skillchain-web3/
 - [docs/tron-setup.md](docs/tron-setup.md) — TronLink + Nile testnet
 - [docs/deployment.md](docs/deployment.md) — deploy production
 
+### 📝 Proposals (DRAFT — เปิดหารือ)
+
+ข้อเสนอที่ยังไม่ได้ implement — รออภิปรายและอนุมัติ
+- [training-program.md](docs/proposals/training-program.md) — หลักสูตรอบรมระยะสั้น + จ่ายค่าวิทยากร (Phase 1: volunteer)
+- [skill-taxonomy.md](docs/proposals/skill-taxonomy.md) — 🔴 ต้นไม้ทักษะ (รากฐานของทุก proposal)
+- [talent-directory.md](docs/proposals/talent-directory.md) — public profile + portfolio
+- [learning-path.md](docs/proposals/learning-path.md) — career ladder + personal progress
+- [verifiable-credential.md](docs/proposals/verifiable-credential.md) — W3C VC + DID
+- [community-mentorship.md](docs/proposals/community-mentorship.md) — peer endorsement + mentor pairing
+
 ---
 
 ## 🤝 Contributing
 
 อ่าน [CONTRIBUTING.md](CONTRIBUTING.md) ก่อนส่ง PR
+และ [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) สำหรับมารยาทในชุมชน
+
+## 🔒 Security
+
+หากพบช่องโหว่ ดู [SECURITY.md](SECURITY.md) — อย่าเปิดเป็น public issue
 
 ## 📄 License
 
-โปรเจกต์ภายใต้โครงการวิจัย มทร.ล้านนา — ติดต่อผู้ดูแลก่อนนำไปใช้
+[MIT](LICENSE) — ภายใต้โครงการวิจัย มทร.ล้านนา (ใต้ร่มพระบารมี)
