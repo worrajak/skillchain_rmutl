@@ -109,6 +109,7 @@ skillchain-web3/
 
 ## 📚 Documentation
 
+- [docs/vision.md](docs/vision.md) — 🌟 วิสัยทัศน์และ end state
 - [docs/architecture.md](docs/architecture.md) — ภาพรวมระบบและการไหลของข้อมูล
 - [docs/smart-contracts.md](docs/smart-contracts.md) — TRPB Token + Job Escrow
 - [docs/job-lifecycle.md](docs/job-lifecycle.md) — สถานะงานและขั้นตอน
