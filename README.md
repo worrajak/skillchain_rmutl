@@ -112,8 +112,13 @@ skillchain-web3/
 - [docs/architecture.md](docs/architecture.md) — ภาพรวมระบบและการไหลของข้อมูล
 - [docs/smart-contracts.md](docs/smart-contracts.md) — TRPB Token + Job Escrow
 - [docs/job-lifecycle.md](docs/job-lifecycle.md) — สถานะงานและขั้นตอน
-- [docs/database.md](docs/database.md) — สรุป schema หลัก
+- [docs/database.md](docs/database.md) — สรุป schema หลัก + ER diagram
 - [docs/roles.md](docs/roles.md) — สิทธิ์ของแต่ละ role
+- [docs/credentials.md](docs/credentials.md) — ระบบ credential 5 ระดับ
+- [docs/api.md](docs/api.md) — รายการ API routes
+- [docs/setup-supabase.md](docs/setup-supabase.md) — ตั้ง Supabase project
+- [docs/tron-setup.md](docs/tron-setup.md) — TronLink + Nile testnet
+- [docs/deployment.md](docs/deployment.md) — deploy production
 
 ---
 

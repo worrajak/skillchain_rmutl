@@ -31,6 +31,24 @@
 - `Job` index บน `status`, `type`, `campus`, `employer_id`, `student_id`
 - Reviews มี unique `(job_id, ผู้ให้, ผู้รับ)` เพื่อกัน double review
 
+## ER Diagram (highlights)
+
+```mermaid
+erDiagram
+    User ||--o{ Job : "employer/student/mentor"
+    User ||--o| StudentTier : has
+    User ||--o| StudentQualification : has
+    User ||--o| StudentAvailability : has
+    User ||--o{ StudentCredential : earns
+    User ||--o{ DonationFund : donates
+    User ||--o{ BehaviorLog : logs
+    Job  ||--o{ Evaluation : has
+    Job  ||--o{ EmployerReview : has
+    Job  ||--o{ StudentReview : has
+    Job  ||--o{ MentorReview : has
+    StudentCredential }o--|| User : "certified_by_user"
+```
+
 ## Migration
 ```bash
 npx prisma migrate dev --name <ชื่อ>
