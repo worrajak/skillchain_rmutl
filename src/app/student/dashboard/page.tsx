@@ -30,6 +30,7 @@ import {
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { StaffSupervisorBadge } from "@/components/staff-supervisor-badge";
+import { StudentReviewForm } from "@/components/reviews/student-review-form";
 
 const CREDENTIAL_CONFIG: Record<string, { num: number; name: string; color: string; gradient: string; icon: typeof Award }> = {
   LEVEL_1: { num: 1, name: "ลงทะเบียน", color: "text-gray-600", gradient: "from-gray-400 to-gray-500", icon: UserCheck },
@@ -342,10 +343,19 @@ export default function StudentDashboardPage() {
                     )}
 
                     {/* COMPLETED */}
-                    {job.status === "COMPLETED" && (
-                      <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg p-2">
-                        <CheckCircle className="size-3" />เสร็จสมบูรณ์ — พร้อมประเมิน
-                      </div>
+                    {job.status === "COMPLETED" && userId && (
+                      <>
+                        <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg p-2">
+                          <CheckCircle className="size-3" />เสร็จสมบูรณ์ — ให้คะแนนผู้ว่าจ้าง
+                        </div>
+                        <StudentReviewForm
+                          jobId={job.id as string}
+                          studentId={userId}
+                          employerId={job.employer_id as string}
+                          employerName={(job.employer as { name?: string } | null)?.name ?? "ผู้ว่าจ้าง"}
+                          jobTitle={job.title as string}
+                        />
+                      </>
                     )}
                   </div>
                 );

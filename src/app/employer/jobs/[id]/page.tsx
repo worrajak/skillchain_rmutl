@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { StaffSupervisorBadge } from "@/components/staff-supervisor-badge";
+import { EmployerReviewForm } from "@/components/reviews/employer-review-form";
+import { EscrowPaymentCard } from "@/components/escrow-payment-card";
 import { cn } from "@/lib/utils";
 import {
   Briefcase, MapPin, Clock, Wallet, User, Calendar, CheckCircle, XCircle, Send, ArrowLeft,
@@ -127,6 +129,19 @@ export default function EmployerJobDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Escrow — ฝากเงินเมื่อ ASSIGNED / IN_PROGRESS */}
+      {["ASSIGNED", "IN_PROGRESS"].includes(job.status) && job.type === "PAID" && job.pay_amount > 0 && !job.escrow_tx && (
+        <EscrowPaymentCard
+          jobId={job.id}
+          jobStatus={job.status}
+          payAmount={job.pay_amount}
+          hasMentor={!!job.mentor_id}
+          escrowTx={job.escrow_tx}
+          studentWallet={job.student?.wallet_address ?? null}
+          mentorWallet={null}
+        />
+      )}
+
       {/* Work Schedule — ASSIGNED */}
       {job.status === "ASSIGNED" && (
         <Card className="border-blue-200">
@@ -227,15 +242,38 @@ export default function EmployerJobDetailPage() {
 
       {/* Completed */}
       {job.status === "COMPLETED" && (
-        <Card className="border-green-200 bg-green-50">
-          <CardContent className="flex items-center gap-3 pt-4 pb-4">
-            <CheckCircle className="size-6 text-green-600" />
-            <div>
-              <p className="font-medium text-green-800">งานเสร็จสมบูรณ์</p>
-              <p className="text-xs text-green-700">พร้อมเข้าสู่ระบบประเมิน</p>
-            </div>
-          </CardContent>
-        </Card>
+        <>
+          <Card className="border-green-200 bg-green-50">
+            <CardContent className="flex items-center gap-3 pt-4 pb-4">
+              <CheckCircle className="size-6 text-green-600" />
+              <div>
+                <p className="font-medium text-green-800">งานเสร็จสมบูรณ์</p>
+                <p className="text-xs text-green-700">ให้คะแนนนักศึกษาด้านล่าง</p>
+              </div>
+            </CardContent>
+          </Card>
+          {job.type === "PAID" && job.pay_amount > 0 && (
+            <EscrowPaymentCard
+              jobId={job.id}
+              jobStatus={job.status}
+              payAmount={job.pay_amount}
+              hasMentor={!!job.mentor_id}
+              escrowTx={job.escrow_tx}
+              studentWallet={job.student?.wallet_address ?? null}
+              mentorWallet={null}
+              onPaymentRecorded={loadJob}
+            />
+          )}
+          {userId && job.student_id && studentName && (
+            <EmployerReviewForm
+              jobId={job.id}
+              employerId={userId}
+              studentId={job.student_id}
+              studentName={studentName}
+              jobTitle={job.title}
+            />
+          )}
+        </>
       )}
     </div>
   );

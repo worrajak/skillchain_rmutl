@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/card";
 import { StarRating } from "./star-rating";
 import { ScoreCircle } from "./badge-display";
-import { createClient } from "@/lib/supabase/client";
 import { CheckCircle } from "lucide-react";
 
 const CRITERIA = [
@@ -46,7 +45,7 @@ export function StudentReviewForm({
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const supabase = createClient();
+  const [error, setError] = useState<string | null>(null);
 
   const overallRating =
     Object.values(scores).filter((v) => v > 0).length > 0
@@ -60,22 +59,28 @@ export function StudentReviewForm({
     e.preventDefault();
     if (!allScored) return;
     setLoading(true);
+    setError(null);
 
-    const { error } = await supabase.from("student_reviews").insert({
-      job_id: jobId,
-      student_id: studentId,
-      employer_id: employerId,
-      score_clarity: scores.score_clarity,
-      score_payment: scores.score_payment,
-      score_safety: scores.score_safety,
-      overall_rating: overallRating,
-      comment: comment || null,
+    const res = await fetch("/api/reviews", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: "student",
+        job_id: jobId,
+        employer_id: employerId,
+        score_clarity: scores.score_clarity,
+        score_payment: scores.score_payment,
+        score_safety: scores.score_safety,
+        comment: comment || null,
+      }),
     });
-
+    const data = await res.json();
     setLoading(false);
-    if (!error) {
+    if (res.ok) {
       setSuccess(true);
       onSuccess?.();
+    } else {
+      setError(data.error || "บันทึกไม่สำเร็จ");
     }
   }
 
@@ -135,6 +140,7 @@ export function StudentReviewForm({
             rows={3}
           />
 
+          {error && <p className="text-sm text-red-600">{error}</p>}
           <Button
             type="submit"
             className="w-full"
