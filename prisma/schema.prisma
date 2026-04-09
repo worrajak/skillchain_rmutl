@@ -3,9 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 // ==================== Users ====================
@@ -74,6 +72,7 @@ model User {
   // Credentials
   student_credentials           StudentCredential[] @relation("StudentCredentials")
   certifier_credentials         StudentCredential[] @relation("CertifierCredentials")
+  assignment_requests           JobAssignmentRequest[] @relation("StudentAssignmentRequests")
 
   @@map("users")
 }
@@ -237,6 +236,15 @@ model Job {
   eval_window_start  DateTime?
   eval_window_end    DateTime?
   eval_window_days   Int         @default(7)
+  // Staff assignment & schedule lifecycle
+  approved_by_staff             String?
+  staff_approval_at             DateTime?
+  work_start_date               DateTime?
+  work_end_date                 DateTime?
+  schedule_proposed_by          String?
+  schedule_confirmed            Boolean  @default(false)
+  staff_confirmed_completion    Boolean  @default(false)
+  employer_confirmed_completion Boolean  @default(false)
   created_at         DateTime    @default(now())
   updated_at         DateTime    @updatedAt
 
@@ -249,6 +257,7 @@ model Job {
   employer_reviews EmployerReview[]
   student_reviews  StudentReview[]
   mentor_reviews   MentorReview[]
+  assignment_requests JobAssignmentRequest[]
 
   @@index([status])
   @@index([type])
@@ -256,6 +265,33 @@ model Job {
   @@index([employer_id])
   @@index([student_id])
   @@map("jobs")
+}
+
+enum AssignmentRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model JobAssignmentRequest {
+  id          String                  @id @default(uuid())
+  job_id      String
+  student_id  String
+  status      AssignmentRequestStatus @default(PENDING)
+  review_note String?
+  reviewed_by String?
+  reviewed_at DateTime?
+  created_at  DateTime                @default(now())
+  updated_at  DateTime                @updatedAt
+
+  job     Job  @relation(fields: [job_id], references: [id])
+  student User @relation("StudentAssignmentRequests", fields: [student_id], references: [id])
+
+  @@unique([job_id, student_id])
+  @@index([status])
+  @@index([student_id])
+  @@map("job_assignment_requests")
 }
 
 // ==================== Evaluations ====================
@@ -405,4 +441,211 @@ model BehaviorLog {
   @@index([user_id])
   @@index([event_type])
   @@map("behavior_logs")
+}
+
+// ==================== Notifications ====================
+
+model Notification {
+  id         String   @id @default(uuid())
+  user_id    String
+  type       String
+  title      String
+  body       String
+  link       String?
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  @@index([user_id])
+  @@index([user_id, is_read])
+  @@map("notifications")
+}
+
+// ==================== Chat ====================
+
+model JobChatRoom {
+  id          String   @id @default(uuid())
+  job_id      String   @unique
+  is_locked   Boolean  @default(false)
+  employer_id String?
+  student_id  String?
+  mentor_id   String?
+  created_at  DateTime @default(now())
+
+  messages     ChatMessage[]
+  participants ChatParticipant[]
+
+  @@map("job_chat_rooms")
+}
+
+model ChatMessage {
+  id           String   @id @default(uuid())
+  room_id      String
+  sender_id    String
+  content      String
+  message_type String   @default("TEXT")
+  content_hash String?
+  metadata     Json?
+  is_deleted   Boolean  @default(false)
+  created_at   DateTime @default(now())
+
+  room JobChatRoom @relation(fields: [room_id], references: [id], onDelete: Cascade)
+
+  @@index([room_id, created_at])
+  @@map("chat_messages")
+}
+
+model ChatParticipant {
+  id           String   @id @default(uuid())
+  room_id      String
+  user_id      String
+  role_in_chat String
+  is_deleted   Boolean  @default(false)
+  created_at   DateTime @default(now())
+
+  room JobChatRoom @relation(fields: [room_id], references: [id], onDelete: Cascade)
+
+  @@unique([room_id, user_id])
+  @@map("chat_participants")
+}
+
+// ==================== Job Cancellation / Agreement ====================
+// (JobAssignmentRequest defined earlier near Job model)
+
+enum CancellationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model JobCancellationRequest {
+  id            String             @id @default(uuid())
+  job_id        String
+  requested_by  String
+  reason        String
+  reason_detail String?
+  status        CancellationStatus @default(PENDING)
+  reviewed_by   String?
+  reviewed_at   DateTime?
+  created_at    DateTime           @default(now())
+
+  @@index([status])
+  @@map("job_cancellation_requests")
+}
+
+enum AgreementStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model JobAgreement {
+  id             String          @id @default(uuid())
+  job_id         String
+  proposed_by    String
+  agreement_type String
+  terms          String
+  status         AgreementStatus @default(PENDING)
+  accepted_by    String?
+  content_hash   String?
+  created_at     DateTime        @default(now())
+
+  @@index([job_id])
+  @@map("job_agreements")
+}
+
+// ==================== Disputes ====================
+
+enum DisputeStatus {
+  RAISED
+  UNDER_REVIEW
+  MEDIATION
+  RESOLVED
+}
+
+model Dispute {
+  id               String        @id @default(uuid())
+  job_id           String
+  raised_by        String
+  raised_against   String
+  arbitrator_id    String?
+  category         String
+  description      String
+  evidence_urls    Json?
+  status           DisputeStatus @default(RAISED)
+  resolution_terms String?
+  resolved_at      DateTime?
+  content_hash     String?
+  created_at       DateTime      @default(now())
+
+  @@index([job_id])
+  @@index([status])
+  @@map("disputes")
+}
+
+// ==================== Approval Logs ====================
+
+enum ApprovalLogAction {
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+model ApprovalLog {
+  id          String            @id @default(uuid())
+  user_id     String
+  approved_by String
+  action      ApprovalLogAction
+  reason      String?
+  created_at  DateTime          @default(now())
+
+  @@index([user_id])
+  @@map("approval_logs")
+}
+
+// ==================== Fee Config ====================
+
+model FeeConfig {
+  id          String   @id @default(uuid())
+  student_bps Int      @default(8500)
+  fund_bps    Int      @default(500)
+  mentor_bps  Int      @default(500)
+  staff_bps   Int      @default(500)
+  updated_by  String?
+  updated_at  DateTime @default(now()) @updatedAt
+
+  @@map("fee_config")
+}
+
+// ==================== Rating Summary Views ====================
+// NOTE: These are maintained in DB (views or triggered tables).
+// Prisma treats them as regular models for query typing.
+
+model StudentRatingSummary {
+  student_id            String  @id
+  name                  String?
+  campus                String?
+  credential_level      String?
+  credential_name       String?
+  nft_tier              String?
+  avg_teacher_score     Float?
+  teacher_review_count  BigInt?
+  avg_employer_rating   Float?
+  employer_review_count BigInt?
+  avg_mentor_score      Float?
+  mentor_review_count   BigInt?
+  combined_score        Float?
+
+  @@map("student_rating_summary")
+}
+
+model EmployerRatingSummary {
+  employer_id  String  @id
+  name         String?
+  avg_rating   Float?
+  review_count BigInt?
+  avg_clarity  Float?
+  avg_payment  Float?
+  avg_safety   Float?
+
+  @@map("employer_rating_summary")
 }
