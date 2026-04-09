@@ -178,6 +178,22 @@ export async function createEscrow(
   return tx;
 }
 
+/** Release escrow — employer เรียกหลังงาน COMPLETED → contract แบ่งเงินให้ student/fund/mentor/staff */
+export async function releaseEscrow(jobId: string): Promise<string> {
+  const contract = getEscrowContract();
+  const jobIdBytes32 = "0x" + jobId.replace(/-/g, "").padEnd(64, "0");
+  const tx = await contract.release(jobIdBytes32).send();
+  return tx; // txId
+}
+
+/** Refund escrow — คืนเงินให้ employer (กรณียกเลิกงาน) */
+export async function refundEscrow(jobId: string): Promise<string> {
+  const contract = getEscrowContract();
+  const jobIdBytes32 = "0x" + jobId.replace(/-/g, "").padEnd(64, "0");
+  const tx = await contract.refund(jobIdBytes32).send();
+  return tx;
+}
+
 /** ดูข้อมูล Escrow ของงาน */
 export async function getEscrowInfo(jobId: string) {
   const contract = getEscrowContract();
