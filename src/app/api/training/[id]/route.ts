@@ -43,6 +43,13 @@ export async function PATCH(
     IN_PROGRESS: ["COMPLETED", "CANCELLED"],
   };
 
+  // ตรวจ role: เฉพาะ staff/teacher เท่านั้น
+  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
+  const staffRoles = ["teacher", "project_staff", "rmutl_staff", "admin", "superadmin"];
+  if (!profile || !staffRoles.includes(profile.role)) {
+    return NextResponse.json({ error: "เฉพาะอาจารย์/คณะทำงานเท่านั้น" }, { status: 403 });
+  }
+
   const { data: course } = await supabase.from("training_courses").select("status, instructor_id").eq("id", id).single();
   if (!course) return NextResponse.json({ error: "ไม่พบหลักสูตร" }, { status: 404 });
 

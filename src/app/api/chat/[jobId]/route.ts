@@ -8,6 +8,15 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ jobId:
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // ตรวจสิทธิ์: ต้องเป็นผู้เกี่ยวข้องกับงาน หรือ staff
+  const { data: userProfile } = await supabase.from("users").select("role").eq("id", user.id).single();
+  const isStaff = ["admin", "superadmin", "project_staff", "rmutl_staff", "teacher"].includes(userProfile?.role ?? "");
+  const { data: jobCheck } = await supabase.from("jobs").select("employer_id, student_id, mentor_id").eq("id", jobId).single();
+  if (!jobCheck) return NextResponse.json({ error: "ไม่พบงาน" }, { status: 404 });
+  if (!isStaff && jobCheck.employer_id !== user.id && jobCheck.student_id !== user.id && jobCheck.mentor_id !== user.id) {
+    return NextResponse.json({ error: "ไม่มีสิทธิ์เข้าถึง chat นี้" }, { status: 403 });
+  }
+
   // Get or create room
   let { data: room } = await supabase.from("job_chat_rooms").select("*").eq("job_id", jobId).single();
 

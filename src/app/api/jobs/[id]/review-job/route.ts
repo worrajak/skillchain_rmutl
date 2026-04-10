@@ -59,6 +59,11 @@ export async function POST(
         ? Number(adjusted_pay)
         : job.pay_amount;
 
+    // Validate pay amount
+    if (!Number.isFinite(finalPay) || finalPay < 0 || finalPay > 1000000) {
+      return NextResponse.json({ error: "ค่าตอบแทนต้องอยู่ระหว่าง 0-1,000,000" }, { status: 400 });
+    }
+
     const { error } = await supabase
       .from("jobs")
       .update({

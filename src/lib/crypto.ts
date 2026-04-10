@@ -1,12 +1,12 @@
-import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import { createCipheriv, createDecipheriv, randomBytes, createHash } from "crypto";
 
 const ALGORITHM = "aes-256-gcm";
 
 function getKey(): Buffer {
   const secret = process.env.WALLET_ENCRYPTION_KEY;
   if (!secret) throw new Error("WALLET_ENCRYPTION_KEY not set");
-  // Hash to 32 bytes
-  return Buffer.from(secret.padEnd(32, "0").slice(0, 32), "utf-8");
+  // Derive 32-byte key using SHA-256 hash (not padEnd)
+  return createHash("sha256").update(secret).digest();
 }
 
 export function encryptPrivateKey(plaintext: string): string {

@@ -107,9 +107,12 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ error: "Invalid review type" }, { status: 400 });
 }
 
-// GET /api/reviews?type=employer&student_id=xxx (ไม่ต้องเปลี่ยน)
+// GET /api/reviews?type=employer&student_id=xxx (ต้อง login)
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type");
 

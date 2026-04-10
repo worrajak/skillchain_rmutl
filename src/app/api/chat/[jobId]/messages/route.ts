@@ -9,6 +9,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // ตรวจสิทธิ์: ต้องเป็นผู้เกี่ยวข้องกับงาน หรือ staff
+  const { data: userProfile } = await supabase.from("users").select("role").eq("id", user.id).single();
+  const isStaff = ["admin", "superadmin", "project_staff", "rmutl_staff", "teacher"].includes(userProfile?.role ?? "");
+  const { data: jobCheck } = await supabase.from("jobs").select("employer_id, student_id, mentor_id").eq("id", jobId).single();
+  if (!jobCheck) return NextResponse.json({ error: "ไม่พบงาน" }, { status: 404 });
+  if (!isStaff && jobCheck.employer_id !== user.id && jobCheck.student_id !== user.id && jobCheck.mentor_id !== user.id) {
+    return NextResponse.json({ error: "ไม่มีสิทธิ์ส่งข้อความใน chat นี้" }, { status: 403 });
+  }
+
   const body = await request.json();
   const { content, message_type, metadata } = body;
   if (!content) return NextResponse.json({ error: "ต้องมีเนื้อหา" }, { status: 400 });

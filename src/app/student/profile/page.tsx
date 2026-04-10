@@ -55,7 +55,7 @@ export default function StudentProfilePage() {
       if (!user) { setLoading(false); return; }
 
       const [{ data: prof }, { data: cred }, { data: rate }] = await Promise.all([
-        supabase.from("users").select("*").eq("id", user.id).single(),
+        supabase.from("users").select("id, email, name, role, campus, faculty, year_level, student_id_card, wallet_address, avatar_url, approval_status, created_at").eq("id", user.id).single(),
         supabase.from("student_credentials").select("*").eq("student_id", user.id).eq("is_active", true).order("credential_level", { ascending: false }).limit(1).single(),
         supabase.from("student_rating_summary").select("*").eq("student_id", user.id).single(),
       ]);

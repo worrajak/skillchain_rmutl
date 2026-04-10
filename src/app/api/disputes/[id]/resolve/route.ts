@@ -18,6 +18,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const body = await request.json();
   const { status, resolution, resolution_terms } = body;
 
+  // Validate status
+  const validStatuses = ["RESOLVED_STUDENT_FAVOR", "RESOLVED_EMPLOYER_FAVOR", "RESOLVED_COMPROMISE", "ESCALATED", "CLOSED"];
+  if (!status || !validStatuses.includes(status)) {
+    return NextResponse.json({ error: `สถานะไม่ถูกต้อง ต้องเป็น: ${validStatuses.join(", ")}` }, { status: 400 });
+  }
+  if (!resolution) {
+    return NextResponse.json({ error: "กรุณาระบุผลการตัดสิน" }, { status: 400 });
+  }
+
   const contentHash = await hashReviewContent({ id, status, resolution, resolution_terms, resolved_by: user.id, resolved_at: new Date().toISOString() });
 
   const { data, error } = await supabase.from("disputes").update({
