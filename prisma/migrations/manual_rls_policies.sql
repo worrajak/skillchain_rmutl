@@ -40,6 +40,19 @@ BEGIN
   END LOOP;
 END $$;
 
+-- Drop training system placeholder policies (from manual_training_system.sql)
+DROP POLICY IF EXISTS "training_courses_read" ON public.training_courses;
+DROP POLICY IF EXISTS "training_courses_insert" ON public.training_courses;
+DROP POLICY IF EXISTS "training_courses_update" ON public.training_courses;
+DROP POLICY IF EXISTS "training_modules_read" ON public.training_modules;
+DROP POLICY IF EXISTS "training_modules_insert" ON public.training_modules;
+DROP POLICY IF EXISTS "training_enrollments_read" ON public.training_enrollments;
+DROP POLICY IF EXISTS "training_enrollments_insert" ON public.training_enrollments;
+DROP POLICY IF EXISTS "training_enrollments_update" ON public.training_enrollments;
+DROP POLICY IF EXISTS "module_assessments_read" ON public.module_assessments;
+DROP POLICY IF EXISTS "module_assessments_insert" ON public.module_assessments;
+DROP POLICY IF EXISTS "module_assessments_update" ON public.module_assessments;
+
 -- ============================================================
 -- 1. users
 -- ============================================================
