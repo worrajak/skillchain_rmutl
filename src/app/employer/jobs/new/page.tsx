@@ -21,16 +21,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertTriangle, CheckCircle, Home } from "lucide-react";
+import { AlertTriangle, CheckCircle, Home, Camera } from "lucide-react";
 import { toast } from "sonner";
 import { JOB_POSTER_ROLES } from "@/types/database";
 import type { UserRole } from "@/types/database";
+import { ImageUpload } from "@/components/image-upload";
 
 export default function NewJobPage() {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [createdJobId, setCreatedJobId] = useState<string | null>(null);
+  const [quota, setQuota] = useState<{ job_quota: number; job_quota_used: number } | null>(null);
 
   // Form fields
   const [title, setTitle] = useState("");
@@ -51,8 +54,13 @@ export default function NewJobPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
-      const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
-      if (profile) setUserRole(profile.role as UserRole);
+      const { data: profile } = await supabase.from("users").select("role, job_quota, job_quota_used").eq("id", user.id).single();
+      if (profile) {
+        setUserRole(profile.role as UserRole);
+        if (profile.job_quota > 0) {
+          setQuota({ job_quota: profile.job_quota, job_quota_used: profile.job_quota_used ?? 0 });
+        }
+      }
     }
     init();
   }, []);
@@ -65,7 +73,7 @@ export default function NewJobPage() {
     if (!userId || !canPost) return;
     setLoading(true);
 
-    const { error } = await supabase.from("jobs").insert({
+    const { data: newJob, error } = await supabase.from("jobs").insert({
       title,
       description,
       type: jobType,
@@ -77,31 +85,55 @@ export default function NewJobPage() {
       employer_id: userId,
       is_mentorship: isMentorship,
       status: "OPEN",
-    });
+    }).select("id").single();
 
     setLoading(false);
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("ลงงานสำเร็จ!");
+      toast.success("ลงงานสำเร็จ! — เพิ่มรูปถ่ายด้านล่าง");
+      setCreatedJobId(newJob?.id ?? null);
       setSuccess(true);
     }
   }
 
   if (success) {
     return (
-      <div className="max-w-md mx-auto mt-10">
+      <div className="max-w-md mx-auto mt-10 space-y-4">
         <Card className="text-center">
           <CardContent className="py-10 space-y-4">
             <CheckCircle className="size-16 mx-auto text-green-500" />
             <h2 className="text-xl font-bold text-foreground">ลงงานสำเร็จ!</h2>
             <p className="text-sm text-muted-foreground">งานจะปรากฏในหน้า Job Board ให้นักศึกษาสมัครได้</p>
-            <div className="flex gap-3 justify-center">
-              <Button onClick={() => { setSuccess(false); setTitle(""); setDescription(""); }}>ลงงานอีก</Button>
-              <Link href="/"><Button variant="outline"><Home className="size-4 mr-1" />หน้าหลัก</Button></Link>
-            </div>
           </CardContent>
         </Card>
+
+        {/* Image Upload Section */}
+        {createdJobId && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-foreground text-sm flex items-center gap-2">
+                <Camera className="size-5 text-blue-600" />
+                เพิ่มรูปเครื่อง/ลักษณะงาน (2-4 รูป)
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-3">
+                ถ่ายรูปเครื่องจักร อุปกรณ์ หรือลักษณะงานที่ต้องซ่อม เพื่อช่วยนักศึกษาตัดสินใจ
+              </p>
+              <ImageUpload
+                jobId={createdJobId}
+                imageType="job"
+                maxImages={4}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="flex gap-3 justify-center">
+          <Button onClick={() => { setSuccess(false); setCreatedJobId(null); setTitle(""); setDescription(""); }}>ลงงานอีก</Button>
+          <Link href="/"><Button variant="outline"><Home className="size-4 mr-1" />หน้าหลัก</Button></Link>
+        </div>
       </div>
     );
   }
@@ -126,6 +158,13 @@ export default function NewJobPage() {
         <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
           <AlertTriangle className="size-4 shrink-0" />
           <span>คุณกำลังสร้าง<strong>งานจ้างเทียม</strong> (ทดสอบทักษะ/ทดลองระบบ) ในฐานะ {userRole}</span>
+        </div>
+      )}
+
+      {quota && (
+        <div className={`flex items-center justify-between rounded-lg border p-3 text-sm ${quota.job_quota_used >= quota.job_quota ? "border-red-200 bg-red-50 text-red-800" : "border-green-200 bg-green-50 text-green-800"}`}>
+          <span>โควต้างานจ้าง: ใช้ไป {quota.job_quota_used}/{quota.job_quota} ครั้ง</span>
+          <span className="font-bold">เหลือ {Math.max(0, quota.job_quota - quota.job_quota_used)} ครั้ง</span>
         </div>
       )}
 

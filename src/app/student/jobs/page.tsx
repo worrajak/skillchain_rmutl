@@ -27,6 +27,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { ImageGallery } from "@/components/image-gallery";
 
 const TYPE_LABELS: Record<string, string> = { PAID: "งานจ้าง", VOLUNTEER: "จิตอาสา", TRAINING: "ฝึกทักษะ", EXEMPTED: "ยกเว้นค่าบริการ" };
 const CATEGORY_LABELS: Record<string, string> = { electrical: "ไฟฟ้า", hvac: "แอร์/เครื่องเย็น", automotive: "ยานยนต์", general: "ทั่วไป" };
@@ -146,6 +147,7 @@ export default function StudentJobsPage() {
                     <span className="flex items-center gap-1 text-green-700 font-medium"><Wallet className="size-3" />{(job.pay_amount as number).toLocaleString()} TRPB</span>
                   )}
                 </div>
+                <ImageGallery jobId={job.id as string} imageType="job" />
                 <div className="flex items-center justify-between pt-2 border-t">
                   <span className="text-xs text-muted-foreground">
                     โดย: {(job.employer as { name: string })?.name ?? "ไม่ระบุ"}

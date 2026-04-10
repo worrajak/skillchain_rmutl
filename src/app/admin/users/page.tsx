@@ -109,6 +109,7 @@ export default function AdminUsersPage() {
         can_evaluate: u.can_evaluate ?? false,
         can_approve_users: u.can_approve_users ?? false,
         can_manage_credentials: u.can_manage_credentials ?? false,
+        job_quota: u.job_quota ?? 0,
       })
       .eq("id", editUser.id);
 
@@ -337,6 +338,29 @@ export default function AdminUsersPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {/* โควต้างานจ้าง — เฉพาะ employer หรือ role ที่จ้างงานได้ */}
+              {["employer", "teacher", "project_staff", "rmutl_staff", "admin", "superadmin"].includes(editUser.role) && (
+                <div className="space-y-2">
+                  <Label className="text-foreground">โควต้างานจ้าง (PAID)</Label>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="number"
+                      min="0"
+                      value={(editUser as any).job_quota ?? 0}
+                      onChange={(e) => setEditUser({ ...editUser, job_quota: parseInt(e.target.value) || 0 } as any)}
+                      className="w-24"
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      ใช้ไป {(editUser as any).job_quota_used ?? 0} ครั้ง
+                      {(editUser as any).job_quota > 0 && (
+                        <> — เหลือ {Math.max(0, ((editUser as any).job_quota ?? 0) - ((editUser as any).job_quota_used ?? 0))} ครั้ง</>
+                      )}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">0 = ไม่จำกัด (ค่าจ้างหักจากกองทุน)</p>
+                </div>
+              )}
+
               {/* สิทธิ์เพิ่มเติม */}
               <div className="space-y-2">
                 <Label className="text-foreground">สิทธิ์เพิ่มเติม (นอกเหนือ role หลัก)</Label>

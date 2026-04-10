@@ -171,8 +171,21 @@ export interface User {
   org_address: string | null;
   staff_position: string | null;
   teacher_id_card: string | null;
+  job_quota: number;
+  job_quota_used: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface JobImage {
+  id: string;
+  job_id: string;
+  image_url: string;
+  image_type: "job" | "progress" | "completion";
+  sort_order: number;
+  uploaded_by: string;
+  caption: string | null;
+  created_at: string;
 }
 
 // สิทธิ์ที่แต่ละ role สามารถยืนยัน role อื่นได้

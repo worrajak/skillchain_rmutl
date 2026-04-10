@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StaffSupervisorBadge } from "@/components/staff-supervisor-badge";
 import { cn } from "@/lib/utils";
-import { Briefcase, CheckCircle, XCircle, Calendar, User } from "lucide-react";
+import { Briefcase, CheckCircle, XCircle, Calendar, User, Wallet, Loader2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { ImageGallery } from "@/components/image-gallery";
 
 const STATUS_TH: Record<string, { label: string; color: string }> = {
   ASSIGNED: { label: "มอบหมายแล้ว", color: "bg-blue-100 text-blue-800" },
@@ -21,6 +22,7 @@ export default function StaffActiveJobsPage() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState<string | null>(null);
+  const [releasing, setReleasing] = useState<string | null>(null);
   const supabase = createClient();
 
   async function loadJobs() {
@@ -86,6 +88,14 @@ export default function StaffActiveJobsPage() {
                       )}
                     </div>
 
+                    {/* รูปภาพ — SUBMITTED/COMPLETED */}
+                    {(job.status === "SUBMITTED" || job.status === "COMPLETED") && (
+                      <div className="space-y-1">
+                        <ImageGallery jobId={job.id} imageType="completion" label="รูปงานเสร็จ (นศ.)" />
+                        <ImageGallery jobId={job.id} imageType="progress" label="รูประหว่างทำงาน" />
+                      </div>
+                    )}
+
                     {/* SUBMITTED — ปุ่มยืนยัน */}
                     {job.status === "SUBMITTED" && (
                       <div className="space-y-2 pt-1">
@@ -111,8 +121,43 @@ export default function StaffActiveJobsPage() {
                     )}
 
                     {job.status === "COMPLETED" && (
-                      <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg p-2">
-                        <CheckCircle className="size-3" />เสร็จสมบูรณ์
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg p-2">
+                          <CheckCircle className="size-3" />เสร็จสมบูรณ์
+                        </div>
+                        {job.type === "PAID" && job.pay_amount > 0 && !job.escrow_tx && (
+                          <Button
+                            size="sm"
+                            onClick={async () => {
+                              setReleasing(job.id);
+                              const res = await fetch(`/api/jobs/${job.id}/release-escrow`, { method: "POST" });
+                              const data = await res.json();
+                              setReleasing(null);
+                              if (res.ok) {
+                                toast.success(`${data.message} — TX: ${data.tx_hash?.slice(0, 12)}...`);
+                                loadJobs();
+                              } else {
+                                toast.error(data.error);
+                              }
+                            }}
+                            disabled={releasing === job.id}
+                            className="w-full bg-amber-600 hover:bg-amber-700"
+                          >
+                            {releasing === job.id
+                              ? <><Loader2 className="size-4 mr-1 animate-spin" />กำลังจ่ายค่าจ้าง on-chain...</>
+                              : <><Wallet className="size-4 mr-1" />จ่ายค่าจ้าง {job.pay_amount.toLocaleString()} TRPB</>}
+                          </Button>
+                        )}
+                        {job.escrow_tx && (
+                          <a
+                            href={`https://nile.tronscan.org/#/transaction/${job.escrow_tx}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                          >
+                            <ExternalLink className="size-3" />จ่ายแล้ว — ดู TX บน TronScan
+                          </a>
+                        )}
                       </div>
                     )}
                   </div>

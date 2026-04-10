@@ -31,6 +31,8 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { StaffSupervisorBadge } from "@/components/staff-supervisor-badge";
 import { StudentReviewForm } from "@/components/reviews/student-review-form";
+import { ImageUpload } from "@/components/image-upload";
+import { ImageGallery } from "@/components/image-gallery";
 
 const CREDENTIAL_CONFIG: Record<string, { num: number; name: string; color: string; gradient: string; icon: typeof Award }> = {
   LEVEL_1: { num: 1, name: "ลงทะเบียน", color: "text-gray-600", gradient: "from-gray-400 to-gray-500", icon: UserCheck },
@@ -322,9 +324,13 @@ export default function StudentDashboardPage() {
                       <JobScheduleAction jobId={job.id as string} job={job} userId={userId} onUpdate={loadData} />
                     )}
 
-                    {/* Action: IN_PROGRESS — ส่งงาน */}
+                    {/* Action: IN_PROGRESS — อัปโหลดรูป + ส่งงาน */}
                     {job.status === "IN_PROGRESS" && (
-                      <JobSubmitAction jobId={job.id as string} onUpdate={loadData} />
+                      <div className="space-y-2">
+                        <ImageGallery jobId={job.id as string} imageType="job" label="รูปจากผู้ว่าจ้าง" />
+                        <ImageUpload jobId={job.id as string} imageType="progress" maxImages={4} label="รูประหว่างทำงาน" />
+                        <JobSubmitAction jobId={job.id as string} onUpdate={loadData} />
+                      </div>
                     )}
 
                     {/* Action: SUBMITTED — รอยืนยัน */}
@@ -427,9 +433,11 @@ function JobScheduleAction({ jobId, job, userId, onUpdate }: { jobId: string; jo
   );
 }
 
-// Sub-component: Submit work
+// Sub-component: Submit work (with completion image upload)
 function JobSubmitAction({ jobId, onUpdate }: { jobId: string; onUpdate: () => void }) {
   const [submitting, setSubmitting] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
+
   async function handleSubmit() {
     setSubmitting(true);
     const res = await fetch(`/api/jobs/${jobId}/submit`, { method: "POST" });
@@ -437,9 +445,22 @@ function JobSubmitAction({ jobId, onUpdate }: { jobId: string; onUpdate: () => v
     setSubmitting(false);
     if (res.ok) { toast.success(data.message); onUpdate(); } else toast.error(data.error);
   }
+
+  if (!showUpload) {
+    return (
+      <Button size="sm" variant="outline" onClick={() => setShowUpload(true)} className="w-full border-cyan-300 text-cyan-700 hover:bg-cyan-50">
+        <Send className="size-3 mr-1" />เตรียมส่งงาน
+      </Button>
+    );
+  }
+
   return (
-    <Button size="sm" variant="outline" onClick={handleSubmit} disabled={submitting} className="w-full border-cyan-300 text-cyan-700 hover:bg-cyan-50">
-      <Send className="size-3 mr-1" />{submitting ? "กำลังส่ง..." : "ส่งงาน"}
-    </Button>
+    <div className="space-y-2 rounded-lg border border-cyan-200 bg-cyan-50/50 p-3">
+      <p className="text-xs font-medium text-cyan-800">ถ่ายรูปงานเสร็จ (2-4 รูป) แล้วกดส่ง</p>
+      <ImageUpload jobId={jobId} imageType="completion" maxImages={4} label="รูปงานเสร็จ" />
+      <Button size="sm" onClick={handleSubmit} disabled={submitting} className="w-full bg-cyan-600 hover:bg-cyan-700">
+        <Send className="size-3 mr-1" />{submitting ? "กำลังส่ง..." : "ส่งงาน"}
+      </Button>
+    </div>
   );
 }

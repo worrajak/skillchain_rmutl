@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { StaffSupervisorBadge } from "@/components/staff-supervisor-badge";
 import { EmployerReviewForm } from "@/components/reviews/employer-review-form";
 import { EscrowPaymentCard } from "@/components/escrow-payment-card";
+import { ImageUpload } from "@/components/image-upload";
+import { ImageGallery } from "@/components/image-gallery";
 import { cn } from "@/lib/utils";
 import {
   Briefcase, MapPin, Clock, Wallet, User, Calendar, CheckCircle, XCircle, Send, ArrowLeft,
@@ -129,6 +131,23 @@ export default function EmployerJobDetailPage() {
         </CardContent>
       </Card>
 
+      {/* Job Images — ผู้ว่าจ้างอัปโหลด/ดูรูปเครื่อง */}
+      {["OPEN", "ASSIGNED"].includes(job.status) && (
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <ImageUpload
+              jobId={job.id}
+              imageType="job"
+              maxImages={4}
+              label="รูปเครื่อง/ลักษณะงาน"
+            />
+          </CardContent>
+        </Card>
+      )}
+      {!["OPEN", "ASSIGNED"].includes(job.status) && (
+        <ImageGallery jobId={job.id} imageType="job" label="รูปเครื่อง/ลักษณะงาน" />
+      )}
+
       {/* Escrow — ฝากเงินเมื่อ ASSIGNED / IN_PROGRESS */}
       {["ASSIGNED", "IN_PROGRESS"].includes(job.status) && job.type === "PAID" && job.pay_amount > 0 && !job.escrow_tx && (
         <EscrowPaymentCard
@@ -202,6 +221,16 @@ export default function EmployerJobDetailPage() {
               <span className="text-foreground font-medium">วันทำงาน:</span>
               <span>{new Date(job.work_start_date).toLocaleDateString("th-TH")} — {new Date(job.work_end_date).toLocaleDateString("th-TH")}</span>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Student Progress/Completion Images — SUBMITTED */}
+      {(job.status === "SUBMITTED" || job.status === "COMPLETED") && (
+        <Card>
+          <CardContent className="pt-4 pb-4 space-y-3">
+            <ImageGallery jobId={job.id} imageType="progress" label="รูประหว่างทำงาน (นศ.)" />
+            <ImageGallery jobId={job.id} imageType="completion" label="รูปงานเสร็จ (นศ.)" />
           </CardContent>
         </Card>
       )}
