@@ -13,6 +13,8 @@ const navItems = [
   { href: "/teacher/students", label: "ประเมินระดับ นศ.", icon: Award },
   { href: "/teacher/pending", label: "รอประเมิน", icon: Clock },
   { href: "/employer/jobs/new", label: "สร้างงาน", icon: PlusCircle },
+  { href: "/training/manage/new", label: "สร้างหลักสูตร", icon: Users },
+  { href: "/training", label: "หลักสูตรอบรม", icon: GraduationCap },
 ];
 
 export default function TeacherLayout({ children }: { children: React.ReactNode }) {

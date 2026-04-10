@@ -10,6 +10,8 @@ import { TrpbBalance } from "@/components/trpb-balance";
 
 const navLinks = [
   { href: "/", label: "หน้าหลัก" },
+  { href: "/training", label: "หลักสูตรอบรม" },
+  { href: "/verify", label: "ตรวจสอบใบรับรอง" },
   { href: "/about", label: "เกี่ยวกับระบบ" },
 ];
 

@@ -1,6 +1,6 @@
 // SkillChain RMUTL — Database Types (ตาม MasterPlan v3)
 
-export type UserRole = "student" | "employer" | "admin" | "teacher" | "donor" | "superadmin" | "project_staff" | "rmutl_staff";
+export type UserRole = "student" | "employer" | "admin" | "teacher" | "donor" | "superadmin" | "project_staff" | "rmutl_staff" | "trainee";
 
 export type ApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED";
 
@@ -147,6 +147,86 @@ export const JOB_TYPE_REQUIRED_LEVEL: Record<JobType, CredentialLevel> = {
   EXEMPTED: "LEVEL_3",
 };
 
+// Training System
+export type CourseStatus = "DRAFT" | "OPEN_ENROLLMENT" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+export type TrainingProvider = "RMUTL_TEACHER" | "PROJECT_BARAMEE" | "DSD_PARTNER" | "TPQI_PARTNER" | "EXTERNAL";
+export type PaymentMode = "VOLUNTEER" | "HYBRID";
+
+export interface TrainingCourse {
+  id: string;
+  title: string;
+  description: string;
+  category: JobCategory;
+  provider: TrainingProvider;
+  instructor_id: string;
+  status: CourseStatus;
+  start_date: string;
+  end_date: string;
+  total_hours: number;
+  max_participants: number;
+  min_participants: number;
+  is_open_to_external: boolean;
+  payment_mode: PaymentMode;
+  hourly_rate_trpb: number;
+  per_pass_rate_trpb: number;
+  total_budget_trpb: number;
+  pledged_trpb: number;
+  grants_credential_level: CredentialLevel | null;
+  cover_image_url: string | null;
+  created_at: string;
+}
+
+export interface TrainingModule {
+  id: string;
+  course_id: string;
+  sort_order: number;
+  title: string;
+  description: string | null;
+  competency_code: string | null;
+  hours: number;
+  pass_criteria: string;
+}
+
+export interface TrainingEnrollment {
+  id: string;
+  course_id: string;
+  trainee_id: string;
+  is_external: boolean;
+  enrolled_at: string;
+  completed_at: string | null;
+  certificate_number: string | null;
+  certificate_tx: string | null;
+}
+
+export interface ModuleAssessment {
+  id: string;
+  module_id: string;
+  enrollment_id: string;
+  passed: boolean;
+  score: number | null;
+  evidence_url: string | null;
+  assessor_id: string;
+  note: string | null;
+  on_chain_tx: string | null;
+  assessed_at: string;
+}
+
+export const COURSE_STATUS_LABELS: Record<CourseStatus, { label: string; color: string }> = {
+  DRAFT: { label: "ร่าง", color: "bg-gray-100 text-gray-700" },
+  OPEN_ENROLLMENT: { label: "เปิดรับสมัคร", color: "bg-green-100 text-green-800" },
+  IN_PROGRESS: { label: "กำลังอบรม", color: "bg-cyan-100 text-cyan-800" },
+  COMPLETED: { label: "เสร็จสิ้น", color: "bg-blue-100 text-blue-800" },
+  CANCELLED: { label: "ยกเลิก", color: "bg-red-100 text-red-800" },
+};
+
+export const PROVIDER_LABELS: Record<TrainingProvider, string> = {
+  RMUTL_TEACHER: "อาจารย์ มทร.ล้านนา",
+  PROJECT_BARAMEE: "ทีมใต้ร่มพระบารมี",
+  DSD_PARTNER: "สพร. (กรมพัฒนาฝีมือแรงงาน)",
+  TPQI_PARTNER: "สคช. (สถาบันคุณวุฒิวิชาชีพ)",
+  EXTERNAL: "วิทยากรภายนอก",
+};
+
 export type DonorTier = "friend" | "supporter" | "patron" | "benefactor";
 
 // --- Main Entities ---
@@ -201,6 +281,7 @@ export const APPROVAL_PERMISSIONS: Record<UserRole, UserRole[]> = {
   employer: [],
   student: [],
   donor: [],
+  trainee: [],
 };
 
 export interface StudentTierRecord {

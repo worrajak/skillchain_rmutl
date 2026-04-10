@@ -12,6 +12,7 @@ import {
   LogOut,
   Menu,
   X,
+  GraduationCap,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ const navItems = [
   { href: "/student/jobs", label: "งาน", icon: Briefcase },
   { href: "/student/profile", label: "โปรไฟล์", icon: User },
   { href: "/student/wallet", label: "Wallet", icon: Wallet },
+  { href: "/training", label: "หลักสูตรอบรม", icon: GraduationCap },
 ];
 
 export default function StudentLayout({ children }: { children: React.ReactNode }) {

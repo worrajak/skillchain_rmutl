@@ -6,10 +6,10 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { UserCheck, AlertTriangle, FileCheck, Briefcase, Users, Award, ClipboardCheck } from "lucide-react";
+import { UserCheck, AlertTriangle, FileCheck, Briefcase, Users, Award, ClipboardCheck, GraduationCap } from "lucide-react";
 
 export default function ProjectStaffDashboardPage() {
-  const [stats, setStats] = useState({ pendingReviews: 0, pendingAssignments: 0, pendingDisputes: 0, pendingCancellations: 0, activeJobs: 0, totalStudents: 0, totalCredentials: 0 });
+  const [stats, setStats] = useState({ pendingReviews: 0, pendingAssignments: 0, pendingDisputes: 0, pendingCancellations: 0, activeJobs: 0, totalStudents: 0, totalCredentials: 0, trainingCourses: 0 });
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
@@ -17,7 +17,7 @@ export default function ProjectStaffDashboardPage() {
     async function load() {
       const [
         { count: pr }, { count: pa }, { count: pd }, { count: pc },
-        { count: aj }, { count: ts }, { count: tc },
+        { count: aj }, { count: ts }, { count: tc }, { count: trn },
       ] = await Promise.all([
         supabase.from("jobs").select("*", { count: "exact", head: true }).eq("status", "PENDING_REVIEW"),
         supabase.from("job_assignment_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
@@ -26,10 +26,11 @@ export default function ProjectStaffDashboardPage() {
         supabase.from("jobs").select("*", { count: "exact", head: true }).in("status", ["ASSIGNED", "IN_PROGRESS"]),
         supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "student"),
         supabase.from("student_credentials").select("*", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("training_courses").select("*", { count: "exact", head: true }).in("status", ["OPEN_ENROLLMENT", "IN_PROGRESS"]),
       ]);
       setStats({
         pendingReviews: pr ?? 0, pendingAssignments: pa ?? 0, pendingDisputes: pd ?? 0, pendingCancellations: pc ?? 0,
-        activeJobs: aj ?? 0, totalStudents: ts ?? 0, totalCredentials: tc ?? 0,
+        activeJobs: aj ?? 0, totalStudents: ts ?? 0, totalCredentials: tc ?? 0, trainingCourses: trn ?? 0,
       });
       setLoading(false);
     }
@@ -46,6 +47,7 @@ export default function ProjectStaffDashboardPage() {
     { label: "งานกำลังทำ", value: stats.activeJobs, icon: Briefcase, color: "text-green-600", bg: "bg-green-100", href: "#", urgent: false },
     { label: "นักศึกษาในระบบ", value: stats.totalStudents, icon: Users, color: "text-purple-600", bg: "bg-purple-100", href: "#", urgent: false },
     { label: "Credentials", value: stats.totalCredentials, icon: Award, color: "text-amber-600", bg: "bg-amber-100", href: "#", urgent: false },
+    { label: "หลักสูตรอบรม", value: stats.trainingCourses, icon: GraduationCap, color: "text-indigo-600", bg: "bg-indigo-100", href: "/training", urgent: false },
   ];
 
   return (
