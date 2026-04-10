@@ -56,11 +56,22 @@ export async function POST(
     );
   }
 
-  // สร้าง TRON wallet ถ้ายังไม่มี
+  // อนุมัติผู้ใช้ก่อน (สำคัญสุด)
+  const { error } = await supabase
+    .from("users")
+    .update({
+      approval_status: "APPROVED",
+      approved_by: me.id,
+      approved_at: new Date().toISOString(),
+    })
+    .eq("id", userId);
+
+  // สร้าง TRON wallet ถ้ายังไม่มี (ไม่บล็อคการอนุมัติถ้าล้มเหลว)
   let walletAddress = targetUser.wallet_address;
   let walletGenerated = false;
+  let walletError: string | null = null;
 
-  if (!walletAddress) {
+  if (!walletAddress && !error) {
     try {
       const tronWeb = new TronWeb({
         fullHost: process.env.NEXT_PUBLIC_TRON_FULL_HOST || "https://nile.trongrid.io",
@@ -79,33 +90,24 @@ export async function POST(
         .eq("id", userId);
 
       if (walletErr) {
-        return NextResponse.json(
-          { error: "สร้าง wallet ไม่สำเร็จ: " + walletErr.message },
-          { status: 500 }
-        );
+        // ลองบันทึกแค่ wallet_address (กรณี column wallet_private_key ยังไม่มี)
+        const { error: walletErr2 } = await supabase
+          .from("users")
+          .update({ wallet_address: walletAddress })
+          .eq("id", userId);
+
+        if (walletErr2) {
+          walletError = walletErr.message;
+        } else {
+          walletGenerated = true;
+        }
+      } else {
+        walletGenerated = true;
       }
-      walletGenerated = true;
     } catch (err) {
-      return NextResponse.json(
-        {
-          error:
-            "สร้าง wallet ไม่สำเร็จ: " +
-            (err instanceof Error ? err.message : "Unknown error"),
-        },
-        { status: 500 }
-      );
+      walletError = err instanceof Error ? err.message : "Unknown error";
     }
   }
-
-  // อนุมัติผู้ใช้
-  const { error } = await supabase
-    .from("users")
-    .update({
-      approval_status: "APPROVED",
-      approved_by: me.id,
-      approved_at: new Date().toISOString(),
-    })
-    .eq("id", userId);
 
   if (error) {
     return NextResponse.json(
@@ -133,8 +135,11 @@ export async function POST(
   });
 
   return NextResponse.json({
-    message: "อนุมัติสำเร็จ",
+    message: walletError
+      ? `อนุมัติสำเร็จ (แต่สร้าง wallet ไม่สำเร็จ: ${walletError})`
+      : "อนุมัติสำเร็จ",
     wallet_address: walletAddress,
     wallet_generated: walletGenerated,
+    wallet_error: walletError,
   });
 }
