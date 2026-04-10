@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import {
   ArrowLeft, ArrowRight, UserPlus, FileCheck, Wrench, Star, BadgeCheck,
   Shield, Award, Users, Wallet, Zap, Briefcase, Coins, ExternalLink, Database,
+  GraduationCap, ClipboardCheck, Search, BookOpen,
 } from "lucide-react";
 import { CONTRACTS, TRON_CONFIG, TRPB_TOKEN } from "@/lib/tron/client";
 
@@ -161,6 +162,35 @@ export default async function AboutPage() {
           </Card>
         </section>
 
+        {/* Training System */}
+        <section>
+          <h2 className="text-2xl font-bold text-center mb-2 text-foreground">ระบบฝึกอบรมทักษะช่าง</h2>
+          <p className="text-sm text-muted-foreground text-center mb-6">Reskill · Upskill · New Skill — เปิดรับทั้งนักศึกษาและบุคคลภายนอก</p>
+          <div className="grid md:grid-cols-4 gap-3">
+            {[
+              { icon: GraduationCap, title: "หลักสูตรอบรม", desc: "สร้างหลักสูตรพร้อมโมดูลการเรียนรู้ กำหนดเกณฑ์ผ่านแต่ละหัวข้อ", color: "text-indigo-600", bg: "bg-indigo-50" },
+              { icon: UserPlus, title: "ลงทะเบียนภายนอก", desc: "บุคคลทั่วไปสมัครเรียนได้ทันที ไม่ต้องรอ admin อนุมัติ", color: "text-green-600", bg: "bg-green-50" },
+              { icon: ClipboardCheck, title: "ประเมินรายโมดูล", desc: "อาจารย์/คณะทำงานประเมินผ่าน-ไม่ผ่าน พร้อมคะแนนและหมายเหตุ", color: "text-orange-600", bg: "bg-orange-50" },
+              { icon: Search, title: "ตรวจสอบใบรับรอง", desc: "ผ่านครบทุกโมดูล → ออกใบรับรองอัตโนมัติ ตรวจสอบได้แบบสาธารณะ", color: "text-purple-600", bg: "bg-purple-50" },
+            ].map((f) => (
+              <Card key={f.title}>
+                <CardContent className="pt-4 pb-4 text-center space-y-2">
+                  <div className={cn("flex size-12 items-center justify-center rounded-xl mx-auto", f.bg)}>
+                    <f.icon className={cn("size-6", f.color)} />
+                  </div>
+                  <div className="font-semibold text-sm text-foreground">{f.title}</div>
+                  <p className="text-xs text-muted-foreground">{f.desc}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="flex justify-center gap-3 mt-6">
+            <Link href="/training"><Button variant="outline" size="sm"><BookOpen className="size-4 mr-1" />ดูหลักสูตรทั้งหมด</Button></Link>
+            <Link href="/register-trainee"><Button size="sm" className="bg-indigo-600 hover:bg-indigo-700"><GraduationCap className="size-4 mr-1" />สมัครผู้เรียนภายนอก</Button></Link>
+            <Link href="/verify"><Button variant="outline" size="sm"><Search className="size-4 mr-1" />ตรวจสอบใบรับรอง</Button></Link>
+          </div>
+        </section>
+
         {/* 5 Credential Levels */}
         <section>
           <h2 className="text-2xl font-bold text-center mb-2 text-foreground">5 ระดับ Credential</h2>
@@ -197,6 +227,7 @@ export default async function AboutPage() {
               { role: "อาจารย์", desc: "ประเมินทักษะ ดูแลคุณภาพ เลื่อนระดับ สร้างงานจ้างเทียม", icon: Award, color: "text-orange-600", bg: "bg-orange-50" },
               { role: "คณะทำงานใต้ร่มพระบารมี", desc: "ฝึกอบรม ประเมินเบื้องต้น รับรอง Lv.2 ยืนยันผู้ใช้ กำกับดูแลคุณภาพ", icon: Shield, color: "text-purple-600", bg: "bg-purple-50" },
               { role: "คณะทำงาน มทร.ล้านนา", desc: "ผู้ว่าจ้างเทียม+ผู้ประเมินทักษะ สร้างงานทดสอบ", icon: Wrench, color: "text-indigo-600", bg: "bg-indigo-50" },
+              { role: "ผู้เรียนภายนอก (Trainee)", desc: "สมัครอบรม Reskill/Upskill/New Skill ได้ทันที ผ่านแล้วได้ใบรับรองบน Blockchain", icon: GraduationCap, color: "text-indigo-600", bg: "bg-indigo-50" },
               { role: "ผู้บริจาค", desc: "บริจาคกองทุน ติดตามการใช้เงินแบบ Real-time บน Blockchain", icon: Wallet, color: "text-pink-600", bg: "bg-pink-50" },
             ].map((r) => (
               <Card key={r.role}>
@@ -225,6 +256,9 @@ export default async function AboutPage() {
               { icon: Users, title: "Mentorship", desc: "พี่เลี้ยงดูแล + ประเมิน" },
               { icon: Shield, title: "Dispute Resolution", desc: "ข้อพิพาท คณะทำงานตัดสิน" },
               { icon: Zap, title: "Chat + Agreement", desc: "เจรจา + ข้อตกลงบันทึกบน Chain" },
+              { icon: GraduationCap, title: "Training System", desc: "หลักสูตรอบรม + ประเมินรายโมดูล + ใบรับรอง" },
+              { icon: ClipboardCheck, title: "Job Review", desc: "คณะทำงานพิจารณาค่าตอบแทนก่อนเปิดงาน" },
+              { icon: Search, title: "Certificate Verify", desc: "ตรวจสอบใบรับรองอบรมแบบสาธารณะ" },
             ].map((f) => (
               <Card key={f.title}>
                 <CardContent className="flex items-center gap-3 pt-4 pb-4">
@@ -241,8 +275,10 @@ export default async function AboutPage() {
 
         {/* CTA */}
         <section className="text-center">
-          <div className="flex gap-4 justify-center">
-            <Link href="/register"><Button size="lg" className="font-semibold px-8">ลงทะเบียนเลย</Button></Link>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Link href="/register"><Button size="lg" className="font-semibold px-8">ลงทะเบียนนักศึกษา</Button></Link>
+            <Link href="/register-trainee"><Button size="lg" className="font-semibold px-8 bg-indigo-600 hover:bg-indigo-700">สมัครผู้เรียนภายนอก</Button></Link>
+            <Link href="/training"><Button size="lg" variant="outline" className="font-semibold px-8">ดูหลักสูตรอบรม</Button></Link>
             <Link href="/"><Button size="lg" variant="outline" className="font-semibold px-8">กลับหน้าหลัก</Button></Link>
           </div>
         </section>
