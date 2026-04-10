@@ -28,6 +28,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { AvatarUpload } from "@/components/avatar-upload";
 
 const CREDENTIAL_CONFIG: Record<string, { num: number; name: string; gradient: string; icon: typeof Award }> = {
   LEVEL_1: { num: 1, name: "ลงทะเบียน", gradient: "from-gray-400 to-gray-500", icon: UserCheck },
@@ -110,7 +111,14 @@ export default function StudentProfilePage() {
             <div className="absolute -left-4 -bottom-4 size-32 rounded-full border-4 border-white" />
           </div>
           <div className="relative flex items-center gap-4">
-            <CredIcon className="size-12" />
+            <AvatarUpload
+              userId={profile.id as string}
+              currentUrl={profile.avatar_url as string | null}
+              name={profile.name as string}
+              size="lg"
+              editable
+              onUploaded={(url) => setProfile({ ...profile, avatar_url: url })}
+            />
             <div>
               <div className="font-bold text-2xl">Level {credConfig.num}</div>
               <div className="text-lg opacity-90">{credConfig.name}</div>

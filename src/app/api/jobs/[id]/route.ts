@@ -9,7 +9,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
   // Try with staff_supervisor join first, fallback without it
   let { data, error } = await supabase
     .from("jobs")
-    .select("*, employer:users!jobs_employer_id_fkey(name, email), student:users!jobs_student_id_fkey(name, email), staff_supervisor:users!jobs_approved_by_staff_fkey(name)")
+    .select("*, employer:users!jobs_employer_id_fkey(name, email), student:users!jobs_student_id_fkey(name, email, avatar_url), staff_supervisor:users!jobs_approved_by_staff_fkey(name)")
     .eq("id", id)
     .single();
 
@@ -17,7 +17,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     // Fallback: query without staff_supervisor join (FK may not exist yet)
     const result = await supabase
       .from("jobs")
-      .select("*, employer:users!jobs_employer_id_fkey(name, email), student:users!jobs_student_id_fkey(name, email)")
+      .select("*, employer:users!jobs_employer_id_fkey(name, email), student:users!jobs_student_id_fkey(name, email, avatar_url)")
       .eq("id", id)
       .single();
     data = result.data;

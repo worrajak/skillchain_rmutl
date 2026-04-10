@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { StaffSupervisorBadge } from "@/components/staff-supervisor-badge";
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
+  PENDING_REVIEW: { label: "รอพิจารณา", color: "bg-orange-100 text-orange-800" },
   OPEN: { label: "เปิดรับ", color: "bg-green-100 text-green-800" },
   ASSIGNED: { label: "มอบหมาย", color: "bg-blue-100 text-blue-800" },
   IN_PROGRESS: { label: "กำลังทำ", color: "bg-cyan-100 text-cyan-800" },

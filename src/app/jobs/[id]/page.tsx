@@ -10,6 +10,7 @@ import { StaffSupervisorBadge } from "@/components/staff-supervisor-badge";
 const TYPE_TH: Record<string, string> = { PAID: "งานจ้าง", VOLUNTEER: "จิตอาสา", TRAINING: "ฝึกทักษะ", EXEMPTED: "ยกเว้นค่าบริการ" };
 const CAT_TH: Record<string, string> = { electrical: "ไฟฟ้า", hvac: "แอร์/เครื่องเย็น", automotive: "ยานยนต์", general: "ทั่วไป" };
 const STATUS_TH: Record<string, { label: string; color: string }> = {
+  PENDING_REVIEW: { label: "รอพิจารณา", color: "bg-orange-100 text-orange-800" },
   OPEN: { label: "เปิดรับ", color: "bg-green-100 text-green-800" },
   ASSIGNED: { label: "มอบหมายแล้ว", color: "bg-blue-100 text-blue-800" },
   IN_PROGRESS: { label: "กำลังทำ", color: "bg-cyan-100 text-cyan-800" },

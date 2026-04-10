@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Users, Search, Star, Award, MapPin } from "lucide-react";
+import { UserAvatar } from "@/components/avatar-upload";
 
 const LEVEL_CONFIG: Record<string, { label: string; color: string }> = {
   LEVEL_1: { label: "Lv.1", color: "bg-gray-100 text-gray-700" },
@@ -58,9 +59,7 @@ export default function EmployerStudentsPage() {
               {filtered.map((s) => (
                 <div key={String(s.student_id)} className="flex items-center justify-between rounded-lg border p-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-full bg-blue-100 text-blue-700 font-bold text-sm">
-                      {String(s.name).charAt(0)}
-                    </div>
+                    <UserAvatar url={s.avatar_url as string | null} name={String(s.name)} size="sm" />
                     <div>
                       <div className="font-medium text-sm text-foreground">{String(s.name)}</div>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">

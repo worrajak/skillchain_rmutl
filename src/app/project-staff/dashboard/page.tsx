@@ -6,19 +6,20 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { UserCheck, AlertTriangle, FileCheck, Briefcase, Users, Award } from "lucide-react";
+import { UserCheck, AlertTriangle, FileCheck, Briefcase, Users, Award, ClipboardCheck } from "lucide-react";
 
 export default function ProjectStaffDashboardPage() {
-  const [stats, setStats] = useState({ pendingAssignments: 0, pendingDisputes: 0, pendingCancellations: 0, activeJobs: 0, totalStudents: 0, totalCredentials: 0 });
+  const [stats, setStats] = useState({ pendingReviews: 0, pendingAssignments: 0, pendingDisputes: 0, pendingCancellations: 0, activeJobs: 0, totalStudents: 0, totalCredentials: 0 });
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
   useEffect(() => {
     async function load() {
       const [
-        { count: pa }, { count: pd }, { count: pc },
+        { count: pr }, { count: pa }, { count: pd }, { count: pc },
         { count: aj }, { count: ts }, { count: tc },
       ] = await Promise.all([
+        supabase.from("jobs").select("*", { count: "exact", head: true }).eq("status", "PENDING_REVIEW"),
         supabase.from("job_assignment_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
         supabase.from("disputes").select("*", { count: "exact", head: true }).in("status", ["RAISED", "UNDER_REVIEW", "MEDIATION"]),
         supabase.from("job_cancellation_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
@@ -27,7 +28,7 @@ export default function ProjectStaffDashboardPage() {
         supabase.from("student_credentials").select("*", { count: "exact", head: true }).eq("is_active", true),
       ]);
       setStats({
-        pendingAssignments: pa ?? 0, pendingDisputes: pd ?? 0, pendingCancellations: pc ?? 0,
+        pendingReviews: pr ?? 0, pendingAssignments: pa ?? 0, pendingDisputes: pd ?? 0, pendingCancellations: pc ?? 0,
         activeJobs: aj ?? 0, totalStudents: ts ?? 0, totalCredentials: tc ?? 0,
       });
       setLoading(false);
@@ -38,6 +39,7 @@ export default function ProjectStaffDashboardPage() {
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin size-8 border-4 border-purple-500 border-t-transparent rounded-full" /></div>;
 
   const actions = [
+    { label: "งานรอพิจารณา", value: stats.pendingReviews, icon: ClipboardCheck, color: "text-orange-600", bg: "bg-orange-100", href: "/project-staff/review-jobs", urgent: stats.pendingReviews > 0 },
     { label: "คำขอรับงานรอ", value: stats.pendingAssignments, icon: UserCheck, color: "text-blue-600", bg: "bg-blue-100", href: "/project-staff/approvals", urgent: stats.pendingAssignments > 0 },
     { label: "ข้อพิพาทรอ", value: stats.pendingDisputes, icon: AlertTriangle, color: "text-red-600", bg: "bg-red-100", href: "/project-staff/disputes", urgent: stats.pendingDisputes > 0 },
     { label: "ขอยกเลิกงานรอ", value: stats.pendingCancellations, icon: FileCheck, color: "text-yellow-600", bg: "bg-yellow-100", href: "/project-staff/cancellations", urgent: stats.pendingCancellations > 0 },

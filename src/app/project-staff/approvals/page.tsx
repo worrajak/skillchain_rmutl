@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { UserCheck, XCircle, CheckCircle } from "lucide-react";
+import { UserAvatar } from "@/components/avatar-upload";
 import { toast } from "sonner";
 
 export default function StaffApprovalsPage() {
@@ -18,7 +19,7 @@ export default function StaffApprovalsPage() {
   async function loadRequests() {
     setLoading(true);
     const { data } = await supabase.from("job_assignment_requests")
-      .select("*, student:users!job_assignment_requests_student_id_fkey(name, email, faculty, student_id_card), job:jobs(id, title, type, job_category, location, campus, pay_amount)")
+      .select("*, student:users!job_assignment_requests_student_id_fkey(name, email, faculty, student_id_card, avatar_url), job:jobs(id, title, type, job_category, location, campus, pay_amount)")
       .eq("status", "PENDING")
       .order("created_at", { ascending: false });
     setRequests(data ?? []);
@@ -63,9 +64,12 @@ export default function StaffApprovalsPage() {
                 return (
                   <div key={String(req.id)} className="rounded-lg border p-4 space-y-3">
                     <div className="flex items-start justify-between">
-                      <div>
-                        <div className="font-medium text-foreground">{String(student?.name)} ({String(student?.student_id_card ?? student?.email)})</div>
-                        <div className="text-xs text-muted-foreground">{String(student?.faculty ?? "")}</div>
+                      <div className="flex items-center gap-3">
+                        <UserAvatar url={student?.avatar_url as string | null} name={String(student?.name)} size="sm" />
+                        <div>
+                          <div className="font-medium text-foreground">{String(student?.name)} ({String(student?.student_id_card ?? student?.email)})</div>
+                          <div className="text-xs text-muted-foreground">{String(student?.faculty ?? "")}</div>
+                        </div>
                       </div>
                       <div className="text-right">
                         <div className="font-medium text-sm text-foreground">{String(job?.title)}</div>

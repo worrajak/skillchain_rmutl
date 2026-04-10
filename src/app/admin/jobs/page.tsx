@@ -55,6 +55,7 @@ interface Job {
 }
 
 const STATUS_OPTIONS = [
+  { value: "PENDING_REVIEW", label: "รอพิจารณา", color: "bg-orange-100 text-orange-800" },
   { value: "OPEN", label: "เปิดรับ", color: "bg-green-100 text-green-800" },
   { value: "ASSIGNED", label: "มอบหมาย", color: "bg-blue-100 text-blue-800" },
   { value: "CONFIRMED", label: "ยืนยัน", color: "bg-indigo-100 text-indigo-800" },

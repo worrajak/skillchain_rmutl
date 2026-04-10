@@ -18,8 +18,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { UserAvatar } from "@/components/avatar-upload";
 
 const STATUS_TH: Record<string, { label: string; color: string }> = {
+  PENDING_REVIEW: { label: "รอพิจารณา", color: "bg-orange-100 text-orange-800" },
   OPEN: { label: "เปิดรับ", color: "bg-green-100 text-green-800" },
   ASSIGNED: { label: "มอบหมายแล้ว", color: "bg-blue-100 text-blue-800" },
   IN_PROGRESS: { label: "กำลังทำ", color: "bg-cyan-100 text-cyan-800" },
@@ -126,7 +128,7 @@ export default function EmployerJobDetailPage() {
             <div className="flex items-center gap-2"><MapPin className="size-4 text-muted-foreground" /><span>{job.location} ({job.campus})</span></div>
             <div className="flex items-center gap-2"><Clock className="size-4 text-muted-foreground" /><span>กำหนด: {new Date(job.deadline).toLocaleDateString("th-TH")}</span></div>
             {job.pay_amount > 0 && <div className="flex items-center gap-2"><Wallet className="size-4 text-green-600" /><span className="text-green-700 font-bold">{job.pay_amount.toLocaleString()} TRPB</span></div>}
-            {studentName && <div className="flex items-center gap-2"><User className="size-4 text-blue-600" /><span className="font-medium">{studentName}</span></div>}
+            {studentName && <div className="flex items-center gap-2"><UserAvatar url={job.student?.avatar_url ?? null} name={studentName} size="sm" /><span className="font-medium">{studentName}</span></div>}
           </div>
         </CardContent>
       </Card>

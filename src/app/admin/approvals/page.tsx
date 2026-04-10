@@ -69,24 +69,16 @@ export default function AdminApprovalsPage() {
   useEffect(() => { loadData(); }, []);
 
   async function handleApprove(userId: string) {
-    const { data: { user: me } } = await supabase.auth.getUser();
-    const { error } = await supabase.from("users").update({
-      approval_status: "APPROVED",
-      approved_by: me?.id,
-      approved_at: new Date().toISOString(),
-    }).eq("id", userId);
-
-    if (!error) {
-      // บันทึก log
-      await supabase.from("approval_logs").insert({
-        user_id: userId,
-        approved_by: me?.id,
-        action: "APPROVED",
-      });
-      toast.success("ยืนยันสำเร็จ");
+    const res = await fetch(`/api/users/${userId}/approve`, { method: "POST" });
+    const data = await res.json();
+    if (res.ok) {
+      const msg = data.wallet_generated
+        ? `ยืนยันสำเร็จ — สร้าง Wallet: ${data.wallet_address}`
+        : "ยืนยันสำเร็จ";
+      toast.success(msg);
       loadData();
     } else {
-      toast.error(error.message);
+      toast.error(data.error ?? "อนุมัติไม่สำเร็จ");
     }
   }
 

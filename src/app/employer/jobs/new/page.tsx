@@ -84,14 +84,14 @@ export default function NewJobPage() {
       deadline: new Date(deadline).toISOString(),
       employer_id: userId,
       is_mentorship: isMentorship,
-      status: "OPEN",
+      status: "PENDING_REVIEW",
     }).select("id").single();
 
     setLoading(false);
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("ลงงานสำเร็จ! — เพิ่มรูปถ่ายด้านล่าง");
+      toast.success("ลงงานสำเร็จ! — รอคณะทำงานพิจารณาค่าตอบแทน");
       setCreatedJobId(newJob?.id ?? null);
       setSuccess(true);
     }
@@ -104,7 +104,7 @@ export default function NewJobPage() {
           <CardContent className="py-10 space-y-4">
             <CheckCircle className="size-16 mx-auto text-green-500" />
             <h2 className="text-xl font-bold text-foreground">ลงงานสำเร็จ!</h2>
-            <p className="text-sm text-muted-foreground">งานจะปรากฏในหน้า Job Board ให้นักศึกษาสมัครได้</p>
+            <p className="text-sm text-muted-foreground">งานอยู่ระหว่างรอคณะทำงานพิจารณาค่าตอบแทน<br/>เมื่ออนุมัติแล้วจะปรากฏในหน้า Job Board</p>
           </CardContent>
         </Card>
 

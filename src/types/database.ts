@@ -9,6 +9,7 @@ export type StudentTier = "trainee" | "apprentice" | "certified";
 export type JobType = "PAID" | "VOLUNTEER" | "TRAINING" | "EXEMPTED";
 
 export type JobStatus =
+  | "PENDING_REVIEW"
   | "OPEN"
   | "ASSIGNED"
   | "CONFIRMED"
@@ -157,6 +158,7 @@ export interface User {
   name: string;
   campus: string;
   wallet_address: string | null;
+  wallet_private_key: string | null;
   is_active: boolean;
   email_verified: boolean;
   approval_status: ApprovalStatus;
@@ -171,6 +173,7 @@ export interface User {
   org_address: string | null;
   staff_position: string | null;
   teacher_id_card: string | null;
+  avatar_url: string | null;
   job_quota: number;
   job_quota_used: number;
   created_at: string;

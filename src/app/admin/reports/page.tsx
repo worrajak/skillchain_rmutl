@@ -26,7 +26,7 @@ const ROLE_TH: Record<string, string> = {
 };
 
 const STATUS_TH: Record<string, string> = {
-  OPEN: "เปิดรับ", ASSIGNED: "มอบหมาย", CONFIRMED: "ยืนยัน", IN_PROGRESS: "กำลังทำ",
+  PENDING_REVIEW: "รอพิจารณา", OPEN: "เปิดรับ", ASSIGNED: "มอบหมาย", CONFIRMED: "ยืนยัน", IN_PROGRESS: "กำลังทำ",
   SUBMITTED: "ส่งงาน", COMPLETED: "เสร็จ", CANCELLED: "ยกเลิก", DISPUTED: "พิพาท",
 };
 
