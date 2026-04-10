@@ -22,6 +22,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Award, UserCheck, Users, Search } from "lucide-react";
 import { toast } from "sonner";
+import { getCampusLabel } from "@/types/database";
 
 const LEVEL_CONFIG: Record<string, { label: string; color: string }> = {
   LEVEL_1: { label: "Lv.1 ลงทะเบียน", color: "bg-gray-100 text-gray-700" },
@@ -171,7 +172,7 @@ export default function TeacherStudentsPage() {
                       <div className="font-medium text-sm text-foreground">{s.name}</div>
                       <div className="text-xs text-muted-foreground">
                         {s.student_id_card ?? s.email}
-                        {s.faculty ? ` · ${s.faculty}` : ""} · {s.campus}
+                        {s.faculty ? ` · ${s.faculty}` : ""} · {getCampusLabel(String(s.campus))}
                       </div>
                     </div>
                   </div>

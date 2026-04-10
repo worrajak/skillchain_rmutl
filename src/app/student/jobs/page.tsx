@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ImageGallery } from "@/components/image-gallery";
+import { getCampusLabel } from "@/types/database";
 
 const TYPE_LABELS: Record<string, string> = { PAID: "งานจ้าง", VOLUNTEER: "จิตอาสา", TRAINING: "ฝึกทักษะ", EXEMPTED: "ยกเว้นค่าบริการ" };
 const CATEGORY_LABELS: Record<string, string> = { electrical: "ไฟฟ้า", hvac: "แอร์/เครื่องเย็น", automotive: "ยานยนต์", general: "ทั่วไป" };
@@ -141,7 +142,7 @@ export default function StudentJobsPage() {
               <CardContent className="space-y-3">
                 <p className="text-sm text-muted-foreground line-clamp-2">{job.description as string}</p>
                 <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1"><MapPin className="size-3" />{job.location as string} ({job.campus as string})</span>
+                  <span className="flex items-center gap-1"><MapPin className="size-3" />{job.location as string} ({getCampusLabel(job.campus as string)})</span>
                   <span className="flex items-center gap-1"><Clock className="size-3" />กำหนดส่ง: {new Date(job.deadline as string).toLocaleDateString("th-TH")}</span>
                   {(job.pay_amount as number) > 0 && (
                     <span className="flex items-center gap-1 text-green-700 font-medium"><Wallet className="size-3" />{(job.pay_amount as number).toLocaleString()} TRPB</span>

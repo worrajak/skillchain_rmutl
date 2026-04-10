@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AvatarUpload } from "@/components/avatar-upload";
+import { getCampusLabel } from "@/types/database";
 
 const CREDENTIAL_CONFIG: Record<string, { num: number; name: string; gradient: string; icon: typeof Award }> = {
   LEVEL_1: { num: 1, name: "ลงทะเบียน", gradient: "from-gray-400 to-gray-500", icon: UserCheck },
@@ -183,7 +184,7 @@ export default function StudentProfilePage() {
           <div className="space-y-2">
             <Label className="text-foreground">วิทยาเขต</Label>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="size-4" />{profile.campus as string}
+              <MapPin className="size-4" />{getCampusLabel(profile.campus as string)}
             </div>
           </div>
           <div className="space-y-2">

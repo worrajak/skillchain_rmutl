@@ -33,6 +33,7 @@ import { StaffSupervisorBadge } from "@/components/staff-supervisor-badge";
 import { StudentReviewForm } from "@/components/reviews/student-review-form";
 import { ImageUpload } from "@/components/image-upload";
 import { ImageGallery } from "@/components/image-gallery";
+import { getCampusLabel } from "@/types/database";
 
 const CREDENTIAL_CONFIG: Record<string, { num: number; name: string; color: string; gradient: string; icon: typeof Award }> = {
   LEVEL_1: { num: 1, name: "ลงทะเบียน", color: "text-gray-600", gradient: "from-gray-400 to-gray-500", icon: UserCheck },
@@ -196,7 +197,7 @@ export default function StudentDashboardPage() {
             </div>
             <div className="flex-1">
               <h2 className="text-xl font-bold text-foreground">สวัสดี, {user.name as string}</h2>
-              <p className="text-sm text-muted-foreground">{user.email as string} — {user.campus as string}</p>
+              <p className="text-sm text-muted-foreground">{user.email as string} — {getCampusLabel(user.campus as string)}</p>
             </div>
           </CardContent>
         </Card>

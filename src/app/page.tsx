@@ -18,6 +18,7 @@ import {
   Shield,
   Wrench,
 } from "lucide-react";
+import { getCampusLabel } from "@/types/database";
 
 const JOB_TYPE_LABELS: Record<string, string> = {
   PAID: "งานจ้าง",
@@ -156,7 +157,7 @@ export default async function HomePage() {
                           <div className="font-medium text-sm truncate">{job.title}</div>
                           <div className="flex items-center gap-2 mt-1">
                             <span className="inline-flex rounded-full bg-white/20 px-2 py-0.5 text-[10px]">{JOB_TYPE_LABELS[job.type] ?? job.type}</span>
-                            <span className="text-[10px] text-blue-200 flex items-center gap-0.5"><MapPin className="size-3" />{job.campus}</span>
+                            <span className="text-[10px] text-blue-200 flex items-center gap-0.5"><MapPin className="size-3" />{getCampusLabel(String(job.campus))}</span>
                           </div>
                         </div>
                         {job.pay_amount > 0 && (
@@ -205,7 +206,7 @@ export default async function HomePage() {
                       <div className="flex-1 min-w-0">
                         <CardTitle className="text-base text-foreground truncate">{s.name}</CardTitle>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                          <MapPin className="size-3" />{s.campus}
+                          <MapPin className="size-3" />{getCampusLabel(String(s.campus))}
                         </div>
                       </div>
                       <div className="text-right">

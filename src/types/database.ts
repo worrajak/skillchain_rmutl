@@ -227,6 +227,22 @@ export const PROVIDER_LABELS: Record<TrainingProvider, string> = {
   EXTERNAL: "วิทยากรภายนอก",
 };
 
+// Campus (พื้นที่ มทร.ล้านนา)
+export const CAMPUS_LABELS: Record<string, string> = {
+  huaykaew: "เชียงใหม่ (ห้วยแก้ว)",
+  doisaket: "เชียงใหม่ (ดอยสะเก็ด)",
+  chiangrai: "เชียงราย",
+  lampang: "ลำปาง",
+  tak: "ตาก",
+  nan: "น่าน",
+  phitsanulok: "พิษณุโลก",
+  external: "ภายนอก",
+};
+
+export function getCampusLabel(campus: string): string {
+  return CAMPUS_LABELS[campus] ?? campus;
+}
+
 export type DonorTier = "friend" | "supporter" | "patron" | "benefactor";
 
 // --- Main Entities ---

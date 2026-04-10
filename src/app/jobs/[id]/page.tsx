@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { getCampusLabel } from "@/types/database";
 import { MapPin, Clock, Wallet, User, Briefcase, ArrowLeft, Shield, Award } from "lucide-react";
 import { StaffSupervisorBadge } from "@/components/staff-supervisor-badge";
 
@@ -99,7 +100,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                 </div>
                 <div className="flex items-center gap-2">
                   <Shield className="size-4 text-muted-foreground" />
-                  <div><div className="text-muted-foreground text-xs">วิทยาเขต</div><div className="text-foreground">{job.campus}</div></div>
+                  <div><div className="text-muted-foreground text-xs">วิทยาเขต</div><div className="text-foreground">{getCampusLabel(String(job.campus))}</div></div>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="size-4 text-muted-foreground" />
@@ -148,7 +149,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
                 )}
                 <div className="flex items-center gap-2">
                   <MapPin className="size-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">{employer?.campus ?? ""}</span>
+                  <span className="text-sm text-muted-foreground">{getCampusLabel(String(employer?.campus ?? ""))}</span>
                 </div>
               </CardContent>
             </Card>

@@ -34,6 +34,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Search, Edit2, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
+import { getCampusLabel } from "@/types/database";
 
 interface Job {
   id: string;
@@ -278,7 +279,7 @@ export default function AdminJobsPage() {
                 <div><span className="text-muted-foreground">ประเภท:</span> {TYPE_LABELS[detailJob.type]}</div>
                 <div><span className="text-muted-foreground">หมวด:</span> {CATEGORY_LABELS[detailJob.job_category]}</div>
                 <div><span className="text-muted-foreground">สถานที่:</span> {detailJob.location}</div>
-                <div><span className="text-muted-foreground">วิทยาเขต:</span> {detailJob.campus}</div>
+                <div><span className="text-muted-foreground">วิทยาเขต:</span> {getCampusLabel(String(detailJob.campus))}</div>
                 <div><span className="text-muted-foreground">ค่าจ้าง:</span> {detailJob.pay_amount > 0 ? `${detailJob.pay_amount} TRPB` : "-"}</div>
                 <div><span className="text-muted-foreground">กำหนดส่ง:</span> {new Date(detailJob.deadline).toLocaleDateString("th-TH")}</div>
                 <div><span className="text-muted-foreground">ผู้ว่าจ้าง:</span> {detailJob.employer?.name ?? "-"}</div>

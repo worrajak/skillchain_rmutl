@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { Users, Search, Star, Award, MapPin } from "lucide-react";
 import { UserAvatar } from "@/components/avatar-upload";
+import { getCampusLabel } from "@/types/database";
 
 const LEVEL_CONFIG: Record<string, { label: string; color: string }> = {
   LEVEL_1: { label: "Lv.1", color: "bg-gray-100 text-gray-700" },
@@ -63,7 +64,7 @@ export default function EmployerStudentsPage() {
                     <div>
                       <div className="font-medium text-sm text-foreground">{String(s.name)}</div>
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="size-3" />{String(s.campus)}
+                        <MapPin className="size-3" />{getCampusLabel(String(s.campus))}
                       </div>
                     </div>
                   </div>

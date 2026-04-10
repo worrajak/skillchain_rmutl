@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GraduationCap, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import { getCampusLabel } from "@/types/database";
 
 const TIER_CONFIG: Record<string, { label: string; color: string }> = {
   trainee: { label: "Trainee (ฝึกหัด)", color: "bg-gray-100 text-gray-700" },
@@ -76,7 +77,7 @@ export default function AdminTierPage() {
               <div key={String(s.id)} className="flex items-center justify-between rounded-lg border p-3">
                 <div>
                   <div className="font-medium text-sm text-foreground">{String(s.name)}</div>
-                  <div className="text-xs text-muted-foreground">{String(s.email)} · {String(s.campus)}</div>
+                  <div className="text-xs text-muted-foreground">{String(s.email)} · {getCampusLabel(String(s.campus))}</div>
                   <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                     <span>งานฝึก: {String(s.training_jobs)}</span>
                     <span>คะแนน Mentor: {Number(s.avg_mentor).toFixed(1)}</span>

@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { getCampusLabel } from "@/types/database";
 import { MapPin, Clock, Wallet, Briefcase, ArrowLeft, Search } from "lucide-react";
 
 const TYPE_TH: Record<string, string> = { PAID: "งานจ้าง", VOLUNTEER: "จิตอาสา", TRAINING: "ฝึกทักษะ", EXEMPTED: "ยกเว้นค่าบริการ" };
@@ -142,7 +143,7 @@ export default async function PublicJobsPage({
                       {/* Info row */}
                       <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
-                          <MapPin className="size-3" />{job.campus}
+                          <MapPin className="size-3" />{getCampusLabel(String(job.campus))}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="size-3" />{new Date(job.deadline).toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" })}

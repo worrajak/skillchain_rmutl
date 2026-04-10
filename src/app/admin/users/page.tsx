@@ -35,6 +35,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Search, Edit2, Trash2, UserPlus, Shield } from "lucide-react";
 import { toast } from "sonner";
+import { getCampusLabel } from "@/types/database";
 
 interface User {
   id: string;
@@ -59,8 +60,14 @@ const ROLES = [
 ];
 
 const CAMPUSES = [
-  { value: "huaykaew", label: "ห้วยแก้ว" },
-  { value: "doisaket", label: "ดอยสะเก็ด" },
+  { value: "huaykaew", label: "เชียงใหม่ (ห้วยแก้ว)" },
+  { value: "doisaket", label: "เชียงใหม่ (ดอยสะเก็ด)" },
+  { value: "chiangrai", label: "เชียงราย" },
+  { value: "lampang", label: "ลำปาง" },
+  { value: "tak", label: "ตาก" },
+  { value: "nan", label: "น่าน" },
+  { value: "phitsanulok", label: "พิษณุโลก" },
+  { value: "external", label: "ภายนอก" },
 ];
 
 export default function AdminUsersPage() {
@@ -235,7 +242,7 @@ export default function AdminUsersPage() {
                           {roleLabel(user.role)}
                         </span>
                       </TableCell>
-                      <TableCell className="text-sm">{user.campus}</TableCell>
+                      <TableCell className="text-sm">{getCampusLabel(String(user.campus))}</TableCell>
                       <TableCell>
                         <span
                           className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${

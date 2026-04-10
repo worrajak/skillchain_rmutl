@@ -222,8 +222,13 @@ export default function NewJobPage() {
                 <Select value={campus} onValueChange={(v) => v && setCampus(v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="huaykaew">ห้วยแก้ว</SelectItem>
-                    <SelectItem value="doisaket">ดอยสะเก็ด</SelectItem>
+                    <SelectItem value="huaykaew">เชียงใหม่ (ห้วยแก้ว)</SelectItem>
+                    <SelectItem value="doisaket">เชียงใหม่ (ดอยสะเก็ด)</SelectItem>
+                    <SelectItem value="chiangrai">เชียงราย</SelectItem>
+                    <SelectItem value="lampang">ลำปาง</SelectItem>
+                    <SelectItem value="tak">ตาก</SelectItem>
+                    <SelectItem value="nan">น่าน</SelectItem>
+                    <SelectItem value="phitsanulok">พิษณุโลก</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

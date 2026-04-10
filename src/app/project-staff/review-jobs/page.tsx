@@ -20,6 +20,7 @@ import {
   User,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getCampusLabel } from "@/types/database";
 
 const TYPE_LABELS: Record<string, string> = {
   PAID: "งานจ้าง",
@@ -223,7 +224,7 @@ export default function StaffReviewJobsPage() {
                     <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <MapPin className="size-3" />
-                        {job.location} ({job.campus})
+                        {job.location} ({getCampusLabel(String(job.campus))})
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="size-3" />

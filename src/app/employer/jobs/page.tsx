@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { getCampusLabel } from "@/types/database";
 import { Briefcase, PlusCircle, Eye, Trash2, MessageCircle, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { StaffSupervisorBadge } from "@/components/staff-supervisor-badge";
@@ -82,7 +83,7 @@ export default function EmployerJobsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="font-medium text-foreground">{String(j.title)}</div>
                     <div className="text-xs text-muted-foreground mt-0.5">
-                      {String(j.type)} · {String(j.job_category)} · {String(j.campus)}
+                      {String(j.type)} · {String(j.job_category)} · {getCampusLabel(String(j.campus))}
                       {hasStudent && ` · นศ.: ${String((j.student as Record<string, unknown>)?.name)}`}
                     </div>
                     <div className="flex items-center gap-2 mt-1">

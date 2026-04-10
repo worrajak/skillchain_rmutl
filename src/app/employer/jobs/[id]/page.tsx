@@ -17,6 +17,7 @@ import {
   Briefcase, MapPin, Clock, Wallet, User, Calendar, CheckCircle, XCircle, Send, ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getCampusLabel } from "@/types/database";
 import Link from "next/link";
 import { UserAvatar } from "@/components/avatar-upload";
 
@@ -125,7 +126,7 @@ export default function EmployerJobDetailPage() {
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground">{job.description}</p>
           <div className="grid grid-cols-2 gap-3 text-sm">
-            <div className="flex items-center gap-2"><MapPin className="size-4 text-muted-foreground" /><span>{job.location} ({job.campus})</span></div>
+            <div className="flex items-center gap-2"><MapPin className="size-4 text-muted-foreground" /><span>{job.location} ({getCampusLabel(String(job.campus))})</span></div>
             <div className="flex items-center gap-2"><Clock className="size-4 text-muted-foreground" /><span>กำหนด: {new Date(job.deadline).toLocaleDateString("th-TH")}</span></div>
             {job.pay_amount > 0 && <div className="flex items-center gap-2"><Wallet className="size-4 text-green-600" /><span className="text-green-700 font-bold">{job.pay_amount.toLocaleString()} TRPB</span></div>}
             {studentName && <div className="flex items-center gap-2"><UserAvatar url={job.student?.avatar_url ?? null} name={studentName} size="sm" /><span className="font-medium">{studentName}</span></div>}
