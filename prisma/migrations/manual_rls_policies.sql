@@ -213,20 +213,14 @@ CREATE POLICY "disputes_update_staff" ON public.disputes FOR UPDATE
   USING (public.is_staff());
 
 -- ============================================================
--- 12. dispute_comments
+-- 12. dispute_comments (optional — table may not exist yet)
 -- ============================================================
-CREATE POLICY "dispute_comments_select" ON public.dispute_comments FOR SELECT
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.disputes d
-      WHERE d.id = dispute_id
-        AND (d.raised_by = auth.uid() OR d.raised_against = auth.uid())
-    )
-    OR public.is_staff()
-  );
-
-CREATE POLICY "dispute_comments_insert" ON public.dispute_comments FOR INSERT
-  WITH CHECK (user_id = auth.uid());
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'dispute_comments') THEN
+    EXECUTE 'CREATE POLICY "dispute_comments_select" ON public.dispute_comments FOR SELECT USING (EXISTS (SELECT 1 FROM public.disputes d WHERE d.id = dispute_id AND (d.raised_by = auth.uid() OR d.raised_against = auth.uid())) OR public.is_staff())';
+    EXECUTE 'CREATE POLICY "dispute_comments_insert" ON public.dispute_comments FOR INSERT WITH CHECK (user_id = auth.uid())';
+  END IF;
+END $$;
 
 -- ============================================================
 -- 13. job_assignment_requests
@@ -350,58 +344,57 @@ CREATE POLICY "fee_config_update_admin" ON public.fee_config FOR UPDATE
   USING (public.is_admin());
 
 -- ============================================================
--- 24. escrow_records
+-- 24. escrow_records (optional — table may not exist yet)
 -- ============================================================
-CREATE POLICY "escrow_select" ON public.escrow_records FOR SELECT
-  USING (employer_id = auth.uid() OR student_id = auth.uid() OR public.is_staff());
-
-CREATE POLICY "escrow_insert" ON public.escrow_records FOR INSERT
-  WITH CHECK (true);  -- API/smart contract inserts
-
-CREATE POLICY "escrow_update_staff" ON public.escrow_records FOR UPDATE
-  USING (public.is_staff());
-
--- ============================================================
--- 25. job_images
--- ============================================================
-CREATE POLICY "job_images_select" ON public.job_images FOR SELECT
-  USING (true);
-
-CREATE POLICY "job_images_insert" ON public.job_images FOR INSERT
-  WITH CHECK (uploaded_by = auth.uid());
-
-CREATE POLICY "job_images_delete" ON public.job_images FOR DELETE
-  USING (uploaded_by = auth.uid() OR public.is_staff());
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'escrow_records') THEN
+    EXECUTE 'CREATE POLICY "escrow_select" ON public.escrow_records FOR SELECT USING (employer_id = auth.uid() OR student_id = auth.uid() OR public.is_staff())';
+    EXECUTE 'CREATE POLICY "escrow_insert" ON public.escrow_records FOR INSERT WITH CHECK (true)';
+    EXECUTE 'CREATE POLICY "escrow_update_staff" ON public.escrow_records FOR UPDATE USING (public.is_staff())';
+  END IF;
+END $$;
 
 -- ============================================================
--- 26. work_instruction_templates — staff manage, all read
+-- 25. job_images (optional — table may not exist yet)
 -- ============================================================
-CREATE POLICY "wit_select" ON public.work_instruction_templates FOR SELECT
-  USING (true);
-
-CREATE POLICY "wit_insert_staff" ON public.work_instruction_templates FOR INSERT
-  WITH CHECK (public.is_staff());
-
-CREATE POLICY "wit_update_staff" ON public.work_instruction_templates FOR UPDATE
-  USING (public.is_staff());
-
--- ============================================================
--- 27. job_safety_checks
--- ============================================================
-CREATE POLICY "safety_select" ON public.job_safety_checks FOR SELECT
-  USING (checked_by = auth.uid() OR public.is_staff());
-
-CREATE POLICY "safety_insert" ON public.job_safety_checks FOR INSERT
-  WITH CHECK (checked_by = auth.uid());
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'job_images') THEN
+    EXECUTE 'CREATE POLICY "job_images_select" ON public.job_images FOR SELECT USING (true)';
+    EXECUTE 'CREATE POLICY "job_images_insert" ON public.job_images FOR INSERT WITH CHECK (uploaded_by = auth.uid())';
+    EXECUTE 'CREATE POLICY "job_images_delete" ON public.job_images FOR DELETE USING (uploaded_by = auth.uid() OR public.is_staff())';
+  END IF;
+END $$;
 
 -- ============================================================
--- 28. credential_level_config — read-only for all, admin write
+-- 26. work_instruction_templates (optional — table may not exist yet)
 -- ============================================================
-CREATE POLICY "clc_select" ON public.credential_level_config FOR SELECT
-  USING (true);
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'work_instruction_templates') THEN
+    EXECUTE 'CREATE POLICY "wit_select" ON public.work_instruction_templates FOR SELECT USING (true)';
+    EXECUTE 'CREATE POLICY "wit_insert_staff" ON public.work_instruction_templates FOR INSERT WITH CHECK (public.is_staff())';
+    EXECUTE 'CREATE POLICY "wit_update_staff" ON public.work_instruction_templates FOR UPDATE USING (public.is_staff())';
+  END IF;
+END $$;
 
-CREATE POLICY "clc_update_admin" ON public.credential_level_config FOR UPDATE
-  USING (public.is_admin());
+-- ============================================================
+-- 27. job_safety_checks (optional — table may not exist yet)
+-- ============================================================
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'job_safety_checks') THEN
+    EXECUTE 'CREATE POLICY "safety_select" ON public.job_safety_checks FOR SELECT USING (checked_by = auth.uid() OR public.is_staff())';
+    EXECUTE 'CREATE POLICY "safety_insert" ON public.job_safety_checks FOR INSERT WITH CHECK (checked_by = auth.uid())';
+  END IF;
+END $$;
+
+-- ============================================================
+-- 28. credential_level_config (optional — table may not exist yet)
+-- ============================================================
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'credential_level_config') THEN
+    EXECUTE 'CREATE POLICY "clc_select" ON public.credential_level_config FOR SELECT USING (true)';
+    EXECUTE 'CREATE POLICY "clc_update_admin" ON public.credential_level_config FOR UPDATE USING (public.is_admin())';
+  END IF;
+END $$;
 
 -- ============================================================
 -- 29. training_courses — public read, staff manage
