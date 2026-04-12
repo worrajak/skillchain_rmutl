@@ -21,6 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Clock, CheckCircle } from "lucide-react";
+import { PDPAConsent } from "@/components/pdpa-consent";
 
 const ROLES = [
   { value: "student", label: "นักศึกษา" },
@@ -47,6 +48,8 @@ export default function RegisterPage() {
   const [staffPosition, setStaffPosition] = useState("");
   const [teacherIdCard, setTeacherIdCard] = useState("");
 
+  const [pdpaAccepted, setPdpaAccepted] = useState(false);
+  const [pdpaVersion, setPdpaVersion] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -57,7 +60,13 @@ export default function RegisterPage() {
     setLoading(true);
     setError("");
 
-    const metadata: Record<string, unknown> = { name, role, campus };
+    if (!pdpaAccepted) {
+      setError("กรุณายอมรับนโยบายความเป็นส่วนตัว (PDPA)");
+      setLoading(false);
+      return;
+    }
+
+    const metadata: Record<string, unknown> = { name, role, campus, pdpa_version: pdpaVersion };
 
     // เพิ่มข้อมูลตาม role
     if (role === "student") {
@@ -226,9 +235,15 @@ export default function RegisterPage() {
               </div>
             )}
 
+            {/* PDPA Consent */}
+            <PDPAConsent
+              accepted={pdpaAccepted}
+              onAccept={(version) => { setPdpaAccepted(true); setPdpaVersion(version); }}
+            />
+
             {error && <p className="text-sm text-red-600">{error}</p>}
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full" disabled={loading || !pdpaAccepted}>
               {loading ? "กำลังลงทะเบียน..." : "ลงทะเบียน"}
             </Button>
 

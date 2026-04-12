@@ -23,6 +23,7 @@ import {
   Award,
   Save,
 } from "lucide-react";
+import { QRCheckIn } from "@/components/qr-checkin";
 import { toast } from "sonner";
 import Link from "next/link";
 import { COURSE_STATUS_LABELS } from "@/types/database";
@@ -275,6 +276,9 @@ export default function AssessPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* QR เช็คชื่ออบรม */}
+            <QRCheckIn courseId={courseId as string} title={course.title} />
 
             {/* Module assessments */}
             <div className="space-y-3">

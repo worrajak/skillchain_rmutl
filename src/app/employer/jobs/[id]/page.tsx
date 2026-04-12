@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { getCampusLabel } from "@/types/database";
 import Link from "next/link";
 import { UserAvatar } from "@/components/avatar-upload";
+import { QRCheckIn } from "@/components/qr-checkin";
 
 const STATUS_TH: Record<string, { label: string; color: string }> = {
   PENDING_REVIEW: { label: "รอพิจารณา", color: "bg-orange-100 text-orange-800" },
@@ -149,6 +150,11 @@ export default function EmployerJobDetailPage() {
       )}
       {!["OPEN", "ASSIGNED"].includes(job.status) && (
         <ImageGallery jobId={job.id} imageType="job" label="รูปเครื่อง/ลักษณะงาน" />
+      )}
+
+      {/* QR Check-in — เมื่อมอบหมายแล้วหรือกำลังทำ */}
+      {["ASSIGNED", "IN_PROGRESS"].includes(job.status) && (
+        <QRCheckIn jobId={job.id} title={job.title} />
       )}
 
       {/* Escrow — ฝากเงินเมื่อ ASSIGNED / IN_PROGRESS */}
