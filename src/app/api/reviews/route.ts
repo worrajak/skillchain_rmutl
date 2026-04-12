@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
 
 // ตรวจสอบว่า reviewer เกี่ยวข้องกับงานจริง
 async function verifyReviewer(
@@ -46,6 +47,10 @@ async function verifyReviewer(
 
 // POST /api/reviews — Create review (ตรวจสอบสิทธิ์เฉพาะงาน)
 export async function POST(request: NextRequest) {
+  const ip = getClientIP(request);
+  const rl = checkRateLimit(ip, RATE_LIMITS.apiWrite);
+  if (!rl.allowed) return NextResponse.json({ error: "ส่งคำขอบ่อยเกินไป" }, { status: 429 });
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -28,6 +28,15 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
+    // Rate limit check
+    const rlRes = await fetch("/api/auth/login", { method: "POST" });
+    if (rlRes.status === 429) {
+      const rlData = await rlRes.json();
+      setError(rlData.error);
+      setLoading(false);
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,

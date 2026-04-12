@@ -66,6 +66,15 @@ export default function RegisterPage() {
       return;
     }
 
+    // Rate limit check
+    const rlRes = await fetch("/api/auth/register-check", { method: "POST" });
+    if (rlRes.status === 429) {
+      const rlData = await rlRes.json();
+      setError(rlData.error);
+      setLoading(false);
+      return;
+    }
+
     const metadata: Record<string, unknown> = { name, role, campus, pdpa_version: pdpaVersion };
 
     // เพิ่มข้อมูลตาม role

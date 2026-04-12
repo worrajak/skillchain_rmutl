@@ -1,11 +1,16 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
 import crypto from "crypto";
 
 const BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME ?? "SkillChainBot";
 
 // POST /api/telegram/link — generate link token for current user
-export async function POST() {
+export async function POST(request: NextRequest) {
+  const ip = getClientIP(request);
+  const rl = checkRateLimit(ip, RATE_LIMITS.telegramLink);
+  if (!rl.allowed) return NextResponse.json({ error: "ส่งคำขอบ่อยเกินไป" }, { status: 429 });
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
