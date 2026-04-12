@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createNotification } from "@/lib/telegram";
 
 // GET /api/jobs/[id]
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -132,7 +133,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       description: `Admin/Staff ลบงาน: ${body.reason ?? "ไม่ระบุเหตุผล"}`,
     });
     // แจ้ง employer
-    await supabase.from("notifications").insert({
+    await createNotification(supabase, {
       user_id: job.employer_id,
       type: "job_deleted",
       title: "งานถูกลบโดยผู้ดูแล",

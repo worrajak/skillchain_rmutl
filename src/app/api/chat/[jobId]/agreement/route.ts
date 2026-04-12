@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { hashReviewContent } from "@/lib/credential";
+import { createNotification } from "@/lib/telegram";
 
 // POST /api/chat/[jobId]/agreement — propose agreement
 export async function POST(request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
@@ -47,7 +48,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   // แจ้ง proposer
   if (data) {
-    await supabase.from("notifications").insert({
+    await createNotification(supabase, {
       user_id: data.proposed_by,
       type: "agreement",
       title: action === "ACCEPTED" ? "ข้อตกลงได้รับการยอมรับ" : "ข้อตกลงถูกปฏิเสธ",

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createNotification } from "@/lib/telegram";
 
 // POST /api/jobs/[id]/record-payment
 // Employer บันทึก tx hash หลัง release escrow on-chain สำเร็จ
@@ -58,7 +59,7 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 500 });
 
   // แจ้ง student
-  await supabase.from("notifications").insert({
+  await createNotification(supabase, {
     user_id: job.student_id,
     type: "payment_released",
     title: "ได้รับค่าจ้าง",

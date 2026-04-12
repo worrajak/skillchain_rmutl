@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { TronWeb } from "tronweb";
 import { encryptPrivateKey } from "@/lib/crypto";
+import { createNotification } from "@/lib/telegram";
 
 // POST /api/users/[id]/approve
 // Admin/staff กดอนุมัติผู้ใช้ → สร้าง TRON wallet อัตโนมัติ (ถ้ายังไม่มี)
@@ -124,7 +125,7 @@ export async function POST(
   });
 
   // แจ้งเตือนผู้ใช้
-  await supabase.from("notifications").insert({
+  await createNotification(supabase, {
     user_id: userId,
     type: "approval",
     title: "บัญชีได้รับอนุมัติแล้ว",

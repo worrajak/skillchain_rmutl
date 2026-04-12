@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createNotification, createNotifications } from "@/lib/telegram";
 
 // POST /api/jobs/[id]/schedule — เสนอวันทำงาน
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   // แจ้งอีกฝ่าย
   const notifyUserId = isStudent ? job.employer_id : job.student_id;
-  await supabase.from("notifications").insert({
+  await createNotification(supabase, {
     user_id: notifyUserId,
     type: "schedule_proposed",
     title: "เสนอวันทำงาน",
@@ -76,7 +77,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (job.approved_by_staff) {
     notifications.push({ user_id: job.approved_by_staff, type: "job_started", title: "งานเริ่มแล้ว", body: `งาน "${job.title}" เข้าสู่สถานะ IN_PROGRESS`, link: "/project-staff/active-jobs" });
   }
-  await supabase.from("notifications").insert(notifications);
+  await createNotifications(supabase, notifications);
 
   return NextResponse.json({ message: "ยืนยันวันทำงานแล้ว — เริ่มงาน!" });
 }

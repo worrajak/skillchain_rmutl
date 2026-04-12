@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AvatarUpload } from "@/components/avatar-upload";
+import { TelegramLink } from "@/components/telegram-link";
 import { getCampusLabel } from "@/types/database";
 
 const CREDENTIAL_CONFIG: Record<string, { num: number; name: string; gradient: string; icon: typeof Award }> = {
@@ -164,6 +165,9 @@ export default function StudentProfilePage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Telegram */}
+      <TelegramLink />
 
       {/* Profile Form */}
       <Card>

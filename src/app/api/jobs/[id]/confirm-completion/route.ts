@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createNotification, createNotifications } from "@/lib/telegram";
 
 // POST /api/jobs/[id]/confirm-completion — staff หรือ employer ยืนยันงานเสร็จ
 export async function POST(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -41,7 +42,7 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
     if (job.approved_by_staff) {
       notifications.push({ user_id: job.approved_by_staff, type: "job_completed", title: "งานเสร็จสมบูรณ์", body: `งาน "${job.title}" — Staff + Employer ยืนยันแล้ว`, link: "/project-staff/active-jobs" });
     }
-    await supabase.from("notifications").insert(notifications);
+    await createNotifications(supabase, notifications);
 
     return NextResponse.json({ message: "ยืนยันครบแล้ว — งานเสร็จสมบูรณ์!", completed: true });
   }
@@ -49,7 +50,7 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
   // แจ้งอีกฝ่ายที่ยังไม่ยืนยัน
   const pendingParty = !updated.staff_confirmed_completion ? job.approved_by_staff : job.employer_id;
   if (pendingParty) {
-    await supabase.from("notifications").insert({
+    await createNotification(supabase, {
       user_id: pendingParty,
       type: "completion_pending",
       title: "รอการยืนยันงานเสร็จ",

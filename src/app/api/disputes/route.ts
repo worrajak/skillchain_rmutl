@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createNotifications } from "@/lib/telegram";
 
 // GET /api/disputes — list disputes (ต้อง login)
 export async function GET(request: NextRequest) {
@@ -61,7 +62,7 @@ export async function POST(request: NextRequest) {
       user_id: s.id, type: "dispute", title: "ข้อพิพาทใหม่รอตรวจสอบ", body: `หมวด: ${category}`, link: `/admin/disputes`,
     })),
   ];
-  await supabase.from("notifications").insert(notifs);
+  await createNotifications(supabase, notifs);
 
   return NextResponse.json(data, { status: 201 });
 }

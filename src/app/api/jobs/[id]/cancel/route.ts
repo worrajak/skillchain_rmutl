@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createNotification, createNotifications } from "@/lib/telegram";
 
 // POST /api/jobs/[id]/cancel — submit cancellation request
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   // แจ้งนักศึกษา
   if (job.student_id) {
-    await supabase.from("notifications").insert({
+    await createNotification(supabase, {
       user_id: job.student_id,
       type: "cancellation_request",
       title: "ผู้ว่าจ้างขอยกเลิกงาน",
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     .eq("approval_status", "APPROVED");
 
   if (staffUsers) {
-    await supabase.from("notifications").insert(
+    await createNotifications(supabase,
       staffUsers.map((s) => ({
         user_id: s.id,
         type: "cancellation_request",

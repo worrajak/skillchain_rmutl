@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createNotification } from "@/lib/telegram";
 
 // POST /api/jobs/[id]/review-job
 // คณะทำงานพิจารณางานใหม่: อนุมัติ / ปรับค่าจ้าง / ปฏิเสธ
@@ -87,7 +88,7 @@ export async function POST(
       finalPay !== job.pay_amount
         ? ` (ปรับค่าจ้างเป็น ${finalPay.toLocaleString()} TRPB)`
         : "";
-    await supabase.from("notifications").insert({
+    await createNotification(supabase, {
       user_id: job.employer_id,
       type: "job_approved",
       title: "งานได้รับอนุมัติแล้ว",
@@ -121,7 +122,7 @@ export async function POST(
     }
 
     // แจ้งผู้ว่าจ้าง
-    await supabase.from("notifications").insert({
+    await createNotification(supabase, {
       user_id: job.employer_id,
       type: "job_rejected",
       title: "งานไม่ผ่านการพิจารณา",

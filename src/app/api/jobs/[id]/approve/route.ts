@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createNotification } from "@/lib/telegram";
 
 // POST /api/jobs/[id]/approve — staff approves student assignment
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await supabase.from("job_chat_rooms").insert({ job_id: id }).select().single();
 
     // แจ้ง student
-    await supabase.from("notifications").insert({
+    await createNotification(supabase, {
       user_id: req.student_id,
       type: "job_assigned",
       title: "ได้รับงานแล้ว!",
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     // แจ้ง employer ว่ามี นศ. แล้ว
     if (job?.employer_id) {
-      await supabase.from("notifications").insert({
+      await createNotification(supabase, {
         user_id: job.employer_id,
         type: "job_assigned",
         title: "นักศึกษาได้รับมอบหมายแล้ว",
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   if (action === "REJECTED" && req) {
-    await supabase.from("notifications").insert({
+    await createNotification(supabase, {
       user_id: req.student_id,
       type: "job_rejected",
       title: "คำขอรับงานถูกปฏิเสธ",
