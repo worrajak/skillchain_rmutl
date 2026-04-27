@@ -21,6 +21,7 @@ import { getCampusLabel } from "@/types/database";
 import Link from "next/link";
 import { UserAvatar } from "@/components/avatar-upload";
 import { QRCheckIn } from "@/components/qr-checkin";
+import JobQrCard from "@/components/job-qr-card";
 
 const STATUS_TH: Record<string, { label: string; color: string }> = {
   PENDING_REVIEW: { label: "รอพิจารณา", color: "bg-orange-100 text-orange-800" },
@@ -150,6 +151,11 @@ export default function EmployerJobDetailPage() {
       )}
       {!["OPEN", "ASSIGNED"].includes(job.status) && (
         <ImageGallery jobId={job.id} imageType="job" label="รูปเครื่อง/ลักษณะงาน" />
+      )}
+
+      {/* Smart Job QR — แสดงตั้งแต่ ASSIGNED ขึ้นไป (ใช้ทุก stage) */}
+      {!["OPEN", "PENDING_REVIEW"].includes(job.status) && (
+        <JobQrCard jobId={job.id} jobTitle={job.title} />
       )}
 
       {/* QR Check-in — เมื่อมอบหมายแล้วหรือกำลังทำ */}
