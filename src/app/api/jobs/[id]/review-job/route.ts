@@ -18,7 +18,7 @@ export async function POST(
 
   // ตรวจสอบ role
   const { data: profile } = await supabase
-    .from("users")
+    .from("skc_users")
     .select("role, name")
     .eq("id", user.id)
     .single();
@@ -37,7 +37,7 @@ export async function POST(
 
   // ดึงงาน
   const { data: job } = await supabase
-    .from("jobs")
+    .from("skc_jobs")
     .select("id, status, title, pay_amount, employer_id, type")
     .eq("id", jobId)
     .single();
@@ -66,7 +66,7 @@ export async function POST(
     }
 
     const { error } = await supabase
-      .from("jobs")
+      .from("skc_jobs")
       .update({
         status: "OPEN",
         pay_amount: finalPay,
@@ -105,7 +105,7 @@ export async function POST(
 
   if (action === "REJECT") {
     const { error } = await supabase
-      .from("jobs")
+      .from("skc_jobs")
       .update({
         status: "CANCELLED",
         reviewed_by_staff: user.id,

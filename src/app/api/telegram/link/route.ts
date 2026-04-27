@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
   // Save token
-  const { error } = await supabase.from("telegram_link_tokens").insert({
+  const { error } = await supabase.from("skc_telegram_link_tokens").insert({
     user_id: user.id,
     token,
     expires_at: expiresAt.toISOString(),
@@ -39,7 +39,7 @@ export async function DELETE() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  await supabase.from("users").update({ telegram_chat_id: null }).eq("id", user.id);
+  await supabase.from("skc_users").update({ telegram_chat_id: null }).eq("id", user.id);
 
   return NextResponse.json({ success: true });
 }
@@ -50,7 +50,7 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data } = await supabase.from("users").select("telegram_chat_id").eq("id", user.id).single();
+  const { data } = await supabase.from("skc_users").select("telegram_chat_id").eq("id", user.id).single();
 
   return NextResponse.json({ connected: !!data?.telegram_chat_id });
 }

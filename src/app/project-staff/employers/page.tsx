@@ -30,7 +30,7 @@ export default function StaffEmployersPage() {
   async function loadEmployers() {
     setLoading(true);
     const { data } = await supabase
-      .from("users")
+      .from("skc_users")
       .select("id, name, email, organization, job_quota, job_quota_used, approval_status")
       .eq("role", "employer")
       .eq("approval_status", "APPROVED")

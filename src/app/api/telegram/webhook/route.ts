@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     // Lookup pending link token
     const admin = getAdminClient();
     const { data: linkData } = await admin
-      .from("telegram_link_tokens")
+      .from("skc_telegram_link_tokens")
       .select("user_id")
       .eq("token", token)
       .eq("used", false)
@@ -49,10 +49,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Link: save chat_id to user + mark token used
-    await admin.from("users").update({ telegram_chat_id: chatId }).eq("id", linkData.user_id);
-    await admin.from("telegram_link_tokens").update({ used: true }).eq("token", token);
+    await admin.from("skc_users").update({ telegram_chat_id: chatId }).eq("id", linkData.user_id);
+    await admin.from("skc_telegram_link_tokens").update({ used: true }).eq("token", token);
 
-    const { data: user } = await admin.from("users").select("name").eq("id", linkData.user_id).single();
+    const { data: user } = await admin.from("skc_users").select("name").eq("id", linkData.user_id).single();
     await sendTelegramMessage(chatId,
       `เชื่อมต่อสำเร็จ! สวัสดีคุณ ${user?.name ?? ""}\n` +
       "คุณจะได้รับแจ้งเตือนจาก SkillChain ผ่าน Telegram นี้แล้ว\n\n" +
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
   // /status — check connection status
   if (text === "/status") {
     const admin = getAdminClient();
-    const { data: user } = await admin.from("users").select("name, role, campus").eq("telegram_chat_id", chatId).single();
+    const { data: user } = await admin.from("skc_users").select("name, role, campus").eq("telegram_chat_id", chatId).single();
     if (user) {
       await sendTelegramMessage(chatId,
         `<b>สถานะ:</b> เชื่อมต่อแล้ว\n` +
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
   // /stop — unlink
   if (text === "/stop") {
     const admin = getAdminClient();
-    await admin.from("users").update({ telegram_chat_id: null }).eq("telegram_chat_id", chatId);
+    await admin.from("skc_users").update({ telegram_chat_id: null }).eq("telegram_chat_id", chatId);
     await sendTelegramMessage(chatId, "หยุดรับแจ้งเตือนแล้ว คุณสามารถเชื่อมต่อใหม่ได้จากหน้าเว็บ");
     return NextResponse.json({ ok: true });
   }

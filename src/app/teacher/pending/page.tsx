@@ -15,8 +15,8 @@ export default function TeacherPendingPage() {
   useEffect(() => {
     async function load() {
       const { data } = await supabase
-        .from("jobs")
-        .select("id, title, type, status, campus, student:users!jobs_student_id_fkey(name)")
+        .from("skc_jobs")
+        .select("id, title, type, status, campus, student:skc_users!skc_jobs_student_id_fkey(name)")
         .in("status", ["SUBMITTED", "COMPLETED"])
         .order("updated_at", { ascending: false })
         .limit(20);

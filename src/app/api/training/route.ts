@@ -8,8 +8,8 @@ export async function GET(request: NextRequest) {
   const status = searchParams.get("status");
 
   let query = supabase
-    .from("training_courses")
-    .select("*, instructor:users!training_courses_instructor_id_fkey(name, email)")
+    .from("skc_training_courses")
+    .select("*, instructor:skc_users!skc_training_courses_instructor_id_fkey(name, email)")
     .order("start_date", { ascending: false });
 
   if (status) {
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("skc_users").select("role").eq("id", user.id).single();
   const allowedRoles = ["teacher", "project_staff", "rmutl_staff", "admin", "superadmin"];
   if (!profile || !allowedRoles.includes(profile.role)) {
     return NextResponse.json({ error: "ไม่มีสิทธิ์สร้างหลักสูตร" }, { status: 403 });
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     per_pass_rate_trpb, total_budget_trpb, grants_credential_level, modules } = body;
 
   // Create course
-  const { data: course, error } = await supabase.from("training_courses").insert({
+  const { data: course, error } = await supabase.from("skc_training_courses").insert({
     title,
     description,
     category: category || "general",

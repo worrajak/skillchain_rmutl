@@ -17,11 +17,11 @@ export async function GET(request: NextRequest) {
 
   // ตรวจสอบสิทธิ์ — ผู้จ้าง/staff สร้าง QR สำหรับงาน, staff สร้าง QR สำหรับอบรม
   if (jobId) {
-    const { data: job } = await supabase.from("jobs")
+    const { data: job } = await supabase.from("skc_jobs")
       .select("employer_id, title").eq("id", jobId).single();
     if (!job) return NextResponse.json({ error: "ไม่พบงาน" }, { status: 404 });
 
-    const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("skc_users").select("role").eq("id", user.id).single();
     const isStaff = ["admin", "superadmin", "project_staff", "rmutl_staff", "teacher"].includes(profile?.role ?? "");
     if (job.employer_id !== user.id && !isStaff) {
       return NextResponse.json({ error: "ไม่มีสิทธิ์สร้าง QR" }, { status: 403 });
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (courseId) {
-    const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
+    const { data: profile } = await supabase.from("skc_users").select("role").eq("id", user.id).single();
     const isStaff = ["admin", "superadmin", "project_staff", "rmutl_staff", "teacher"].includes(profile?.role ?? "");
     if (!isStaff) {
       return NextResponse.json({ error: "เฉพาะเจ้าหน้าที่/อาจารย์" }, { status: 403 });

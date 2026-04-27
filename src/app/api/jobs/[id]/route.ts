@@ -9,16 +9,16 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 
   // Try with staff_supervisor join first, fallback without it
   let { data, error } = await supabase
-    .from("jobs")
-    .select("*, employer:users!jobs_employer_id_fkey(name, email), student:users!jobs_student_id_fkey(name, email, avatar_url), staff_supervisor:users!jobs_approved_by_staff_fkey(name)")
+    .from("skc_jobs")
+    .select("*, employer:skc_users!skc_jobs_employer_id_fkey(name, email), student:skc_users!skc_jobs_student_id_fkey(name, email, avatar_url), staff_supervisor:skc_users!skc_jobs_approved_by_staff_fkey(name)")
     .eq("id", id)
     .single();
 
   if (error) {
     // Fallback: query without staff_supervisor join (FK may not exist yet)
     const result = await supabase
-      .from("jobs")
-      .select("*, employer:users!jobs_employer_id_fkey(name, email), student:users!jobs_student_id_fkey(name, email, avatar_url)")
+      .from("skc_jobs")
+      .select("*, employer:skc_users!skc_jobs_employer_id_fkey(name, email), student:skc_users!skc_jobs_student_id_fkey(name, email, avatar_url)")
       .eq("id", id)
       .single();
     data = result.data;
@@ -29,7 +29,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
 
     // Try to get staff name separately
     if (data?.approved_by_staff) {
-      const { data: staff } = await supabase.from("users").select("name").eq("id", data.approved_by_staff).single();
+      const { data: staff } = await supabase.from("skc_users").select("name").eq("id", data.approved_by_staff).single();
       (data as Record<string, unknown>).staff_supervisor = staff;
     }
   }
@@ -58,12 +58,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("skc_users").select("role").eq("id", user.id).single();
   const role = profile?.role ?? "student";
   const isStaff = ["admin", "superadmin", "project_staff", "rmutl_staff", "teacher"].includes(role);
 
   // Get current job
-  const { data: job } = await supabase.from("jobs").select("employer_id, status").eq("id", id).single();
+  const { data: job } = await supabase.from("skc_jobs").select("employer_id, status").eq("id", id).single();
   if (!job) return NextResponse.json({ error: "ไม่พบงาน" }, { status: 404 });
 
   // Only owner or staff can update
@@ -100,7 +100,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: "ไม่มีฟิลด์ที่อนุญาตให้แก้ไข" }, { status: 400 });
   }
 
-  const { data, error } = await supabase.from("jobs").update(safeBody).eq("id", id).select().single();
+  const { data, error } = await supabase.from("skc_jobs").update(safeBody).eq("id", id).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
   return NextResponse.json(data);
 }
@@ -113,11 +113,11 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // ดึงข้อมูลงาน
-  const { data: job } = await supabase.from("jobs").select("*").eq("id", id).single();
+  const { data: job } = await supabase.from("skc_jobs").select("*").eq("id", id).single();
   if (!job) return NextResponse.json({ error: "ไม่พบงาน" }, { status: 404 });
 
   // ดึง role ของผู้ใช้
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("skc_users").select("role").eq("id", user.id).single();
   const role = profile?.role ?? "student";
   const isStaff = ["admin", "superadmin", "project_staff"].includes(role);
 
@@ -125,7 +125,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   if (isStaff) {
     const body = await request.json().catch(() => ({}));
     // บันทึก log
-    await supabase.from("behavior_logs").insert({
+    await supabase.from("skc_behavior_logs").insert({
       user_id: user.id,
       job_id: id,
       event_type: "JOB_FORCE_DELETED",
@@ -140,14 +140,14 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       body: `งาน "${job.title}" ถูกลบ เหตุผล: ${body.reason ?? "-"}`,
       link: "/employer/jobs",
     });
-    const { error } = await supabase.from("jobs").delete().eq("id", id);
+    const { error } = await supabase.from("skc_jobs").delete().eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ message: "ลบงานสำเร็จ" });
   }
 
   // Rule 2: เจ้าของงาน + สถานะ OPEN (ยังไม่มีคนรับ) → ลบได้เลย
   if (job.employer_id === user.id && job.status === "OPEN" && !job.student_id) {
-    const { error } = await supabase.from("jobs").delete().eq("id", id);
+    const { error } = await supabase.from("skc_jobs").delete().eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json({ message: "ลบงานสำเร็จ" });
   }

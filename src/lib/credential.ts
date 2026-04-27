@@ -32,7 +32,7 @@ export async function checkJobEligibility(
 ): Promise<EligibilityResult> {
   // หา credential level สูงสุดที่ active
   const { data } = await supabase
-    .from("student_credentials")
+    .from("skc_student_credentials")
     .select("credential_level")
     .eq("student_id", studentId)
     .eq("is_active", true)

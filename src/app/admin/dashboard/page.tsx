@@ -69,13 +69,13 @@ export default function AdminDashboardPage() {
         { data: rUsers },
         { data: rJobs },
       ] = await Promise.all([
-        supabase.from("users").select("role"),
-        supabase.from("jobs").select("status"),
-        supabase.from("users").select("*", { count: "exact", head: true }).eq("approval_status", "PENDING"),
-        supabase.from("evaluations").select("*", { count: "exact", head: true }),
-        supabase.from("student_credentials").select("*", { count: "exact", head: true }),
-        supabase.from("users").select("id, name, email, role, approval_status, created_at").order("created_at", { ascending: false }).limit(8),
-        supabase.from("jobs").select("id, title, status, type, created_at").order("created_at", { ascending: false }).limit(5),
+        supabase.from("skc_users").select("role"),
+        supabase.from("skc_jobs").select("status"),
+        supabase.from("skc_users").select("*", { count: "exact", head: true }).eq("approval_status", "PENDING"),
+        supabase.from("skc_evaluations").select("*", { count: "exact", head: true }),
+        supabase.from("skc_student_credentials").select("*", { count: "exact", head: true }),
+        supabase.from("skc_users").select("id, name, email, role, approval_status, created_at").order("created_at", { ascending: false }).limit(8),
+        supabase.from("skc_jobs").select("id, title, status, type, created_at").order("created_at", { ascending: false }).limit(5),
       ]);
 
       // นับ role

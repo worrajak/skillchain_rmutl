@@ -86,11 +86,11 @@ export default function AdminCredentialsPage() {
     setLoading(true);
     const [{ data: creds }, { data: studs }] = await Promise.all([
       supabase
-        .from("student_credentials")
-        .select("*, student:users!student_credentials_student_id_fkey(name, email)")
+        .from("skc_student_credentials")
+        .select("*, student:skc_users!skc_student_credentials_student_id_fkey(name, email)")
         .order("created_at", { ascending: false }),
       supabase
-        .from("users")
+        .from("skc_users")
         .select("id, name, email")
         .eq("role", "student")
         .order("name"),
@@ -107,7 +107,7 @@ export default function AdminCredentialsPage() {
       toast.error("กรุณาเลือกนักศึกษาและระดับ");
       return;
     }
-    const { error } = await supabase.from("student_credentials").insert({
+    const { error } = await supabase.from("skc_student_credentials").insert({
       student_id: form.student_id,
       credential_level: form.credential_level,
       certified_by: form.certified_by,
@@ -126,7 +126,7 @@ export default function AdminCredentialsPage() {
   }
 
   async function handleToggle(id: string, isActive: boolean) {
-    await supabase.from("student_credentials").update({ is_active: !isActive }).eq("id", id);
+    await supabase.from("skc_student_credentials").update({ is_active: !isActive }).eq("id", id);
     toast.success(isActive ? "ระงับแล้ว" : "เปิดใช้งานแล้ว");
     loadData();
   }

@@ -12,7 +12,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { start_date, end_date } = await request.json();
   if (!start_date || !end_date) return NextResponse.json({ error: "ต้องระบุวันเริ่มและวันจบ" }, { status: 400 });
 
-  const { data: job } = await supabase.from("jobs").select("*").eq("id", id).single();
+  const { data: job } = await supabase.from("skc_jobs").select("*").eq("id", id).single();
   if (!job) return NextResponse.json({ error: "ไม่พบงาน" }, { status: 404 });
   if (job.status !== "ASSIGNED") return NextResponse.json({ error: "งานต้องอยู่ในสถานะ ASSIGNED" }, { status: 400 });
 
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!isStudent && !isEmployer) return NextResponse.json({ error: "ไม่มีสิทธิ์" }, { status: 403 });
 
   // บันทึกวันทำงาน + ใครเสนอ
-  await supabase.from("jobs").update({
+  await supabase.from("skc_jobs").update({
     work_start_date: start_date,
     work_end_date: end_date,
     schedule_proposed_by: user.id,
@@ -49,7 +49,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: job } = await supabase.from("jobs").select("*").eq("id", id).single();
+  const { data: job } = await supabase.from("skc_jobs").select("*").eq("id", id).single();
   if (!job) return NextResponse.json({ error: "ไม่พบงาน" }, { status: 404 });
   if (job.status !== "ASSIGNED") return NextResponse.json({ error: "งานต้องอยู่ในสถานะ ASSIGNED" }, { status: 400 });
   if (!job.work_start_date) return NextResponse.json({ error: "ยังไม่มีการเสนอวัน" }, { status: 400 });
@@ -64,7 +64,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (!isStudent && !isEmployer) return NextResponse.json({ error: "ไม่มีสิทธิ์" }, { status: 403 });
 
   // ยืนยัน → IN_PROGRESS
-  await supabase.from("jobs").update({
+  await supabase.from("skc_jobs").update({
     schedule_confirmed: true,
     status: "IN_PROGRESS",
   }).eq("id", id);

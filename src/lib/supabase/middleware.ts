@@ -29,18 +29,27 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Check Quick Session cookie (Tier 1 — QR + PIN auth)
+  const hasQuickSession = !!request.cookies.get("skc-quick-session")?.value;
+  const isAuthenticated = !!user || hasQuickSession;
+
   // Redirect unauthenticated users to login (except public pages)
-  const publicPaths = ["/", "/login", "/register", "/register-trainee", "/about", "/jobs", "/training", "/verify"];
+  const publicPaths = ["/", "/login", "/quick-login", "/register", "/register-trainee", "/about", "/jobs", "/training", "/verify"];
   const isPublic = publicPaths.some((p) =>
     request.nextUrl.pathname === p
   ) || request.nextUrl.pathname.startsWith("/api/auth")
+    || request.nextUrl.pathname.startsWith("/api/quick-auth")
+    || request.nextUrl.pathname.startsWith("/api/invitations")
     || request.nextUrl.pathname.startsWith("/jobs/")
     || request.nextUrl.pathname.startsWith("/training/")
-    || request.nextUrl.pathname.startsWith("/verify/");
+    || request.nextUrl.pathname.startsWith("/verify/")
+    || request.nextUrl.pathname.startsWith("/invite/")
+    || request.nextUrl.pathname.startsWith("/j/");
 
-  if (!user && !isPublic) {
+  if (!isAuthenticated && !isPublic) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/quick-login";
+    url.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(url);
   }
 

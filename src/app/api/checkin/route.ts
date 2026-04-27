@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   }
 
   // ตรวจสอบว่าเป็น student ของงานนี้
-  const { data: job } = await supabase.from("jobs")
+  const { data: job } = await supabase.from("skc_jobs")
     .select("student_id, employer_id, title, status")
     .eq("id", job_id).single();
 
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "งานไม่อยู่ในสถานะที่เช็คอินได้" }, { status: 400 });
   }
 
-  const { data, error } = await supabase.from("job_checkins").insert({
+  const { data, error } = await supabase.from("skc_job_checkins").insert({
     job_id,
     user_id: user.id,
     type,
@@ -69,8 +69,8 @@ export async function GET(request: NextRequest) {
   const jobId = new URL(request.url).searchParams.get("job_id");
   if (!jobId) return NextResponse.json({ error: "ต้องระบุ job_id" }, { status: 400 });
 
-  const { data, error } = await supabase.from("job_checkins")
-    .select("*, user:users!job_checkins_user_id_fkey(name)")
+  const { data, error } = await supabase.from("skc_job_checkins")
+    .select("*, user:skc_users!skc_job_checkins_user_id_fkey(name)")
     .eq("job_id", jobId)
     .order("created_at", { ascending: false });
 

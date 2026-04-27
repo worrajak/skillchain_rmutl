@@ -47,9 +47,9 @@ export default function VerifyPage() {
 
     // Find enrollment by certificate number
     const { data: enrollment } = await supabase
-      .from("training_enrollments")
+      .from("skc_training_enrollments")
       .select(
-        "*, trainee:users!training_enrollments_trainee_id_fkey(name, email)"
+        "*, trainee:skc_users!skc_training_enrollments_trainee_id_fkey(name, email)"
       )
       .eq("certificate_number", certNumber.trim())
       .single();
@@ -62,7 +62,7 @@ export default function VerifyPage() {
 
     // Get course info
     const { data: course } = await supabase
-      .from("training_courses")
+      .from("skc_training_courses")
       .select("title, provider, total_hours, grants_credential_level")
       .eq("id", enrollment.course_id)
       .single();

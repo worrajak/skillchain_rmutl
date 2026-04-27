@@ -23,7 +23,7 @@ export default function AdminFeesPage() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from("fee_config").select("*").limit(1).single();
+      const { data } = await supabase.from("skc_fee_config").select("*").limit(1).single();
       if (data) {
         setStudentBps(data.student_bps);
         setFundBps(data.fund_bps);
@@ -43,15 +43,15 @@ export default function AdminFeesPage() {
     if (!isValid) { toast.error("ผลรวมต้องเป็น 100%"); return; }
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
-    const { data: existing } = await supabase.from("fee_config").select("id").limit(1).single();
+    const { data: existing } = await supabase.from("skc_fee_config").select("id").limit(1).single();
 
     if (existing) {
-      await supabase.from("fee_config").update({
+      await supabase.from("skc_fee_config").update({
         student_bps: studentBps, fund_bps: fundBps, mentor_bps: mentorBps, staff_bps: staffBps,
         updated_by: user?.id, updated_at: new Date().toISOString(),
       }).eq("id", existing.id);
     } else {
-      await supabase.from("fee_config").insert({
+      await supabase.from("skc_fee_config").insert({
         student_bps: studentBps, fund_bps: fundBps, mentor_bps: mentorBps, staff_bps: staffBps,
         updated_by: user?.id,
       });

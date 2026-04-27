@@ -92,7 +92,7 @@ export function ImageUpload({
 
         // Insert record in DB
         const { data: record, error: dbError } = await supabase
-          .from("job_images")
+          .from("skc_job_images")
           .insert({
             job_id: jobId,
             image_url: publicUrl,
@@ -128,7 +128,7 @@ export function ImageUpload({
 
   async function handleDeleteExisting(imageId: string) {
     const { error } = await supabase
-      .from("job_images")
+      .from("skc_job_images")
       .delete()
       .eq("id", imageId);
     if (error) {

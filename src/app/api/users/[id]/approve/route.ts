@@ -20,7 +20,7 @@ export async function POST(
 
   // ตรวจสอบ role ของผู้อนุมัติ
   const { data: myProfile } = await supabase
-    .from("users")
+    .from("skc_users")
     .select("role")
     .eq("id", me.id)
     .single();
@@ -41,7 +41,7 @@ export async function POST(
 
   // ดึงข้อมูลผู้ใช้ที่จะอนุมัติ
   const { data: targetUser } = await supabase
-    .from("users")
+    .from("skc_users")
     .select("id, role, wallet_address, approval_status")
     .eq("id", userId)
     .single();
@@ -59,7 +59,7 @@ export async function POST(
 
   // อนุมัติผู้ใช้ก่อน (สำคัญสุด)
   const { error } = await supabase
-    .from("users")
+    .from("skc_users")
     .update({
       approval_status: "APPROVED",
       approved_by: me.id,
@@ -83,7 +83,7 @@ export async function POST(
 
       // บันทึก wallet
       const { error: walletErr } = await supabase
-        .from("users")
+        .from("skc_users")
         .update({
           wallet_address: walletAddress,
           wallet_private_key: encryptedKey,
@@ -93,7 +93,7 @@ export async function POST(
       if (walletErr) {
         // ลองบันทึกแค่ wallet_address (กรณี column wallet_private_key ยังไม่มี)
         const { error: walletErr2 } = await supabase
-          .from("users")
+          .from("skc_users")
           .update({ wallet_address: walletAddress })
           .eq("id", userId);
 
@@ -118,7 +118,7 @@ export async function POST(
   }
 
   // บันทึก log
-  await supabase.from("approval_logs").insert({
+  await supabase.from("skc_approval_logs").insert({
     user_id: userId,
     approved_by: me.id,
     action: "APPROVED",

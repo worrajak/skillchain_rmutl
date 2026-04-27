@@ -20,13 +20,13 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- Training Courses
-CREATE TABLE IF NOT EXISTS training_courses (
+CREATE TABLE IF NOT EXISTS skc_training_courses (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
   description TEXT NOT NULL,
   category TEXT NOT NULL DEFAULT 'general',     -- electrical, hvac, automotive, general
   provider training_provider NOT NULL DEFAULT 'RMUTL_TEACHER',
-  instructor_id UUID NOT NULL REFERENCES users(id),
+  instructor_id UUID NOT NULL REFERENCES skc_users(id),
   status course_status NOT NULL DEFAULT 'DRAFT',
 
   -- เวลาและความจุ
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS training_courses (
 -- Training Modules (บทเรียนย่อยของหลักสูตร)
 CREATE TABLE IF NOT EXISTS training_modules (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  course_id UUID NOT NULL REFERENCES training_courses(id) ON DELETE CASCADE,
+  course_id UUID NOT NULL REFERENCES skc_training_courses(id) ON DELETE CASCADE,
   sort_order INT NOT NULL DEFAULT 0,
   title TEXT NOT NULL,
   description TEXT,
@@ -73,10 +73,10 @@ CREATE TABLE IF NOT EXISTS training_modules (
 );
 
 -- Training Enrollments (ลงทะเบียนเรียน)
-CREATE TABLE IF NOT EXISTS training_enrollments (
+CREATE TABLE IF NOT EXISTS skc_training_enrollments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  course_id UUID NOT NULL REFERENCES training_courses(id) ON DELETE CASCADE,
-  trainee_id UUID NOT NULL REFERENCES users(id),
+  course_id UUID NOT NULL REFERENCES skc_training_courses(id) ON DELETE CASCADE,
+  trainee_id UUID NOT NULL REFERENCES skc_users(id),
   is_external BOOLEAN NOT NULL DEFAULT false,
   enrolled_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   completed_at TIMESTAMPTZ,
@@ -90,11 +90,11 @@ CREATE TABLE IF NOT EXISTS training_enrollments (
 CREATE TABLE IF NOT EXISTS module_assessments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   module_id UUID NOT NULL REFERENCES training_modules(id) ON DELETE CASCADE,
-  enrollment_id UUID NOT NULL REFERENCES training_enrollments(id) ON DELETE CASCADE,
+  enrollment_id UUID NOT NULL REFERENCES skc_training_enrollments(id) ON DELETE CASCADE,
   passed BOOLEAN NOT NULL DEFAULT false,
   score REAL,
   evidence_url TEXT,           -- รูป/ไฟล์หลักฐาน
-  assessor_id UUID NOT NULL REFERENCES users(id),
+  assessor_id UUID NOT NULL REFERENCES skc_users(id),
   note TEXT,
   on_chain_tx TEXT,
   assessed_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -103,31 +103,31 @@ CREATE TABLE IF NOT EXISTS module_assessments (
 );
 
 -- RLS Policies
-ALTER TABLE training_courses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE skc_training_courses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE training_modules ENABLE ROW LEVEL SECURITY;
-ALTER TABLE training_enrollments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE skc_training_enrollments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE module_assessments ENABLE ROW LEVEL SECURITY;
 
--- Read: authenticated users
-CREATE POLICY "training_courses_read" ON training_courses FOR SELECT TO authenticated USING (true);
+-- Read: authenticated skc_users
+CREATE POLICY "training_courses_read" ON skc_training_courses FOR SELECT TO authenticated USING (true);
 CREATE POLICY "training_modules_read" ON training_modules FOR SELECT TO authenticated USING (true);
-CREATE POLICY "training_enrollments_read" ON training_enrollments FOR SELECT TO authenticated USING (true);
+CREATE POLICY "training_enrollments_read" ON skc_training_enrollments FOR SELECT TO authenticated USING (true);
 CREATE POLICY "module_assessments_read" ON module_assessments FOR SELECT TO authenticated USING (true);
 
 -- Insert: staff/instructor for courses/modules, anyone authenticated for enrollments
-CREATE POLICY "training_courses_insert" ON training_courses FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "training_courses_insert" ON skc_training_courses FOR INSERT TO authenticated WITH CHECK (true);
 CREATE POLICY "training_modules_insert" ON training_modules FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "training_enrollments_insert" ON training_enrollments FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "training_enrollments_insert" ON skc_training_enrollments FOR INSERT TO authenticated WITH CHECK (true);
 CREATE POLICY "module_assessments_insert" ON module_assessments FOR INSERT TO authenticated WITH CHECK (true);
 
 -- Update: staff/instructor
-CREATE POLICY "training_courses_update" ON training_courses FOR UPDATE TO authenticated USING (true);
-CREATE POLICY "training_enrollments_update" ON training_enrollments FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "training_courses_update" ON skc_training_courses FOR UPDATE TO authenticated USING (true);
+CREATE POLICY "training_enrollments_update" ON skc_training_enrollments FOR UPDATE TO authenticated USING (true);
 CREATE POLICY "module_assessments_update" ON module_assessments FOR UPDATE TO authenticated USING (true);
 
 -- Indexes
-CREATE INDEX IF NOT EXISTS idx_training_courses_status ON training_courses(status);
-CREATE INDEX IF NOT EXISTS idx_training_courses_instructor ON training_courses(instructor_id);
-CREATE INDEX IF NOT EXISTS idx_training_enrollments_course ON training_enrollments(course_id);
-CREATE INDEX IF NOT EXISTS idx_training_enrollments_trainee ON training_enrollments(trainee_id);
+CREATE INDEX IF NOT EXISTS idx_training_courses_status ON skc_training_courses(status);
+CREATE INDEX IF NOT EXISTS idx_training_courses_instructor ON skc_training_courses(instructor_id);
+CREATE INDEX IF NOT EXISTS idx_training_enrollments_course ON skc_training_enrollments(course_id);
+CREATE INDEX IF NOT EXISTS idx_training_enrollments_trainee ON skc_training_enrollments(trainee_id);
 CREATE INDEX IF NOT EXISTS idx_module_assessments_enrollment ON module_assessments(enrollment_id);

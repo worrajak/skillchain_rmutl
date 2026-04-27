@@ -63,7 +63,7 @@ export function MentorReviewForm({
     if (!allScored) return;
     setLoading(true);
 
-    const { error } = await supabase.from("mentor_reviews").insert({
+    const { error } = await supabase.from("skc_mentor_reviews").insert({
       job_id: jobId,
       mentor_id: mentorId,
       trainee_id: traineeId,

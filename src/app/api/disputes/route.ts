@@ -13,8 +13,8 @@ export async function GET(request: NextRequest) {
   const jobId = searchParams.get("job_id");
   const status = searchParams.get("status");
 
-  let query = supabase.from("disputes")
-    .select("*, job:jobs(title), raised_by_user:users!disputes_raised_by_fkey(name), raised_against_user:users!disputes_raised_against_fkey(name), arbitrator:users!disputes_arbitrator_id_fkey(name)")
+  let query = supabase.from("skc_disputes")
+    .select("*, job:skc_jobs(title), raised_by_user:skc_users!skc_disputes_raised_by_fkey(name), raised_against_user:skc_users!skc_disputes_raised_against_fkey(name), arbitrator:skc_users!skc_disputes_arbitrator_id_fkey(name)")
     .order("created_at", { ascending: false });
 
   if (jobId) query = query.eq("job_id", jobId);
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
   }
 
   // สร้าง dispute
-  const { data, error } = await supabase.from("disputes").insert({
+  const { data, error } = await supabase.from("skc_disputes").insert({
     job_id,
     raised_by: user.id,
     raised_against,
@@ -55,10 +55,10 @@ export async function POST(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
 
   // เปลี่ยนสถานะงานเป็น DISPUTED
-  await supabase.from("jobs").update({ status: "DISPUTED" }).eq("id", job_id);
+  await supabase.from("skc_jobs").update({ status: "DISPUTED" }).eq("id", job_id);
 
   // แจ้ง staff/admin + ฝ่ายตรงข้าม
-  const { data: staffUsers } = await supabase.from("users").select("id")
+  const { data: staffUsers } = await supabase.from("skc_users").select("id")
     .in("role", ["admin", "superadmin", "project_staff"]).eq("approval_status", "APPROVED");
 
   const notifs = [

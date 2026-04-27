@@ -89,8 +89,8 @@ export default function AdminJobsPage() {
   async function loadJobs() {
     setLoading(true);
     let query = supabase
-      .from("jobs")
-      .select("*, employer:users!jobs_employer_id_fkey(name), student:users!jobs_student_id_fkey(name)")
+      .from("skc_jobs")
+      .select("*, employer:skc_users!skc_jobs_employer_id_fkey(name), student:skc_users!skc_jobs_student_id_fkey(name)")
       .order("created_at", { ascending: false });
 
     if (filterStatus !== "all") query = query.eq("status", filterStatus);
@@ -105,7 +105,7 @@ export default function AdminJobsPage() {
 
   async function handleUpdateStatus(jobId: string, newStatus: string) {
     const { error } = await supabase
-      .from("jobs")
+      .from("skc_jobs")
       .update({ status: newStatus })
       .eq("id", jobId);
 
@@ -120,7 +120,7 @@ export default function AdminJobsPage() {
 
   async function handleDelete(job: Job) {
     if (!confirm(`ต้องการลบงาน "${job.title}" จริงหรือไม่?`)) return;
-    const { error } = await supabase.from("jobs").delete().eq("id", job.id);
+    const { error } = await supabase.from("skc_jobs").delete().eq("id", job.id);
     if (!error) {
       toast.success("ลบสำเร็จ");
       loadJobs();

@@ -14,11 +14,11 @@ export default function DonorImpactPage() {
   useEffect(() => {
     async function load() {
       const [{ data: donations }, { count: donors }, { count: students }, { count: jobs }, { count: creds }] = await Promise.all([
-        supabase.from("donation_funds").select("amount"),
-        supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "donor"),
-        supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "student"),
-        supabase.from("jobs").select("*", { count: "exact", head: true }).eq("status", "COMPLETED"),
-        supabase.from("student_credentials").select("*", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("skc_donation_funds").select("amount"),
+        supabase.from("skc_users").select("*", { count: "exact", head: true }).eq("role", "donor"),
+        supabase.from("skc_users").select("*", { count: "exact", head: true }).eq("role", "student"),
+        supabase.from("skc_jobs").select("*", { count: "exact", head: true }).eq("status", "COMPLETED"),
+        supabase.from("skc_student_credentials").select("*", { count: "exact", head: true }).eq("is_active", true),
       ]);
 
       setStats({

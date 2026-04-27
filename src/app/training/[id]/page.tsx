@@ -88,7 +88,7 @@ export default function CourseDetailPage() {
       if (user) {
         setUserId(user.id);
         const { data: profile } = await supabase
-          .from("users")
+          .from("skc_users")
           .select("role")
           .eq("id", user.id)
           .single();

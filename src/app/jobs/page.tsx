@@ -26,8 +26,8 @@ export default async function PublicJobsPage({
   const supabase = await createClient();
 
   let query = supabase
-    .from("jobs")
-    .select("*, employer:users!jobs_employer_id_fkey(name, organization, campus)")
+    .from("skc_jobs")
+    .select("*, employer:skc_users!skc_jobs_employer_id_fkey(name, organization, campus)")
     .eq("status", "OPEN")
     .order("created_at", { ascending: false });
 

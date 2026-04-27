@@ -16,7 +16,7 @@ export default function DonorAuditPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { setLoading(false); return; }
 
-      const { data } = await supabase.from("donation_funds")
+      const { data } = await supabase.from("skc_donation_funds")
         .select("*")
         .eq("donor_id", user.id)
         .order("created_at", { ascending: false });

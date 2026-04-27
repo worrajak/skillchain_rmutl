@@ -41,7 +41,7 @@ export default function StudentWalletPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("กรุณาเข้าสู่ระบบ"); setConnecting(false); return; }
 
-    const { error } = await supabase.from("users").update({ wallet_address: address }).eq("id", user.id);
+    const { error } = await supabase.from("skc_users").update({ wallet_address: address }).eq("id", user.id);
     setConnecting(false);
 
     if (!error) {

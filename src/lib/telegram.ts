@@ -38,7 +38,7 @@ export async function notifyViaTelegram(
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data } = await (supabase as any).from("users").select("telegram_chat_id").eq("id", userId).single();
+    const { data } = await (supabase as any).from("skc_users").select("telegram_chat_id").eq("id", userId).single();
     if (data?.telegram_chat_id) {
       await sendTelegramMessage(data.telegram_chat_id, `<b>${title}</b>\n${body}`, link);
     }
@@ -60,7 +60,7 @@ export async function createNotification(
 ): Promise<void> {
   // Insert to DB
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any).from("notifications").insert(notification);
+  await (supabase as any).from("skc_notifications").insert(notification);
 
   // Send Telegram (non-blocking)
   notifyViaTelegram(supabase, notification.user_id, notification.title, notification.body, notification.link);
@@ -79,7 +79,7 @@ export async function createNotifications(
 ): Promise<void> {
   // Insert all to DB
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase as any).from("notifications").insert(notifications);
+  await (supabase as any).from("skc_notifications").insert(notifications);
 
   // Send Telegram to each (non-blocking)
   for (const n of notifications) {

@@ -12,7 +12,7 @@ export async function POST(
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // Check course status
-  const { data: course } = await supabase.from("training_courses")
+  const { data: course } = await supabase.from("skc_training_courses")
     .select("status, max_participants, is_open_to_external")
     .eq("id", courseId).single();
 
@@ -22,7 +22,7 @@ export async function POST(
   }
 
   // Check user role
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("skc_users").select("role").eq("id", user.id).single();
   const isExternal = profile?.role === "trainee";
 
   if (isExternal && !course.is_open_to_external) {
@@ -30,7 +30,7 @@ export async function POST(
   }
 
   // Check capacity
-  const { count } = await supabase.from("training_enrollments")
+  const { count } = await supabase.from("skc_training_enrollments")
     .select("*", { count: "exact", head: true }).eq("course_id", courseId);
 
   if ((count ?? 0) >= course.max_participants) {
@@ -38,7 +38,7 @@ export async function POST(
   }
 
   // Enroll
-  const { error } = await supabase.from("training_enrollments").insert({
+  const { error } = await supabase.from("skc_training_enrollments").insert({
     course_id: courseId,
     trainee_id: user.id,
     is_external: isExternal,

@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
   }
 
   // ตรวจ role: เฉพาะอาจารย์และ staff เท่านั้น
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("skc_users").select("role").eq("id", user.id).single();
   const evaluatorRoles = ["teacher", "project_staff", "rmutl_staff", "admin", "superadmin"];
   if (!profile || !evaluatorRoles.includes(profile.role)) {
     return NextResponse.json({ error: "เฉพาะอาจารย์/คณะทำงานเท่านั้นที่ประเมินได้" }, { status: 403 });
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Verify job exists and is in evaluatable state
-  const { data: job } = await supabase.from("jobs").select("status, student_id").eq("id", job_id).single();
+  const { data: job } = await supabase.from("skc_jobs").select("status, student_id").eq("id", job_id).single();
   if (!job) return NextResponse.json({ error: "ไม่พบงาน" }, { status: 404 });
   if (!["SUBMITTED", "COMPLETED"].includes(job.status)) {
     return NextResponse.json({ error: "งานยังไม่อยู่ในสถานะที่ประเมินได้" }, { status: 400 });
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
   const weighted_score =
     Number(score_quality) * 0.4 + Number(score_skill) * 0.3 + Number(score_time) * 0.2 + Number(score_tool) * 0.1;
 
-  const { data, error } = await supabase.from("evaluations").insert({
+  const { data, error } = await supabase.from("skc_evaluations").insert({
     job_id,
     student_id,
     teacher_id: user.id,
@@ -85,8 +85,8 @@ export async function GET(request: NextRequest) {
   const studentId = searchParams.get("student_id");
 
   let query = supabase
-    .from("evaluations")
-    .select("*, teacher:users!evaluations_teacher_id_fkey(name), job:jobs(title)")
+    .from("skc_evaluations")
+    .select("*, teacher:skc_users!skc_evaluations_teacher_id_fkey(name), job:skc_jobs(title)")
     .order("created_at", { ascending: false });
 
   if (studentId) {

@@ -36,10 +36,10 @@ export default function AdminReviewsPage() {
   useEffect(() => {
     async function load() {
       const [{ data: evals }, { data: empR }, { data: stuR }, { data: menR }] = await Promise.all([
-        supabase.from("evaluations").select("*, teacher:users!evaluations_teacher_id_fkey(name), student:users!evaluations_student_id_fkey(name), job:jobs(title)").order("created_at", { ascending: false }).limit(50),
-        supabase.from("employer_reviews").select("*, employer:users!employer_reviews_employer_id_fkey(name), student:users!employer_reviews_student_id_fkey(name), job:jobs(title)").order("created_at", { ascending: false }).limit(50),
-        supabase.from("student_reviews").select("*, student:users!student_reviews_student_id_fkey(name), employer:users!student_reviews_employer_id_fkey(name), job:jobs(title)").order("created_at", { ascending: false }).limit(50),
-        supabase.from("mentor_reviews").select("*, mentor:users!mentor_reviews_mentor_id_fkey(name), trainee:users!mentor_reviews_trainee_id_fkey(name), job:jobs(title)").order("created_at", { ascending: false }).limit(50),
+        supabase.from("skc_evaluations").select("*, teacher:skc_users!skc_evaluations_teacher_id_fkey(name), student:skc_users!skc_evaluations_student_id_fkey(name), job:skc_jobs(title)").order("created_at", { ascending: false }).limit(50),
+        supabase.from("skc_employer_reviews").select("*, employer:skc_users!skc_employer_reviews_employer_id_fkey(name), student:skc_users!skc_employer_reviews_student_id_fkey(name), job:skc_jobs(title)").order("created_at", { ascending: false }).limit(50),
+        supabase.from("skc_student_reviews").select("*, student:skc_users!skc_student_reviews_student_id_fkey(name), employer:skc_users!skc_student_reviews_employer_id_fkey(name), job:skc_jobs(title)").order("created_at", { ascending: false }).limit(50),
+        supabase.from("skc_mentor_reviews").select("*, mentor:skc_users!skc_mentor_reviews_mentor_id_fkey(name), trainee:skc_users!skc_mentor_reviews_trainee_id_fkey(name), job:skc_jobs(title)").order("created_at", { ascending: false }).limit(50),
       ]);
       setEvaluations(evals ?? []);
       setEmployerReviews(empR ?? []);

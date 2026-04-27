@@ -74,7 +74,7 @@ model User {
   certifier_credentials         StudentCredential[] @relation("CertifierCredentials")
   assignment_requests           JobAssignmentRequest[] @relation("StudentAssignmentRequests")
 
-  @@map("users")
+  @@map("skc_users")
 }
 
 // ==================== Student Tier System ====================
@@ -95,7 +95,7 @@ model StudentTier {
   promoted_at            DateTime?
   student                User      @relation(fields: [student_id], references: [id])
 
-  @@map("student_tiers")
+  @@map("skc_student_tiers")
 }
 
 enum BadgeLevel {
@@ -149,7 +149,7 @@ model StudentCredential {
 
   @@index([student_id])
   @@index([credential_level])
-  @@map("student_credentials")
+  @@map("skc_student_credentials")
 }
 
 model StudentQualification {
@@ -163,7 +163,7 @@ model StudentQualification {
   suspended_until DateTime?
   student         User       @relation(fields: [student_id], references: [id])
 
-  @@map("student_qualifications")
+  @@map("skc_student_qualifications")
 }
 
 enum AvailabilityStatus {
@@ -180,7 +180,7 @@ model StudentAvailability {
   location     String?
   student      User               @relation(fields: [student_id], references: [id])
 
-  @@map("student_availability")
+  @@map("skc_student_availability")
 }
 
 // ==================== Jobs ====================
@@ -264,7 +264,7 @@ model Job {
   @@index([campus])
   @@index([employer_id])
   @@index([student_id])
-  @@map("jobs")
+  @@map("skc_jobs")
 }
 
 enum AssignmentRequestStatus {
@@ -291,7 +291,7 @@ model JobAssignmentRequest {
   @@unique([job_id, student_id])
   @@index([status])
   @@index([student_id])
-  @@map("job_assignment_requests")
+  @@map("skc_job_assignment_requests")
 }
 
 // ==================== Evaluations ====================
@@ -317,7 +317,7 @@ model Evaluation {
   student User @relation("StudentEvaluations", fields: [student_id], references: [id])
   teacher User @relation("TeacherEvaluations", fields: [teacher_id], references: [id])
 
-  @@map("evaluations")
+  @@map("skc_evaluations")
 }
 
 // ==================== Fund System ====================
@@ -334,7 +334,7 @@ model DonationFund {
 
   donor User @relation(fields: [donor_id], references: [id])
 
-  @@map("donation_funds")
+  @@map("skc_donation_funds")
 }
 
 // ==================== Reviews (Multi-source Rating) ====================
@@ -361,7 +361,7 @@ model EmployerReview {
   @@unique([job_id, employer_id, student_id])
   @@index([student_id])
   @@index([employer_id])
-  @@map("employer_reviews")
+  @@map("skc_employer_reviews")
 }
 
 model StudentReview {
@@ -386,7 +386,7 @@ model StudentReview {
   @@unique([job_id, student_id, employer_id])
   @@index([employer_id])
   @@index([student_id])
-  @@map("student_reviews")
+  @@map("skc_student_reviews")
 }
 
 model MentorReview {
@@ -412,7 +412,7 @@ model MentorReview {
   @@unique([job_id, mentor_id, trainee_id])
   @@index([trainee_id])
   @@index([mentor_id])
-  @@map("mentor_reviews")
+  @@map("skc_mentor_reviews")
 }
 
 // ==================== Behavior Log ====================
@@ -440,7 +440,7 @@ model BehaviorLog {
 
   @@index([user_id])
   @@index([event_type])
-  @@map("behavior_logs")
+  @@map("skc_behavior_logs")
 }
 
 // ==================== Notifications ====================
@@ -457,7 +457,7 @@ model Notification {
 
   @@index([user_id])
   @@index([user_id, is_read])
-  @@map("notifications")
+  @@map("skc_notifications")
 }
 
 // ==================== Chat ====================
@@ -474,7 +474,7 @@ model JobChatRoom {
   messages     ChatMessage[]
   participants ChatParticipant[]
 
-  @@map("job_chat_rooms")
+  @@map("skc_job_chat_rooms")
 }
 
 model ChatMessage {
@@ -491,7 +491,7 @@ model ChatMessage {
   room JobChatRoom @relation(fields: [room_id], references: [id], onDelete: Cascade)
 
   @@index([room_id, created_at])
-  @@map("chat_messages")
+  @@map("skc_chat_messages")
 }
 
 model ChatParticipant {
@@ -505,7 +505,7 @@ model ChatParticipant {
   room JobChatRoom @relation(fields: [room_id], references: [id], onDelete: Cascade)
 
   @@unique([room_id, user_id])
-  @@map("chat_participants")
+  @@map("skc_chat_participants")
 }
 
 // ==================== Job Cancellation / Agreement ====================
@@ -529,7 +529,7 @@ model JobCancellationRequest {
   created_at    DateTime           @default(now())
 
   @@index([status])
-  @@map("job_cancellation_requests")
+  @@map("skc_job_cancellation_requests")
 }
 
 enum AgreementStatus {
@@ -550,7 +550,7 @@ model JobAgreement {
   created_at     DateTime        @default(now())
 
   @@index([job_id])
-  @@map("job_agreements")
+  @@map("skc_job_agreements")
 }
 
 // ==================== Disputes ====================
@@ -579,7 +579,7 @@ model Dispute {
 
   @@index([job_id])
   @@index([status])
-  @@map("disputes")
+  @@map("skc_disputes")
 }
 
 // ==================== Approval Logs ====================
@@ -599,7 +599,7 @@ model ApprovalLog {
   created_at  DateTime          @default(now())
 
   @@index([user_id])
-  @@map("approval_logs")
+  @@map("skc_approval_logs")
 }
 
 // ==================== Fee Config ====================
@@ -613,7 +613,7 @@ model FeeConfig {
   updated_by  String?
   updated_at  DateTime @default(now()) @updatedAt
 
-  @@map("fee_config")
+  @@map("skc_fee_config")
 }
 
 // ==================== Rating Summary Views ====================
@@ -635,7 +635,7 @@ model StudentRatingSummary {
   mentor_review_count   BigInt?
   combined_score        Float?
 
-  @@map("student_rating_summary")
+  @@map("skc_student_rating_summary")
 }
 
 model EmployerRatingSummary {
@@ -647,5 +647,5 @@ model EmployerRatingSummary {
   avg_payment  Float?
   avg_safety   Float?
 
-  @@map("employer_rating_summary")
+  @@map("skc_employer_rating_summary")
 }

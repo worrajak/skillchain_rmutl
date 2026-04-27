@@ -11,7 +11,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // ตรวจสอบ role
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("skc_users").select("role").eq("id", user.id).single();
   if (!profile || !["admin", "superadmin", "project_staff"].includes(profile.role)) {
     return NextResponse.json({ error: "เฉพาะ staff/admin เท่านั้น" }, { status: 403 });
   }
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const contentHash = await hashReviewContent({ id, status, resolution, resolution_terms, resolved_by: user.id, resolved_at: new Date().toISOString() });
 
-  const { data, error } = await supabase.from("disputes").update({
+  const { data, error } = await supabase.from("skc_disputes").update({
     status,
     resolution,
     resolution_terms: resolution_terms ?? null,

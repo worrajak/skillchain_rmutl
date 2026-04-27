@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createNotification } from "@/lib/telegram";
 import { TronWeb } from "tronweb";
 import JobEscrowABI from "@/lib/tron/abi/JobEscrow.json";
+import { checkCanReleaseEscrow } from "@/lib/gov-sync";
 
 // POST /api/jobs/[id]/release-escrow
 // คณะทำงาน (project_staff/admin) กดปล่อยค่าจ้าง on-chain
@@ -21,7 +22,7 @@ export async function POST(
 
   // ตรวจสอบ role: เฉพาะ staff/admin
   const { data: profile } = await supabase
-    .from("users")
+    .from("skc_users")
     .select("role")
     .eq("id", user.id)
     .single();
@@ -36,7 +37,7 @@ export async function POST(
 
   // ตรวจสอบ job status
   const { data: job } = await supabase
-    .from("jobs")
+    .from("skc_jobs")
     .select("status, escrow_tx, pay_amount, student_id, employer_id, type")
     .eq("id", jobId)
     .single();
@@ -44,6 +45,18 @@ export async function POST(
   if (!job) return NextResponse.json({ error: "ไม่พบงาน" }, { status: 404 });
   if (job.status !== "COMPLETED")
     return NextResponse.json({ error: "งานยังไม่เสร็จสมบูรณ์" }, { status: 400 });
+
+  // ===== GOV GATE CHECK =====
+  // ห้ามปล่อย Escrow จนกว่า disbursement จะได้รับอนุมัติจากฝ่ายการเงิน
+  const gate = await checkCanReleaseEscrow(supabase, jobId);
+  if (!gate.allowed) {
+    return NextResponse.json({
+      error: gate.reason,
+      suggestedAction: gate.suggestedAction,
+      currentGovStatus: gate.currentGovStatus,
+      hint: "ต้องผ่านการอนุมัติใบเบิกจากฝ่ายการเงินก่อนจึงจะปล่อย Escrow ได้",
+    }, { status: 403 });
+  }
   if (job.escrow_tx)
     return NextResponse.json({ error: "จ่ายค่าจ้างไปแล้ว", tx_hash: job.escrow_tx }, { status: 400 });
   if (job.type !== "PAID" || !job.pay_amount)
@@ -52,7 +65,7 @@ export async function POST(
   // ตรวจโควต้าผู้ว่าจ้าง (ถ้าตั้งไว้)
   if (job.employer_id) {
     const { data: employer } = await supabase
-      .from("users")
+      .from("skc_users")
       .select("job_quota, job_quota_used")
       .eq("id", job.employer_id)
       .single();
@@ -103,7 +116,7 @@ export async function POST(
       let studentWallet: string | null = null;
       if (job.student_id) {
         const { data: studentProfile } = await supabase
-          .from("users")
+          .from("skc_users")
           .select("wallet_address")
           .eq("id", job.student_id)
           .single();
@@ -126,7 +139,7 @@ export async function POST(
 
     if (info.released) {
       // On-chain released แล้วแต่ DB ยังไม่มี tx → sync
-      await supabase.from("jobs").update({ escrow_tx: "already-released-on-chain" }).eq("id", jobId);
+      await supabase.from("skc_jobs").update({ escrow_tx: "already-released-on-chain" }).eq("id", jobId);
       return NextResponse.json({
         message: "Escrow ถูก release ไปแล้ว on-chain — sync DB เรียบร้อย",
         tx_hash: "already-released-on-chain",
@@ -138,18 +151,18 @@ export async function POST(
     const txHash = typeof releaseTx === "string" ? releaseTx : releaseTx.txid || releaseTx;
 
     // บันทึก tx hash ใน DB
-    await supabase.from("jobs").update({ escrow_tx: txHash }).eq("id", jobId);
+    await supabase.from("skc_jobs").update({ escrow_tx: txHash }).eq("id", jobId);
 
     // อัปเดตโควต้าผู้ว่าจ้าง (+1)
     if (job.employer_id) {
       const { data: emp } = await supabase
-        .from("users")
+        .from("skc_users")
         .select("job_quota_used")
         .eq("id", job.employer_id)
         .single();
       if (emp) {
         await supabase
-          .from("users")
+          .from("skc_users")
           .update({ job_quota_used: (emp.job_quota_used ?? 0) + 1 })
           .eq("id", job.employer_id);
       }

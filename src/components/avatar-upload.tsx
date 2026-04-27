@@ -72,7 +72,7 @@ export function AvatarUpload({
 
       // Update user record
       const { error: dbError } = await supabase
-        .from("users")
+        .from("skc_users")
         .update({ avatar_url: url })
         .eq("id", userId);
 

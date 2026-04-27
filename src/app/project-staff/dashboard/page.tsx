@@ -19,14 +19,14 @@ export default function ProjectStaffDashboardPage() {
         { count: pr }, { count: pa }, { count: pd }, { count: pc },
         { count: aj }, { count: ts }, { count: tc }, { count: trn },
       ] = await Promise.all([
-        supabase.from("jobs").select("*", { count: "exact", head: true }).eq("status", "PENDING_REVIEW"),
-        supabase.from("job_assignment_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
-        supabase.from("disputes").select("*", { count: "exact", head: true }).in("status", ["RAISED", "UNDER_REVIEW", "MEDIATION"]),
-        supabase.from("job_cancellation_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
-        supabase.from("jobs").select("*", { count: "exact", head: true }).in("status", ["ASSIGNED", "IN_PROGRESS"]),
-        supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "student"),
-        supabase.from("student_credentials").select("*", { count: "exact", head: true }).eq("is_active", true),
-        supabase.from("training_courses").select("*", { count: "exact", head: true }).in("status", ["OPEN_ENROLLMENT", "IN_PROGRESS"]),
+        supabase.from("skc_jobs").select("*", { count: "exact", head: true }).eq("status", "PENDING_REVIEW"),
+        supabase.from("skc_job_assignment_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
+        supabase.from("skc_disputes").select("*", { count: "exact", head: true }).in("status", ["RAISED", "UNDER_REVIEW", "MEDIATION"]),
+        supabase.from("skc_job_cancellation_requests").select("*", { count: "exact", head: true }).eq("status", "PENDING"),
+        supabase.from("skc_jobs").select("*", { count: "exact", head: true }).in("status", ["ASSIGNED", "IN_PROGRESS"]),
+        supabase.from("skc_users").select("*", { count: "exact", head: true }).eq("role", "student"),
+        supabase.from("skc_student_credentials").select("*", { count: "exact", head: true }).eq("is_active", true),
+        supabase.from("skc_training_courses").select("*", { count: "exact", head: true }).in("status", ["OPEN_ENROLLMENT", "IN_PROGRESS"]),
       ]);
       setStats({
         pendingReviews: pr ?? 0, pendingAssignments: pa ?? 0, pendingDisputes: pd ?? 0, pendingCancellations: pc ?? 0,

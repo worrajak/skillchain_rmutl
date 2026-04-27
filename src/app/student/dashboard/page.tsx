@@ -68,7 +68,7 @@ export default function StudentDashboardPage() {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
     const { data: jobs } = await supabase
-      .from("jobs")
+      .from("skc_jobs")
       .select("id, title, status, type, pay_amount, deadline, created_at, employer_id, work_start_date, work_end_date, schedule_proposed_by, schedule_confirmed, approved_by_staff, staff_confirmed_completion, employer_confirmed_completion")
       .eq("student_id", authUser.id)
       .order("created_at", { ascending: false })
@@ -77,7 +77,7 @@ export default function StudentDashboardPage() {
     // Fetch staff names separately
     const staffIds = [...new Set(jobList.filter((j) => j.approved_by_staff).map((j) => j.approved_by_staff as string))];
     if (staffIds.length > 0) {
-      const { data: staffUsers } = await supabase.from("users").select("id, name").in("id", staffIds);
+      const { data: staffUsers } = await supabase.from("skc_users").select("id, name").in("id", staffIds);
       const staffMap = new Map((staffUsers ?? []).map((s) => [s.id, s.name]));
       for (const j of jobList) {
         (j as Record<string, unknown>).staff_supervisor = j.approved_by_staff ? { name: staffMap.get(j.approved_by_staff as string) ?? null } : null;
@@ -95,7 +95,7 @@ export default function StudentDashboardPage() {
 
       // Get user profile
       const { data: profile } = await supabase
-        .from("users")
+        .from("skc_users")
         .select("*")
         .eq("id", authUser.id)
         .single();
@@ -103,7 +103,7 @@ export default function StudentDashboardPage() {
 
       // Get credential
       const { data: cred } = await supabase
-        .from("student_credentials")
+        .from("skc_student_credentials")
         .select("credential_level")
         .eq("student_id", authUser.id)
         .eq("is_active", true)
@@ -114,7 +114,7 @@ export default function StudentDashboardPage() {
 
       // Get my jobs (with schedule fields)
       const { data: jobs } = await supabase
-        .from("jobs")
+        .from("skc_jobs")
         .select("id, title, status, type, pay_amount, deadline, created_at, employer_id, work_start_date, work_end_date, schedule_proposed_by, schedule_confirmed, approved_by_staff, staff_confirmed_completion, employer_confirmed_completion")
         .eq("student_id", authUser.id)
         .order("created_at", { ascending: false })
@@ -122,7 +122,7 @@ export default function StudentDashboardPage() {
       const jobList = jobs ?? [];
       const sIds = [...new Set(jobList.filter((j) => j.approved_by_staff).map((j) => j.approved_by_staff as string))];
       if (sIds.length > 0) {
-        const { data: su } = await supabase.from("users").select("id, name").in("id", sIds);
+        const { data: su } = await supabase.from("skc_users").select("id, name").in("id", sIds);
         const sm = new Map((su ?? []).map((s) => [s.id, s.name]));
         for (const j of jobList) (j as Record<string, unknown>).staff_supervisor = j.approved_by_staff ? { name: sm.get(j.approved_by_staff as string) ?? null } : null;
       }
@@ -135,10 +135,10 @@ export default function StudentDashboardPage() {
         { count: inProgress },
         { data: ratings },
       ] = await Promise.all([
-        supabase.from("jobs").select("*", { count: "exact", head: true }).eq("student_id", authUser.id),
-        supabase.from("jobs").select("*", { count: "exact", head: true }).eq("student_id", authUser.id).eq("status", "COMPLETED"),
-        supabase.from("jobs").select("*", { count: "exact", head: true }).eq("student_id", authUser.id).eq("status", "IN_PROGRESS"),
-        supabase.from("student_rating_summary").select("combined_score, teacher_review_count, employer_review_count, mentor_review_count").eq("student_id", authUser.id).single(),
+        supabase.from("skc_jobs").select("*", { count: "exact", head: true }).eq("student_id", authUser.id),
+        supabase.from("skc_jobs").select("*", { count: "exact", head: true }).eq("student_id", authUser.id).eq("status", "COMPLETED"),
+        supabase.from("skc_jobs").select("*", { count: "exact", head: true }).eq("student_id", authUser.id).eq("status", "IN_PROGRESS"),
+        supabase.from("skc_student_rating_summary").select("combined_score, teacher_review_count, employer_review_count, mentor_review_count").eq("student_id", authUser.id).single(),
       ]);
 
       const reviewCount = (ratings?.teacher_review_count ?? 0) + (ratings?.employer_review_count ?? 0) + (ratings?.mentor_review_count ?? 0);

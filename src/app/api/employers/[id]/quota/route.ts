@@ -15,7 +15,7 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { data: employer } = await supabase
-    .from("users")
+    .from("skc_users")
     .select("id, name, role, job_quota, job_quota_used")
     .eq("id", id)
     .single();
@@ -47,7 +47,7 @@ export async function PATCH(
 
   // ตรวจสิทธิ์
   const { data: profile } = await supabase
-    .from("users")
+    .from("skc_users")
     .select("role")
     .eq("id", user.id)
     .single();
@@ -71,7 +71,7 @@ export async function PATCH(
   }
 
   const { data: updated, error } = await supabase
-    .from("users")
+    .from("skc_users")
     .update({ job_quota: quota })
     .eq("id", id)
     .select("id, name, job_quota, job_quota_used")

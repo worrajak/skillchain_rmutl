@@ -66,8 +66,8 @@ export default function TeacherEvaluationPage() {
   useEffect(() => {
     async function loadJobs() {
       const { data } = await supabase
-        .from("jobs")
-        .select("id, title, student:users!jobs_student_id_fkey(name)")
+        .from("skc_jobs")
+        .select("id, title, student:skc_users!skc_jobs_student_id_fkey(name)")
         .in("status", phaseConfig.statuses)
         .order("created_at", { ascending: false });
       setJobs((data ?? []).map((j) => ({
@@ -95,9 +95,9 @@ export default function TeacherEvaluationPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("กรุณาเข้าสู่ระบบ"); setLoading(false); return; }
 
-    const { data: job } = await supabase.from("jobs").select("student_id").eq("id", selectedJob).single();
+    const { data: job } = await supabase.from("skc_jobs").select("student_id").eq("id", selectedJob).single();
 
-    const { error } = await supabase.from("evaluations").insert({
+    const { error } = await supabase.from("skc_evaluations").insert({
       job_id: selectedJob,
       student_id: job?.student_id ?? "",
       teacher_id: user.id,

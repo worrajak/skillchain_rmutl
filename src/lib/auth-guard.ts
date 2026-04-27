@@ -22,7 +22,7 @@ export async function authGuard(options?: { roles?: string[] }) {
   }
 
   const { data: profile } = await supabase
-    .from("users")
+    .from("skc_users")
     .select("role")
     .eq("id", user.id)
     .single();
@@ -54,7 +54,7 @@ export async function verifyJobParticipant(
   if (isStaffRole(role)) return true;
 
   const { data: job } = await supabase
-    .from("jobs")
+    .from("skc_jobs")
     .select("employer_id, student_id, mentor_id")
     .eq("id", jobId)
     .single();

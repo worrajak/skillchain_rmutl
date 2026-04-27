@@ -9,7 +9,7 @@ async function verifyReviewer(
   jobId: string,
   reviewType: string
 ): Promise<{ ok: boolean; error?: string }> {
-  const { data: job } = await supabase.from("jobs").select("employer_id, student_id, mentor_id, status").eq("id", jobId).single();
+  const { data: job } = await supabase.from("skc_jobs").select("employer_id, student_id, mentor_id, status").eq("id", jobId).single();
   if (!job) return { ok: false, error: "ไม่พบงานนี้" };
 
   // งานต้องอยู่ในสถานะที่ประเมินได้
@@ -17,7 +17,7 @@ async function verifyReviewer(
     return { ok: false, error: "งานยังไม่อยู่ในสถานะที่สามารถประเมินได้" };
   }
 
-  const { data: reviewer } = await supabase.from("users").select("role").eq("id", userId).single();
+  const { data: reviewer } = await supabase.from("skc_users").select("role").eq("id", userId).single();
 
   switch (reviewType) {
     case "employer":
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
     const overall_rating = (score_quality + score_punctuality + score_attitude) / 3;
-    const { data, error } = await supabase.from("employer_reviews").insert({
+    const { data, error } = await supabase.from("skc_employer_reviews").insert({
       job_id, employer_id: user.id, student_id,
       score_quality, score_punctuality, score_attitude, overall_rating,
       comment: comment || null,
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
     const overall_rating = (score_clarity + score_payment + score_safety) / 3;
-    const { data, error } = await supabase.from("student_reviews").insert({
+    const { data, error } = await supabase.from("skc_student_reviews").insert({
       job_id, student_id: user.id, employer_id,
       score_clarity, score_payment, score_safety, overall_rating,
       comment: comment || null,
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
     const weighted_score = (score_effort + score_safety + score_skill_dev) / 3;
-    const { data, error } = await supabase.from("mentor_reviews").insert({
+    const { data, error } = await supabase.from("skc_mentor_reviews").insert({
       job_id, mentor_id: user.id, trainee_id,
       score_effort, score_safety, score_skill_dev, weighted_score,
       comment: comment || null, recommend_promotion: recommend_promotion ?? false,
@@ -123,8 +123,8 @@ export async function GET(request: NextRequest) {
 
   if (type === "employer") {
     const studentId = searchParams.get("student_id");
-    let query = supabase.from("employer_reviews")
-      .select("*, employer:users!employer_reviews_employer_id_fkey(name), job:jobs(title)")
+    let query = supabase.from("skc_employer_reviews")
+      .select("*, employer:skc_users!skc_employer_reviews_employer_id_fkey(name), job:skc_jobs(title)")
       .order("created_at", { ascending: false });
     if (studentId) query = query.eq("student_id", studentId);
     const { data, error } = await query;
@@ -134,8 +134,8 @@ export async function GET(request: NextRequest) {
 
   if (type === "student") {
     const employerId = searchParams.get("employer_id");
-    let query = supabase.from("student_reviews")
-      .select("*, student:users!student_reviews_student_id_fkey(name), job:jobs(title)")
+    let query = supabase.from("skc_student_reviews")
+      .select("*, student:skc_users!skc_student_reviews_student_id_fkey(name), job:skc_jobs(title)")
       .order("created_at", { ascending: false });
     if (employerId) query = query.eq("employer_id", employerId);
     const { data, error } = await query;
@@ -145,8 +145,8 @@ export async function GET(request: NextRequest) {
 
   if (type === "mentor") {
     const traineeId = searchParams.get("trainee_id");
-    let query = supabase.from("mentor_reviews")
-      .select("*, mentor:users!mentor_reviews_mentor_id_fkey(name), job:jobs(title)")
+    let query = supabase.from("skc_mentor_reviews")
+      .select("*, mentor:skc_users!skc_mentor_reviews_mentor_id_fkey(name), job:skc_jobs(title)")
       .order("created_at", { ascending: false });
     if (traineeId) query = query.eq("trainee_id", traineeId);
     const { data, error } = await query;
@@ -156,12 +156,12 @@ export async function GET(request: NextRequest) {
 
   const summaryType = searchParams.get("summary");
   if (summaryType === "student") {
-    const { data, error } = await supabase.from("student_rating_summary").select("*");
+    const { data, error } = await supabase.from("skc_student_rating_summary").select("*");
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json(data);
   }
   if (summaryType === "employer") {
-    const { data, error } = await supabase.from("employer_rating_summary").select("*");
+    const { data, error } = await supabase.from("skc_employer_rating_summary").select("*");
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json(data);
   }

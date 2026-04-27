@@ -40,8 +40,8 @@ export default function AdminDisputesPage() {
 
   async function loadDisputes() {
     setLoading(true);
-    const { data } = await supabase.from("disputes")
-      .select("*, job:jobs(title), raised_by_user:users!disputes_raised_by_fkey(name), raised_against_user:users!disputes_raised_against_fkey(name)")
+    const { data } = await supabase.from("skc_disputes")
+      .select("*, job:skc_jobs(title), raised_by_user:skc_users!skc_disputes_raised_by_fkey(name), raised_against_user:skc_users!skc_disputes_raised_against_fkey(name)")
       .order("created_at", { ascending: false });
     setDisputes(data ?? []);
     setLoading(false);

@@ -54,7 +54,7 @@ export default function NewJobPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
-      const { data: profile } = await supabase.from("users").select("role, job_quota, job_quota_used").eq("id", user.id).single();
+      const { data: profile } = await supabase.from("skc_users").select("role, job_quota, job_quota_used").eq("id", user.id).single();
       if (profile) {
         setUserRole(profile.role as UserRole);
         if (profile.job_quota > 0) {
@@ -73,7 +73,7 @@ export default function NewJobPage() {
     if (!userId || !canPost) return;
     setLoading(true);
 
-    const { data: newJob, error } = await supabase.from("jobs").insert({
+    const { data: newJob, error } = await supabase.from("skc_jobs").insert({
       title,
       description,
       type: jobType,

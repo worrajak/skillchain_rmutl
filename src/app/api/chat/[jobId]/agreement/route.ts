@@ -16,7 +16,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const contentHash = await hashReviewContent(terms);
 
-  const { data, error } = await supabase.from("job_agreements").insert({
+  const { data, error } = await supabase.from("skc_job_agreements").insert({
     job_id: jobId,
     proposed_by: user.id,
     agreement_type,
@@ -38,7 +38,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const body = await request.json();
   const { agreement_id, action } = body; // action: 'ACCEPTED' | 'REJECTED'
 
-  const { data, error } = await supabase.from("job_agreements")
+  const { data, error } = await supabase.from("skc_job_agreements")
     .update({ status: action, accepted_by: action === "ACCEPTED" ? user.id : null })
     .eq("id", agreement_id)
     .eq("job_id", jobId)

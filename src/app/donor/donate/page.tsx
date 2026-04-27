@@ -25,7 +25,7 @@ export default function DonatePage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("กรุณาเข้าสู่ระบบ"); setLoading(false); return; }
 
-    const { error } = await supabase.from("donation_funds").insert({
+    const { error } = await supabase.from("skc_donation_funds").insert({
       donor_id: user.id,
       amount: parseFloat(amount),
       purpose,

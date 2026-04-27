@@ -20,8 +20,8 @@ export default function StaffCancellationsPage() {
 
   async function loadData() {
     setLoading(true);
-    const { data } = await supabase.from("job_cancellation_requests")
-      .select("*, job:jobs(title, status), requester:users!job_cancellation_requests_requested_by_fkey(name)")
+    const { data } = await supabase.from("skc_job_cancellation_requests")
+      .select("*, job:skc_jobs(title, status), requester:skc_users!skc_job_cancellation_requests_requested_by_fkey(name)")
       .eq("status", "PENDING")
       .order("created_at", { ascending: false });
     setRequests(data ?? []);
@@ -34,7 +34,7 @@ export default function StaffCancellationsPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    await supabase.from("job_cancellation_requests").update({
+    await supabase.from("skc_job_cancellation_requests").update({
       status: action,
       reviewed_by: user.id,
       reviewed_at: new Date().toISOString(),
@@ -42,9 +42,9 @@ export default function StaffCancellationsPage() {
 
     if (action === "APPROVED") {
       const job = req.job as Record<string, unknown>;
-      await supabase.from("jobs").update({ status: "CANCELLED" }).eq("id", req.job_id);
+      await supabase.from("skc_jobs").update({ status: "CANCELLED" }).eq("id", req.job_id);
       // แจ้ง employer
-      await supabase.from("notifications").insert({
+      await supabase.from("skc_notifications").insert({
         user_id: req.requested_by,
         type: "cancellation_approved",
         title: "คำขอยกเลิกได้รับอนุมัติ",

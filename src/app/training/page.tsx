@@ -45,9 +45,9 @@ export default function TrainingCatalogPage() {
   useEffect(() => {
     async function load() {
       const { data } = await supabase
-        .from("training_courses")
+        .from("skc_training_courses")
         .select(
-          "*, instructor:users!training_courses_instructor_id_fkey(name, email)"
+          "*, instructor:skc_users!skc_training_courses_instructor_id_fkey(name, email)"
         )
         .in("status", ["OPEN_ENROLLMENT", "IN_PROGRESS", "COMPLETED"])
         .order("start_date", { ascending: false });
@@ -56,7 +56,7 @@ export default function TrainingCatalogPage() {
         // Get enrollment counts
         const ids = data.map((c) => c.id);
         const { data: enrollments } = await supabase
-          .from("training_enrollments")
+          .from("skc_training_enrollments")
           .select("course_id")
           .in("course_id", ids);
 

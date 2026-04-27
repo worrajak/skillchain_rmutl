@@ -58,8 +58,8 @@ export default function AdminApprovalsPage() {
   async function loadData() {
     setLoading(true);
     const [{ data: p }, { data: a }] = await Promise.all([
-      supabase.from("users").select("*").eq("approval_status", "PENDING").order("created_at", { ascending: false }),
-      supabase.from("users").select("*").order("created_at", { ascending: false }).limit(50),
+      supabase.from("skc_users").select("*").eq("approval_status", "PENDING").order("created_at", { ascending: false }),
+      supabase.from("skc_users").select("*").order("created_at", { ascending: false }).limit(50),
     ]);
     setPending((p as PendingUser[]) ?? []);
     setAll((a as PendingUser[]) ?? []);
@@ -87,14 +87,14 @@ export default function AdminApprovalsPage() {
     if (reason === null) return;
 
     const { data: { user: me } } = await supabase.auth.getUser();
-    const { error } = await supabase.from("users").update({
+    const { error } = await supabase.from("skc_users").update({
       approval_status: "REJECTED",
       approved_by: me?.id,
       approved_at: new Date().toISOString(),
     }).eq("id", userId);
 
     if (!error) {
-      await supabase.from("approval_logs").insert({
+      await supabase.from("skc_approval_logs").insert({
         user_id: userId,
         approved_by: me?.id,
         action: "REJECTED",
@@ -107,8 +107,8 @@ export default function AdminApprovalsPage() {
 
   async function handleSuspend(userId: string) {
     const { data: { user: me } } = await supabase.auth.getUser();
-    await supabase.from("users").update({ approval_status: "SUSPENDED", approved_by: me?.id }).eq("id", userId);
-    await supabase.from("approval_logs").insert({ user_id: userId, approved_by: me?.id, action: "SUSPENDED" });
+    await supabase.from("skc_users").update({ approval_status: "SUSPENDED", approved_by: me?.id }).eq("id", userId);
+    await supabase.from("skc_approval_logs").insert({ user_id: userId, approved_by: me?.id, action: "SUSPENDED" });
     toast.success("ระงับแล้ว");
     loadData();
   }

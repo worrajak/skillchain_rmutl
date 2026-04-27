@@ -26,8 +26,8 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   const supabase = await createClient();
 
   const { data: job } = await supabase
-    .from("jobs")
-    .select("*, employer:users!jobs_employer_id_fkey(name, email, organization, campus), student:users!jobs_student_id_fkey(name, email)")
+    .from("skc_jobs")
+    .select("*, employer:skc_users!skc_jobs_employer_id_fkey(name, email, organization, campus), student:skc_users!skc_jobs_student_id_fkey(name, email)")
     .eq("id", id)
     .single();
 
@@ -48,7 +48,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
   // Get staff supervisor name separately (FK may not exist)
   let staffSupervisorName: string | null = null;
   if (job.approved_by_staff) {
-    const { data: staff } = await supabase.from("users").select("name").eq("id", job.approved_by_staff).single();
+    const { data: staff } = await supabase.from("skc_users").select("name").eq("id", job.approved_by_staff).single();
     staffSupervisorName = staff?.name ?? null;
   }
 

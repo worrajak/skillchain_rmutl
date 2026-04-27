@@ -22,14 +22,14 @@ export default function AdminTierPage() {
 
   async function loadData() {
     setLoading(true);
-    const { data } = await supabase.from("users")
+    const { data } = await supabase.from("skc_users")
       .select("id, name, email, campus, faculty")
       .eq("role", "student")
       .order("name");
 
     if (!data) { setLoading(false); return; }
 
-    const { data: tiers } = await supabase.from("student_tiers").select("*");
+    const { data: tiers } = await supabase.from("skc_student_tiers").select("*");
     const tierMap = new Map<string, Record<string, unknown>>();
     (tiers ?? []).forEach((t) => tierMap.set(String(t.student_id), t));
 
@@ -49,12 +49,12 @@ export default function AdminTierPage() {
     const next = currentTier === "trainee" ? "apprentice" : currentTier === "apprentice" ? "certified" : null;
     if (!next) { toast.error("ระดับสูงสุดแล้ว"); return; }
 
-    const { data: existing } = await supabase.from("student_tiers").select("id").eq("student_id", studentId).single();
+    const { data: existing } = await supabase.from("skc_student_tiers").select("id").eq("student_id", studentId).single();
 
     if (existing) {
-      await supabase.from("student_tiers").update({ tier: next, promoted_at: new Date().toISOString() }).eq("student_id", studentId);
+      await supabase.from("skc_student_tiers").update({ tier: next, promoted_at: new Date().toISOString() }).eq("student_id", studentId);
     } else {
-      await supabase.from("student_tiers").insert({ student_id: studentId, tier: next, promoted_at: new Date().toISOString() });
+      await supabase.from("skc_student_tiers").insert({ student_id: studentId, tier: next, promoted_at: new Date().toISOString() });
     }
 
     toast.success(`เลื่อนเป็น ${TIER_CONFIG[next]?.label} สำเร็จ`);

@@ -32,7 +32,7 @@ export function ImageGallery({
   useEffect(() => {
     async function load() {
       let query = supabase
-        .from("job_images")
+        .from("skc_job_images")
         .select("id, image_url, image_type, caption, created_at")
         .eq("job_id", jobId)
         .order("sort_order");

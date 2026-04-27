@@ -15,12 +15,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!reason) return NextResponse.json({ error: "ต้องระบุเหตุผล" }, { status: 400 });
 
   // ตรวจว่าเป็นเจ้าของงาน
-  const { data: job } = await supabase.from("jobs").select("*").eq("id", id).single();
+  const { data: job } = await supabase.from("skc_jobs").select("*").eq("id", id).single();
   if (!job) return NextResponse.json({ error: "ไม่พบงาน" }, { status: 404 });
   if (job.employer_id !== user.id) return NextResponse.json({ error: "ไม่ใช่เจ้าของงาน" }, { status: 403 });
 
   // สร้างคำร้อง
-  const { data, error } = await supabase.from("job_cancellation_requests").insert({
+  const { data, error } = await supabase.from("skc_job_cancellation_requests").insert({
     job_id: id,
     requested_by: user.id,
     reason,
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   // แจ้ง staff/admin
   const { data: staffUsers } = await supabase
-    .from("users")
+    .from("skc_users")
     .select("id")
     .in("role", ["admin", "superadmin", "project_staff"])
     .eq("approval_status", "APPROVED");

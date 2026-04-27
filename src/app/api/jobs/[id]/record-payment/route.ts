@@ -26,7 +26,7 @@ export async function POST(
 
   // ตรวจสอบ: ต้องเป็น employer ของงานนี้ + status COMPLETED
   const { data: job } = await supabase
-    .from("jobs")
+    .from("skc_jobs")
     .select("employer_id, student_id, status, escrow_tx")
     .eq("id", id)
     .single();
@@ -51,7 +51,7 @@ export async function POST(
 
   // บันทึก tx hash
   const { error } = await supabase
-    .from("jobs")
+    .from("skc_jobs")
     .update({ escrow_tx: tx_hash })
     .eq("id", id);
 

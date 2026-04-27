@@ -56,8 +56,8 @@ export default function StudentJobsPage() {
     async function load() {
       setLoading(true);
       let query = supabase
-        .from("jobs")
-        .select("*, employer:users!jobs_employer_id_fkey(name)")
+        .from("skc_jobs")
+        .select("*, employer:skc_users!skc_jobs_employer_id_fkey(name)")
         .eq("status", "OPEN")
         .order("created_at", { ascending: false });
 
@@ -76,7 +76,7 @@ export default function StudentJobsPage() {
 
     // ส่งคำขอรับงาน → รอ project_staff อนุมัติ (ไม่ได้ assign ตรง)
     const { error } = await supabase
-      .from("job_assignment_requests")
+      .from("skc_job_assignment_requests")
       .insert({ job_id: jobId, student_id: userId });
 
     if (error) {
@@ -88,10 +88,10 @@ export default function StudentJobsPage() {
     } else {
       toast.success("ส่งคำขอรับงานแล้ว — รอคณะทำงานอนุมัติ");
       // แจ้ง staff
-      const { data: staffUsers } = await supabase.from("users").select("id")
+      const { data: staffUsers } = await supabase.from("skc_users").select("id")
         .in("role", ["project_staff", "admin", "superadmin"]).eq("approval_status", "APPROVED");
       if (staffUsers) {
-        await supabase.from("notifications").insert(
+        await supabase.from("skc_notifications").insert(
           staffUsers.map((s) => ({ user_id: s.id, type: "assignment_request", title: "คำขอรับงานใหม่", body: "นักศึกษาส่งคำขอรับงาน รอการอนุมัติ", link: "/project-staff/approvals" }))
         );
       }

@@ -12,7 +12,7 @@ export async function POST(
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   // Check assessor role
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).single();
+  const { data: profile } = await supabase.from("skc_users").select("role").eq("id", user.id).single();
   const assessorRoles = ["teacher", "project_staff", "rmutl_staff", "admin", "superadmin"];
   if (!profile || !assessorRoles.includes(profile.role)) {
     return NextResponse.json({ error: "ไม่มีสิทธิ์ประเมิน" }, { status: 403 });
@@ -54,21 +54,21 @@ export async function POST(
   if (allPassed) {
     // Generate certificate number
     const certNumber = `TC-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
-    await supabase.from("training_enrollments").update({
+    await supabase.from("skc_training_enrollments").update({
       completed_at: new Date().toISOString(),
       certificate_number: certNumber,
     }).eq("id", enrollment_id);
 
     // Auto-issue credential if course specifies it
-    const { data: course } = await supabase.from("training_courses")
+    const { data: course } = await supabase.from("skc_training_courses")
       .select("grants_credential_level").eq("id", courseId).single();
 
     if (course?.grants_credential_level) {
-      const { data: enrollment } = await supabase.from("training_enrollments")
+      const { data: enrollment } = await supabase.from("skc_training_enrollments")
         .select("trainee_id").eq("id", enrollment_id).single();
 
       if (enrollment) {
-        await supabase.from("student_credentials").insert({
+        await supabase.from("skc_student_credentials").insert({
           student_id: enrollment.trainee_id,
           credential_level: course.grants_credential_level,
           certified_by: "PROJECT_BARAMEE",

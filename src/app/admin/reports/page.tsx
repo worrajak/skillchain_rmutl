@@ -62,11 +62,11 @@ export default function AdminReportsPage() {
     async function load() {
       // ดึงข้อมูลทั้งหมด
       const [{ data: users }, { data: jobs }, { data: creds }, { count: reviews }, { count: pending }] = await Promise.all([
-        supabase.from("users").select("role"),
-        supabase.from("jobs").select("status, type"),
-        supabase.from("student_credentials").select("credential_level").eq("is_active", true),
-        supabase.from("evaluations").select("*", { count: "exact", head: true }),
-        supabase.from("users").select("*", { count: "exact", head: true }).eq("approval_status", "PENDING"),
+        supabase.from("skc_users").select("role"),
+        supabase.from("skc_jobs").select("status, type"),
+        supabase.from("skc_student_credentials").select("credential_level").eq("is_active", true),
+        supabase.from("skc_evaluations").select("*", { count: "exact", head: true }),
+        supabase.from("skc_users").select("*", { count: "exact", head: true }).eq("approval_status", "PENDING"),
       ]);
 
       // นับตาม group

@@ -18,8 +18,8 @@ export default function StaffApprovalsPage() {
 
   async function loadRequests() {
     setLoading(true);
-    const { data } = await supabase.from("job_assignment_requests")
-      .select("*, student:users!job_assignment_requests_student_id_fkey(name, email, faculty, student_id_card, avatar_url), job:jobs(id, title, type, job_category, location, campus, pay_amount)")
+    const { data } = await supabase.from("skc_job_assignment_requests")
+      .select("*, student:skc_users!skc_job_assignment_requests_student_id_fkey(name, email, faculty, student_id_card, avatar_url), job:skc_jobs(id, title, type, job_category, location, campus, pay_amount)")
       .eq("status", "PENDING")
       .order("created_at", { ascending: false });
     setRequests(data ?? []);

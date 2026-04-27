@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createNotification, createNotifications } from "@/lib/telegram";
+import { onWorkCompleted } from "@/lib/gov-sync";
 
 // POST /api/jobs/[id]/confirm-completion — staff หรือ employer ยืนยันงานเสร็จ
 export async function POST(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -9,7 +10,7 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: job } = await supabase.from("jobs").select("*").eq("id", id).single();
+  const { data: job } = await supabase.from("skc_jobs").select("*").eq("id", id).single();
   if (!job) return NextResponse.json({ error: "ไม่พบงาน" }, { status: 404 });
   if (job.status !== "SUBMITTED") return NextResponse.json({ error: "งานต้องอยู่ในสถานะ SUBMITTED" }, { status: 400 });
 
@@ -21,15 +22,15 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
   const updates: Record<string, unknown> = {};
   if (isStaff) updates.staff_confirmed_completion = true;
   if (isEmployer) updates.employer_confirmed_completion = true;
-  await supabase.from("jobs").update(updates).eq("id", id);
+  await supabase.from("skc_jobs").update(updates).eq("id", id);
 
   // ดึงข้อมูลล่าสุด
-  const { data: updated } = await supabase.from("jobs").select("*").eq("id", id).single();
+  const { data: updated } = await supabase.from("skc_jobs").select("*").eq("id", id).single();
   if (!updated) return NextResponse.json({ error: "Error" }, { status: 500 });
 
   // ถ้าทั้ง 2 ฝ่ายยืนยัน → COMPLETED
   if (updated.staff_confirmed_completion && updated.employer_confirmed_completion) {
-    await supabase.from("jobs").update({
+    await supabase.from("skc_jobs").update({
       status: "COMPLETED",
       // eval window จะถูกตั้งโดย DB trigger อัตโนมัติ
     }).eq("id", id);
@@ -44,7 +45,11 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
     }
     await createNotifications(supabase, notifications);
 
-    return NextResponse.json({ message: "ยืนยันครบแล้ว — งานเสร็จสมบูรณ์!", completed: true });
+    // ===== GOV SYNC HOOK =====
+    // เมื่อ both ยืนยัน → trigger สร้าง work_certification draft + แจ้งฝ่ายลงนาม
+    await onWorkCompleted(supabase, id);
+
+    return NextResponse.json({ message: "ยืนยันครบแล้ว — งานเสร็จสมบูรณ์! กรุณาลงนามใบรับรองใน /staff/gov", completed: true });
   }
 
   // แจ้งอีกฝ่ายที่ยังไม่ยืนยัน

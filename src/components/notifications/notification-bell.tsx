@@ -28,7 +28,7 @@ export function NotificationBell() {
       if (!user) return;
 
       const { data } = await supabase
-        .from("notifications")
+        .from("skc_notifications")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
@@ -52,7 +52,7 @@ export function NotificationBell() {
   }, []);
 
   async function markAllRead() {
-    await supabase.from("notifications").update({ is_read: true }).eq("is_read", false);
+    await supabase.from("skc_notifications").update({ is_read: true }).eq("is_read", false);
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
   }
 

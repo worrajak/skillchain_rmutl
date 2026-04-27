@@ -83,7 +83,7 @@ export default function AdminUsersPage() {
   async function loadUsers() {
     setLoading(true);
     let query = supabase
-      .from("users")
+      .from("skc_users")
       .select("*")
       .order("created_at", { ascending: false });
 
@@ -106,7 +106,7 @@ export default function AdminUsersPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const u = editUser as any;
     const { error } = await supabase
-      .from("users")
+      .from("skc_users")
       .update({
         name: editUser.name,
         role: editUser.role,
@@ -131,7 +131,7 @@ export default function AdminUsersPage() {
 
   async function handleToggleActive(user: User) {
     const { error } = await supabase
-      .from("users")
+      .from("skc_users")
       .update({ is_active: !user.is_active })
       .eq("id", user.id);
 
@@ -145,7 +145,7 @@ export default function AdminUsersPage() {
     if (!confirm(`ต้องการลบ/ระงับ "${user.name}" จริงหรือไม่?\n\n(ถ้ามีข้อมูลเชื่อมโยง จะระงับบัญชีแทนลบ)`)) return;
 
     // ลองลบจริงก่อน
-    const { error } = await supabase.from("users").delete().eq("id", user.id);
+    const { error } = await supabase.from("skc_users").delete().eq("id", user.id);
     if (!error) {
       toast.success("ลบสำเร็จ");
       loadUsers();
@@ -153,7 +153,7 @@ export default function AdminUsersPage() {
     }
 
     // ถ้าลบไม่ได้ (foreign key) → soft delete: ระงับ + deactivate
-    const { error: softErr } = await supabase.from("users").update({
+    const { error: softErr } = await supabase.from("skc_users").update({
       is_active: false,
       approval_status: "SUSPENDED",
       deleted_at: new Date().toISOString(),

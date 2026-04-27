@@ -32,12 +32,12 @@ export default function EmployerDashboardPage() {
       if (!authUser) { setLoading(false); return; }
 
       const [{ data: profile }, { data: myJobs }, { count: total }, { count: open }, { count: completed }, { count: inProgress }] = await Promise.all([
-        supabase.from("users").select("*").eq("id", authUser.id).single(),
-        supabase.from("jobs").select("id, title, status, type, pay_amount, deadline, student:users!jobs_student_id_fkey(name)").eq("employer_id", authUser.id).order("created_at", { ascending: false }).limit(10),
-        supabase.from("jobs").select("*", { count: "exact", head: true }).eq("employer_id", authUser.id),
-        supabase.from("jobs").select("*", { count: "exact", head: true }).eq("employer_id", authUser.id).eq("status", "OPEN"),
-        supabase.from("jobs").select("*", { count: "exact", head: true }).eq("employer_id", authUser.id).eq("status", "COMPLETED"),
-        supabase.from("jobs").select("*", { count: "exact", head: true }).eq("employer_id", authUser.id).eq("status", "IN_PROGRESS"),
+        supabase.from("skc_users").select("*").eq("id", authUser.id).single(),
+        supabase.from("skc_jobs").select("id, title, status, type, pay_amount, deadline, student:skc_users!skc_jobs_student_id_fkey(name)").eq("employer_id", authUser.id).order("created_at", { ascending: false }).limit(10),
+        supabase.from("skc_jobs").select("*", { count: "exact", head: true }).eq("employer_id", authUser.id),
+        supabase.from("skc_jobs").select("*", { count: "exact", head: true }).eq("employer_id", authUser.id).eq("status", "OPEN"),
+        supabase.from("skc_jobs").select("*", { count: "exact", head: true }).eq("employer_id", authUser.id).eq("status", "COMPLETED"),
+        supabase.from("skc_jobs").select("*", { count: "exact", head: true }).eq("employer_id", authUser.id).eq("status", "IN_PROGRESS"),
       ]);
 
       setUser(profile);

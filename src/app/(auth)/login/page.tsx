@@ -51,7 +51,7 @@ export default function LoginPage() {
     // Redirect based on role from public.users (source of truth)
     const { data: { user: authUser } } = await supabase.auth.getUser();
     const { data: profile } = await supabase
-      .from("users")
+      .from("skc_users")
       .select("role")
       .eq("id", authUser?.id)
       .single();

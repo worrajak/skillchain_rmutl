@@ -75,9 +75,9 @@ export default function StaffReviewJobsPage() {
   async function loadJobs() {
     setLoading(true);
     const { data } = await supabase
-      .from("jobs")
+      .from("skc_jobs")
       .select(
-        "*, employer:users!jobs_employer_id_fkey(name, email, job_quota, job_quota_used)"
+        "*, employer:skc_users!skc_jobs_employer_id_fkey(name, email, job_quota, job_quota_used)"
       )
       .eq("status", "PENDING_REVIEW")
       .order("created_at", { ascending: false });

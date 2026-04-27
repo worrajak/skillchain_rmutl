@@ -54,7 +54,7 @@ export function ChatRoom({ jobId, currentUserId }: { jobId: string; currentUserI
         filter: `room_id=eq.${roomId}`,
       }, async (payload) => {
         // fetch sender info
-        const { data: sender } = await supabase.from("users").select("name, role").eq("id", (payload.new as Message).sender_id).single();
+        const { data: sender } = await supabase.from("skc_users").select("name, role").eq("id", (payload.new as Message).sender_id).single();
         setMessages((prev) => [...prev, { ...payload.new as Message, sender: sender ?? undefined }]);
       })
       .subscribe();

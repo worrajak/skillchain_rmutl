@@ -67,7 +67,7 @@ export default function TeacherStudentsPage() {
     setLoading(true);
     // ดึง นศ. ทั้งหมด พร้อม credential สูงสุด
     const { data: studs } = await supabase
-      .from("users")
+      .from("skc_users")
       .select("id, name, email, campus, faculty, student_id_card")
       .eq("role", "student")
       .order("name");
@@ -76,7 +76,7 @@ export default function TeacherStudentsPage() {
 
     // ดึง credential ปัจจุบัน
     const { data: creds } = await supabase
-      .from("student_credentials")
+      .from("skc_student_credentials")
       .select("student_id, credential_level")
       .eq("is_active", true)
       .order("credential_level", { ascending: false });
@@ -108,7 +108,7 @@ export default function TeacherStudentsPage() {
     const { data: { user: me } } = await supabase.auth.getUser();
     if (!me) { toast.error("กรุณาเข้าสู่ระบบ"); return; }
 
-    const { error } = await supabase.from("student_credentials").insert({
+    const { error } = await supabase.from("skc_student_credentials").insert({
       student_id: selected.id,
       credential_level: newLevel,
       certified_by: certBy,

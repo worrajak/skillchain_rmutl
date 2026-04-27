@@ -9,13 +9,13 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { data: job } = await supabase.from("jobs").select("*").eq("id", id).single();
+  const { data: job } = await supabase.from("skc_jobs").select("*").eq("id", id).single();
   if (!job) return NextResponse.json({ error: "ไม่พบงาน" }, { status: 404 });
   if (user.id !== job.student_id) return NextResponse.json({ error: "เฉพาะนักศึกษาที่รับงาน" }, { status: 403 });
   if (job.status !== "IN_PROGRESS") return NextResponse.json({ error: "งานต้องอยู่ในสถานะ IN_PROGRESS" }, { status: 400 });
 
   // ส่งงาน
-  await supabase.from("jobs").update({
+  await supabase.from("skc_jobs").update({
     status: "SUBMITTED",
     staff_confirmed_completion: false,
     employer_confirmed_completion: false,

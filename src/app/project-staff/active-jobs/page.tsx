@@ -31,8 +31,8 @@ export default function StaffActiveJobsPage() {
     if (!user) { setLoading(false); return; }
 
     const { data } = await supabase
-      .from("jobs")
-      .select("*, student:users!jobs_student_id_fkey(name), employer:users!jobs_employer_id_fkey(name)")
+      .from("skc_jobs")
+      .select("*, student:skc_users!skc_jobs_student_id_fkey(name), employer:skc_users!skc_jobs_employer_id_fkey(name)")
       .eq("approved_by_staff", user.id)
       .in("status", ["ASSIGNED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"])
       .order("updated_at", { ascending: false });

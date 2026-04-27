@@ -48,20 +48,20 @@ export default async function HomePage() {
     { data: recentJobs },
     { data: topStudents },
   ] = await Promise.all([
-    supabase.from("jobs").select("*", { count: "exact", head: true }),
-    supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "student"),
-    supabase.from("users").select("*", { count: "exact", head: true }).eq("role", "employer"),
-    supabase.from("jobs").select("*", { count: "exact", head: true }).eq("status", "COMPLETED"),
-    supabase.from("evaluations").select("*", { count: "exact", head: true }),
-    supabase.from("student_credentials").select("*", { count: "exact", head: true }),
+    supabase.from("skc_jobs").select("*", { count: "exact", head: true }),
+    supabase.from("skc_users").select("*", { count: "exact", head: true }).eq("role", "student"),
+    supabase.from("skc_users").select("*", { count: "exact", head: true }).eq("role", "employer"),
+    supabase.from("skc_jobs").select("*", { count: "exact", head: true }).eq("status", "COMPLETED"),
+    supabase.from("skc_evaluations").select("*", { count: "exact", head: true }),
+    supabase.from("skc_student_credentials").select("*", { count: "exact", head: true }),
     supabase
-      .from("jobs")
-      .select("*, employer:users!jobs_employer_id_fkey(name)")
+      .from("skc_jobs")
+      .select("*, employer:skc_users!skc_jobs_employer_id_fkey(name)")
       .eq("status", "OPEN")
       .order("created_at", { ascending: false })
       .limit(6),
     supabase
-      .from("student_rating_summary")
+      .from("skc_student_rating_summary")
       .select("*")
       .gt("combined_score", 0)
       .order("combined_score", { ascending: false })

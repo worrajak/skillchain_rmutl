@@ -25,7 +25,7 @@ export default function EmployerStudentsPage() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase.from("student_rating_summary").select("*").order("combined_score", { ascending: false });
+      const { data } = await supabase.from("skc_student_rating_summary").select("*").order("combined_score", { ascending: false });
       setStudents(data ?? []);
       setLoading(false);
     }

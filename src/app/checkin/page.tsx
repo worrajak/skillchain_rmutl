@@ -48,13 +48,13 @@ function CheckInContent() {
       if (!u) { setLoading(false); return; }
 
       if (jobId) {
-        const { data: j } = await supabase.from("jobs")
+        const { data: j } = await supabase.from("skc_jobs")
           .select("id, title, employer_id, student_id, status, location")
           .eq("id", jobId).single();
         setJob(j);
 
         // ดึงประวัติเช็คอิน
-        const { data: h } = await supabase.from("job_checkins")
+        const { data: h } = await supabase.from("skc_job_checkins")
           .select("*")
           .eq("job_id", jobId)
           .eq("user_id", u.id)
@@ -64,7 +64,7 @@ function CheckInContent() {
       }
 
       if (courseId) {
-        const { data: c } = await supabase.from("training_courses")
+        const { data: c } = await supabase.from("skc_training_courses")
           .select("id, title, instructor_id")
           .eq("id", courseId).single();
         setCourse(c);
@@ -101,7 +101,7 @@ function CheckInContent() {
     if (courseId) {
       const today = new Date().toISOString().split("T")[0];
       if (type === "CHECK_IN") {
-        const { error } = await supabase.from("training_attendance").upsert({
+        const { error } = await supabase.from("skc_training_attendance").upsert({
           course_id: courseId,
           trainee_id: user!.id,
           session_date: today,
@@ -110,7 +110,7 @@ function CheckInContent() {
         if (error) toast.error(error.message);
         else { setDone(true); toast.success("เช็คชื่อเข้าอบรมสำเร็จ!"); }
       } else {
-        const { error } = await supabase.from("training_attendance")
+        const { error } = await supabase.from("skc_training_attendance")
           .update({ check_out_at: new Date().toISOString() })
           .eq("course_id", courseId)
           .eq("trainee_id", user!.id)
