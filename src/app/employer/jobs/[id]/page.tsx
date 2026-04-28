@@ -108,13 +108,22 @@ export default function EmployerJobDetailPage() {
   const isProposedByMe = job.schedule_proposed_by === userId;
   const isProposedByOther = job.schedule_proposed_by && !isProposedByMe;
 
+  const canEdit = ["PENDING_REVIEW", "OPEN", "ASSIGNED"].includes(job.status) && job.employer_id === userId;
+
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       {/* Header */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-3">
         <Link href="/employer/jobs">
           <Button variant="ghost" size="sm"><ArrowLeft className="size-4 mr-1" />กลับ</Button>
         </Link>
+        {canEdit && (
+          <Link href={`/employer/jobs/${job.id}/edit`}>
+            <Button variant="outline" size="sm">
+              ✏️ แก้ไขงาน
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Job Info */}
@@ -138,7 +147,7 @@ export default function EmployerJobDetailPage() {
       </Card>
 
       {/* Job Images — ผู้ว่าจ้างอัปโหลด/ดูรูปเครื่อง */}
-      {["OPEN", "ASSIGNED"].includes(job.status) && (
+      {["PENDING_REVIEW", "OPEN", "ASSIGNED"].includes(job.status) && (
         <Card>
           <CardContent className="pt-4 pb-4">
             <ImageUpload
@@ -150,7 +159,7 @@ export default function EmployerJobDetailPage() {
           </CardContent>
         </Card>
       )}
-      {!["OPEN", "ASSIGNED"].includes(job.status) && (
+      {!["PENDING_REVIEW", "OPEN", "ASSIGNED"].includes(job.status) && (
         <ImageGallery jobId={job.id} imageType="job" label="รูปเครื่อง/ลักษณะงาน" />
       )}
 

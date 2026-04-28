@@ -156,23 +156,33 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
             <CardContent>
               <p className="text-xs text-muted-foreground mb-3">
                 ถ่ายรูปเครื่องจักร อุปกรณ์ หรือลักษณะงานที่ต้องซ่อม
+                <br />
+                💡 อัพได้ภายหลังจากปุ่ม "ดูงาน" ด้านล่าง
               </p>
               <ImageUpload jobId={createdJobId} imageType="job" maxImages={4} />
             </CardContent>
           </Card>
         )}
 
-        <div className="flex gap-3 justify-center">
-          <Button onClick={() => { setSuccess(false); setCreatedJobId(null); setTitle(""); setDescription(""); }}>
-            ลงงานอีก
+        <div className="grid grid-cols-2 gap-2">
+          {createdJobId && (
+            <Link href={`/employer/jobs/${createdJobId}`}>
+              <Button className="w-full" variant="default">
+                ดูงานที่สร้าง →
+              </Button>
+            </Link>
+          )}
+          <Button variant="outline" onClick={() => { setSuccess(false); setCreatedJobId(null); setTitle(""); setDescription(""); }}>
+            ลงงานอีกชิ้น
           </Button>
-          <Link href={homeUrl}>
-            <Button variant="outline">
-              <Home className="size-4 mr-1" />
-              กลับ
-            </Button>
-          </Link>
         </div>
+
+        <Link href={homeUrl}>
+          <Button variant="ghost" className="w-full">
+            <Home className="size-4 mr-1" />
+            กลับหน้าหลัก
+          </Button>
+        </Link>
       </div>
     );
   }

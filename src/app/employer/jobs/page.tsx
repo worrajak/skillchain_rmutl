@@ -95,12 +95,20 @@ export default function EmployerJobsPage() {
                     </div>
                   </div>
                   <div className="flex gap-1 shrink-0">
-                    {hasStudent && String(j.status) !== "CANCELLED" && (
-                      <Link href={`/employer/jobs/${j.id}`}>
-                        <Button variant="ghost" size="sm"><MessageCircle className="size-4" /></Button>
+                    <Link href={`/employer/jobs/${j.id}`}>
+                      <Button variant="ghost" size="sm" title="ดูรายละเอียด">👁️</Button>
+                    </Link>
+                    {["PENDING_REVIEW", "OPEN", "ASSIGNED"].includes(String(j.status)) && (
+                      <Link href={`/employer/jobs/${j.id}/edit`}>
+                        <Button variant="ghost" size="sm" title="แก้ไขงาน">✏️</Button>
                       </Link>
                     )}
-                    <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(String(j.id), hasStudent)}>
+                    {hasStudent && String(j.status) !== "CANCELLED" && (
+                      <Link href={`/employer/jobs/${j.id}`}>
+                        <Button variant="ghost" size="sm" title="แชท"><MessageCircle className="size-4" /></Button>
+                      </Link>
+                    )}
+                    <Button variant="ghost" size="sm" className="text-red-600" onClick={() => handleDelete(String(j.id), hasStudent)} title="ลบ">
                       <Trash2 className="size-4" />
                     </Button>
                   </div>
