@@ -15,6 +15,7 @@ import { ImageGallery } from "@/components/image-gallery";
 import { cn } from "@/lib/utils";
 import {
   Briefcase, MapPin, Clock, Wallet, User, Calendar, CheckCircle, XCircle, Send, ArrowLeft,
+  PartyPopper, ThumbsUp, Camera, Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getCampusLabel } from "@/types/database";
@@ -288,46 +289,126 @@ export default function EmployerJobDetailPage() {
         />
       )}
 
-      {/* Student Progress/Completion Images — SUBMITTED */}
-      {(job.status === "SUBMITTED" || job.status === "COMPLETED") && (
-        <Card>
-          <CardContent className="pt-4 pb-4 space-y-3">
-            <ImageGallery jobId={job.id} imageType="progress" label="รูประหว่างทำงาน (นศ.)" />
-            <ImageGallery jobId={job.id} imageType="completion" label="รูปงานเสร็จ (นศ.)" />
-          </CardContent>
-        </Card>
+      {/* SUBMITTED — Acceptance hero (banner + photos + accept button) */}
+      {job.status === "SUBMITTED" && (
+        <>
+          {/* Hero banner */}
+          <Card className="border-2 border-orange-300 bg-gradient-to-br from-yellow-50 via-orange-50 to-rose-50">
+            <CardContent className="pt-5 pb-5 flex items-center gap-4">
+              <div className="rounded-full bg-orange-100 p-3 shrink-0">
+                <PartyPopper className="size-7 text-orange-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-foreground text-lg">นักศึกษาส่งมอบงานแล้ว!</p>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  <strong>{studentName}</strong> ส่งงานเรียบร้อย — ตรวจรูปด้านล่างแล้วกดยืนยันรับงาน
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Completion photos — hero */}
+          <Card className="border-green-200">
+            <CardHeader className="pb-2 bg-green-50/50">
+              <CardTitle className="text-base flex items-center gap-2 text-green-800">
+                <CheckCircle className="size-5 text-green-600" />
+                รูปงานเสร็จที่ส่งมอบ
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <ImageGallery jobId={job.id} imageType="completion" label="รูปงานเสร็จ" showEmpty />
+            </CardContent>
+          </Card>
+
+          {/* Progress photos — supporting */}
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2 text-foreground">
+                <Camera className="size-4 text-orange-600" />
+                รูประหว่างทำงาน (อ้างอิง)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-3">
+              <ImageGallery jobId={job.id} imageType="progress" label="รูประหว่างทำงาน" showEmpty />
+            </CardContent>
+          </Card>
+
+          {/* Acceptance card — big confirm button */}
+          <Card className="border-2 border-green-400 bg-green-50/40 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-foreground flex items-center gap-2">
+                <ThumbsUp className="size-5 text-green-600" />
+                ยืนยันรับงาน
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Confirmation checklist */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className={cn(
+                  "rounded-lg p-3 border bg-white flex items-center gap-2",
+                  job.employer_confirmed_completion && "border-green-400 bg-green-50",
+                )}>
+                  {job.employer_confirmed_completion
+                    ? <CheckCircle className="size-5 text-green-600 shrink-0" />
+                    : <Clock className="size-5 text-gray-300 shrink-0" />}
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm">ผู้ว่าจ้าง</p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {job.employer_confirmed_completion ? "✅ ยืนยันแล้ว" : "รอยืนยัน"}
+                    </p>
+                  </div>
+                </div>
+                <div className={cn(
+                  "rounded-lg p-3 border bg-white flex items-center gap-2",
+                  job.staff_confirmed_completion && "border-green-400 bg-green-50",
+                )}>
+                  {job.staff_confirmed_completion
+                    ? <CheckCircle className="size-5 text-green-600 shrink-0" />
+                    : <Clock className="size-5 text-gray-300 shrink-0" />}
+                  <div className="min-w-0">
+                    <p className="font-medium text-sm">ผู้กำกับ</p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {staffName ? `${staffName}: ` : ""}{job.staff_confirmed_completion ? "✅ ยืนยันแล้ว" : "รอยืนยัน"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Big accept button */}
+              {!job.employer_confirmed_completion && (
+                <Button
+                  onClick={handleConfirmCompletion}
+                  disabled={submitting}
+                  size="lg"
+                  className="w-full bg-green-600 hover:bg-green-700 text-base h-12"
+                >
+                  {submitting
+                    ? <><Loader2 className="size-5 mr-2 animate-spin" />กำลังยืนยัน...</>
+                    : <><ThumbsUp className="size-5 mr-2" />ยืนยันรับงาน — งานเรียบร้อย</>}
+                </Button>
+              )}
+
+              {job.employer_confirmed_completion && !job.staff_confirmed_completion && (
+                <div className="rounded-lg bg-yellow-100 border border-yellow-300 p-3 text-center text-sm text-yellow-800 flex items-center justify-center gap-2">
+                  <CheckCircle className="size-4" />
+                  คุณยืนยันแล้ว — รอผู้กำกับยืนยัน
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground text-center">
+                💡 เมื่อทั้ง 2 ฝ่ายยืนยัน → งานจะปิดและเริ่มประกัน 7 วันอัตโนมัติ
+              </p>
+            </CardContent>
+          </Card>
+        </>
       )}
 
-      {/* Confirm Completion — SUBMITTED */}
-      {job.status === "SUBMITTED" && (
-        <Card className="border-yellow-200">
-          <CardHeader>
-            <CardTitle className="text-foreground text-sm">ยืนยันงานเสร็จ</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">นักศึกษาส่งงานแล้ว — ต้องการให้ทั้ง Staff ผู้กำกับ และ ผู้ว่าจ้าง ยืนยัน</p>
-            <div className="flex gap-4">
-              <div className="flex items-center gap-2 text-sm">
-                {job.staff_confirmed_completion
-                  ? <CheckCircle className="size-4 text-green-600" />
-                  : <XCircle className="size-4 text-gray-300" />}
-                <span className={job.staff_confirmed_completion ? "text-green-700" : "text-muted-foreground"}>Staff: {staffName ?? "-"}</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                {job.employer_confirmed_completion
-                  ? <CheckCircle className="size-4 text-green-600" />
-                  : <XCircle className="size-4 text-gray-300" />}
-                <span className={job.employer_confirmed_completion ? "text-green-700" : "text-muted-foreground"}>ผู้ว่าจ้าง</span>
-              </div>
-            </div>
-            {!job.employer_confirmed_completion && (
-              <Button onClick={handleConfirmCompletion} disabled={submitting} className="w-full">
-                <CheckCircle className="size-4 mr-2" />{submitting ? "กำลังยืนยัน..." : "ยืนยันงานเสร็จ"}
-              </Button>
-            )}
-            {job.employer_confirmed_completion && !job.staff_confirmed_completion && (
-              <p className="text-sm text-yellow-700 text-center">คุณยืนยันแล้ว — รอ Staff ยืนยัน</p>
-            )}
+      {/* COMPLETED — Photos shown read-only */}
+      {job.status === "COMPLETED" && (
+        <Card>
+          <CardContent className="pt-4 pb-4 space-y-3">
+            <ImageGallery jobId={job.id} imageType="completion" label="รูปงานเสร็จ (นศ.)" />
+            <ImageGallery jobId={job.id} imageType="progress" label="รูประหว่างทำงาน (นศ.)" />
           </CardContent>
         </Card>
       )}
