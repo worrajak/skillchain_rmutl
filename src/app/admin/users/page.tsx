@@ -113,10 +113,6 @@ export default function AdminUsersPage() {
         role: editUser.role,
         campus: editUser.campus,
         is_active: editUser.is_active,
-        can_post_jobs: u.can_post_jobs ?? false,
-        can_evaluate: u.can_evaluate ?? false,
-        can_approve_users: u.can_approve_users ?? false,
-        can_manage_credentials: u.can_manage_credentials ?? false,
         job_quota: u.job_quota ?? 0,
       })
       .eq("id", editUser.id);
@@ -374,27 +370,18 @@ export default function AdminUsersPage() {
                 </div>
               )}
 
-              {/* สิทธิ์เพิ่มเติม */}
+              {/* จัดการสิทธิ์ — ใช้ระบบใหม่ */}
               <div className="space-y-2">
-                <Label className="text-foreground">สิทธิ์เพิ่มเติม (นอกเหนือ role หลัก)</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { key: "can_post_jobs", label: "สร้างงาน/จ้างงาน" },
-                    { key: "can_evaluate", label: "ประเมิน นศ." },
-                    { key: "can_approve_users", label: "ยืนยันผู้ใช้" },
-                    { key: "can_manage_credentials", label: "จัดการ Credential" },
-                  ].map((perm) => (
-                    <label key={perm.key} className="flex items-center gap-2 rounded-md border p-2 cursor-pointer hover:bg-muted text-sm">
-                      <input
-                        type="checkbox"
-                        className="size-4 rounded"
-                        checked={!!((editUser as any)[perm.key])}
-                        onChange={(e) => setEditUser({ ...editUser, [perm.key]: e.target.checked } as any)}
-                      />
-                      <span className="text-foreground">{perm.label}</span>
-                    </label>
-                  ))}
-                </div>
+                <Label className="text-foreground">สิทธิ์การใช้งาน</Label>
+                <Link href={`/admin/permissions/${editUser.id}`}>
+                  <Button variant="outline" className="w-full justify-start gap-2" type="button">
+                    <ShieldCheck className="size-4 text-blue-600" />
+                    จัดการสิทธิ์ของผู้ใช้นี้ (40+ permissions)
+                  </Button>
+                </Link>
+                <p className="text-xs text-muted-foreground">
+                  💡 มอบสิทธิ์เพิ่มเติม / ถอนสิทธิ์ — เช่น สร้างงาน, ประเมิน, อนุมัติเบิก
+                </p>
               </div>
               <div className="flex gap-3 pt-2">
                 <Button onClick={handleUpdateUser} className="flex-1">
