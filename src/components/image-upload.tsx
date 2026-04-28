@@ -93,7 +93,7 @@ export function ImageUpload({
 
       for (let i = 0; i < previews.length; i++) {
         const { file } = previews[i];
-        const ext = file.name.split(".").pop() || "jpg";
+        const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
         const path = `${jobId}/${imageType}/${crypto.randomUUID()}.${ext}`;
 
         // Upload to Supabase Storage
@@ -102,7 +102,19 @@ export function ImageUpload({
           .upload(path, file, { contentType: file.type, upsert: false });
 
         if (uploadError) {
-          toast.error(`อัปโหลดไม่สำเร็จ: ${uploadError.message}`);
+          console.error("[ImageUpload] storage error", {
+            path,
+            bucket: "job-images",
+            file: { name: file.name, size: file.size, type: file.type },
+            error: uploadError,
+          });
+          const isBucketMissing = /bucket.*not.*found|not.*found.*bucket/i.test(uploadError.message);
+          toast.error(
+            isBucketMissing
+              ? "ยังไม่ได้สร้าง bucket 'job-images' ใน Supabase Storage — ต้องรัน manual_fix_job_images.sql ก่อน"
+              : `อัปโหลดไม่สำเร็จ: ${uploadError.message}`,
+            { duration: 8000 }
+          );
           continue;
         }
 
@@ -125,7 +137,23 @@ export function ImageUpload({
           .single();
 
         if (dbError) {
-          toast.error(`บันทึกข้อมูลไม่สำเร็จ: ${dbError.message}`);
+          console.error("[ImageUpload] DB insert error", {
+            payload: { job_id: jobId, image_type: imageType, uploaded_by: user.id },
+            error: dbError,
+          });
+          // RLS or schema mismatch is common here — surface full code + hint
+          const hint =
+            dbError.code === "42501"
+              ? " — RLS block: ผู้ใช้ต้อง login + uploaded_by ต้องตรงกับ auth.uid()"
+              : dbError.code === "23503"
+                ? " — Foreign key fail: jobId ไม่ตรงกับ skc_jobs.id"
+                : dbError.code === "42703"
+                  ? " — column ไม่มี — รัน manual_fix_job_images.sql ใน Supabase"
+                  : "";
+          toast.error(
+            `บันทึกข้อมูลไม่สำเร็จ [${dbError.code ?? "?"}]: ${dbError.message}${hint}`,
+            { duration: 10000 }
+          );
           continue;
         }
 
