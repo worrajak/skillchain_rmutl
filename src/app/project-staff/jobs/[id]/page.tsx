@@ -45,32 +45,86 @@ export default function StaffJobDetailPage({ params }: { params: Promise<{ id: s
 
   async function load() {
     setLoading(true);
-    const { data: jobData } = await supabase
+
+    // 1. Job + relations (skip approved_by_staff — not a FK in Prisma)
+    const { data: jobData, error: jobErr } = await supabase
       .from("skc_jobs")
       .select(`
         *,
         student:skc_users!skc_jobs_student_id_fkey(id, name, email, campus, faculty),
         employer:skc_users!skc_jobs_employer_id_fkey(id, name, email),
-        mentor:skc_users!skc_jobs_mentor_id_fkey(id, name),
-        supervisor:skc_users!skc_jobs_approved_by_staff_fkey(id, name, email)
+        mentor:skc_users!skc_jobs_mentor_id_fkey(id, name)
       `)
       .eq("id", id)
       .single();
-    setJob(jobData);
 
-    const { data: logsData } = await supabase
-      .from("skc_approval_logs")
-      .select("*, actor:skc_users!skc_approval_logs_actor_id_fkey(name)")
-      .eq("job_id", id)
-      .order("created_at", { ascending: false });
-    setLogs(logsData ?? []);
+    if (jobErr) {
+      console.error("Load job error:", jobErr);
+    }
 
-    const { data: claimsData } = await supabase
-      .from("skc_warranty_claims")
-      .select("*, claimer:skc_users!skc_warranty_claims_claimed_by_fkey(name)")
-      .eq("job_id", id)
-      .order("created_at", { ascending: false });
-    setClaims(claimsData ?? []);
+    // 2. Supervisor — separate query (approved_by_staff is just a String column)
+    let supervisor = null;
+    if (jobData?.approved_by_staff) {
+      const { data: sup } = await supabase
+        .from("skc_users")
+        .select("id, name, email")
+        .eq("id", jobData.approved_by_staff)
+        .single();
+      supervisor = sup;
+    }
+
+    setJob({ ...jobData, supervisor });
+
+    // 3. Workflow log — use skc_gov_workflow_log (has job_id + actor_id)
+    if (jobData) {
+      const { data: logsData } = await supabase
+        .from("skc_gov_workflow_log")
+        .select("id, from_status, to_status, note, created_at, actor_id")
+        .eq("job_id", id)
+        .order("created_at", { ascending: false });
+
+      // Fetch actor names separately (no FK in schema)
+      const actorIds = [...new Set((logsData ?? []).map((l) => l.actor_id).filter(Boolean))];
+      let actorMap: Record<string, string> = {};
+      if (actorIds.length > 0) {
+        const { data: actors } = await supabase
+          .from("skc_users")
+          .select("id, name")
+          .in("id", actorIds);
+        actorMap = Object.fromEntries((actors ?? []).map((a) => [a.id, a.name]));
+      }
+
+      setLogs(
+        (logsData ?? []).map((l) => ({
+          ...l,
+          action: l.to_status,
+          actor: l.actor_id ? { name: actorMap[l.actor_id] } : null,
+        }))
+      );
+
+      // 4. Warranty claims
+      const { data: claimsData } = await supabase
+        .from("skc_warranty_claims")
+        .select("*")
+        .eq("job_id", id)
+        .order("created_at", { ascending: false });
+
+      const claimerIds = [...new Set((claimsData ?? []).map((c) => c.claimed_by).filter(Boolean))];
+      let claimerMap: Record<string, string> = {};
+      if (claimerIds.length > 0) {
+        const { data: claimers } = await supabase
+          .from("skc_users")
+          .select("id, name")
+          .in("id", claimerIds);
+        claimerMap = Object.fromEntries((claimers ?? []).map((u) => [u.id, u.name]));
+      }
+      setClaims(
+        (claimsData ?? []).map((c) => ({
+          ...c,
+          claimer: c.claimed_by ? { name: claimerMap[c.claimed_by] } : null,
+        }))
+      );
+    }
 
     setLoading(false);
   }
