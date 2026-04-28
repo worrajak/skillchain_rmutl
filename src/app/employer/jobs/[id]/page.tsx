@@ -275,6 +275,19 @@ export default function EmployerJobDetailPage() {
         </Card>
       )}
 
+      {/* Interim Review (IN_PROGRESS) — ผู้ว่าจ้างประเมินระหว่างทำงาน */}
+      {job.status === "IN_PROGRESS" && userId && job.student_id && studentName && job.employer_id === userId && (
+        <EmployerReviewForm
+          jobId={job.id}
+          employerId={userId}
+          studentId={job.student_id}
+          studentName={studentName}
+          jobTitle={job.title}
+          evalPhase="IN_PROGRESS"
+          onSuccess={loadJob}
+        />
+      )}
+
       {/* Student Progress/Completion Images — SUBMITTED */}
       {(job.status === "SUBMITTED" || job.status === "COMPLETED") && (
         <Card>

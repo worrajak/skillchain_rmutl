@@ -2,19 +2,33 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
 
+type EvalPhase = "PRE_WORK" | "IN_PROGRESS" | "POST_WORK";
+
+// สถานะงานที่อนุญาตต่อ eval_phase
+const PHASE_STATUSES: Record<EvalPhase, string[]> = {
+  PRE_WORK: ["ASSIGNED", "CONFIRMED"],
+  IN_PROGRESS: ["IN_PROGRESS"],
+  POST_WORK: ["SUBMITTED", "COMPLETED", "IN_WARRANTY", "CLOSED"],
+};
+
 // ตรวจสอบว่า reviewer เกี่ยวข้องกับงานจริง
 async function verifyReviewer(
   supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
   jobId: string,
-  reviewType: string
+  reviewType: string,
+  evalPhase: EvalPhase,
 ): Promise<{ ok: boolean; error?: string }> {
   const { data: job } = await supabase.from("skc_jobs").select("employer_id, student_id, mentor_id, status").eq("id", jobId).single();
   if (!job) return { ok: false, error: "ไม่พบงานนี้" };
 
-  // งานต้องอยู่ในสถานะที่ประเมินได้
-  if (!["SUBMITTED", "COMPLETED"].includes(job.status)) {
-    return { ok: false, error: "งานยังไม่อยู่ในสถานะที่สามารถประเมินได้" };
+  // งานต้องอยู่ในสถานะที่อนุญาตต่อ eval_phase ที่ระบุ
+  const allowed = PHASE_STATUSES[evalPhase] ?? [];
+  if (!allowed.includes(job.status)) {
+    return {
+      ok: false,
+      error: `สถานะงาน "${job.status}" ไม่อนุญาตให้ประเมินในช่วง "${evalPhase}"`,
+    };
   }
 
   const { data: reviewer } = await supabase.from("skc_users").select("role").eq("id", userId).single();
@@ -57,11 +71,15 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const { type, job_id } = body;
+  const eval_phase: EvalPhase = body.eval_phase ?? "POST_WORK";
 
   if (!job_id) return NextResponse.json({ error: "ต้องระบุ job_id" }, { status: 400 });
+  if (!["PRE_WORK", "IN_PROGRESS", "POST_WORK"].includes(eval_phase)) {
+    return NextResponse.json({ error: "eval_phase ไม่ถูกต้อง" }, { status: 400 });
+  }
 
   // ตรวจสอบสิทธิ์
-  const check = await verifyReviewer(supabase, user.id, job_id, type);
+  const check = await verifyReviewer(supabase, user.id, job_id, type, eval_phase);
   if (!check.ok) return NextResponse.json({ error: check.error }, { status: 403 });
 
   if (type === "employer") {
@@ -74,6 +92,7 @@ export async function POST(request: NextRequest) {
       job_id, employer_id: user.id, student_id,
       score_quality, score_punctuality, score_attitude, overall_rating,
       comment: comment || null,
+      eval_phase,
     }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json(data, { status: 201 });
@@ -89,6 +108,7 @@ export async function POST(request: NextRequest) {
       job_id, student_id: user.id, employer_id,
       score_clarity, score_payment, score_safety, overall_rating,
       comment: comment || null,
+      eval_phase,
     }).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 400 });
     return NextResponse.json(data, { status: 201 });

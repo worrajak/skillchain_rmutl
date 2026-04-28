@@ -25,6 +25,7 @@ interface EmployerReviewFormProps {
   studentId: string;
   studentName: string;
   jobTitle: string;
+  evalPhase?: "PRE_WORK" | "IN_PROGRESS" | "POST_WORK";
   onSuccess?: () => void;
 }
 
@@ -34,6 +35,7 @@ export function EmployerReviewForm({
   studentId,
   studentName,
   jobTitle,
+  evalPhase = "POST_WORK",
   onSuccess,
 }: EmployerReviewFormProps) {
   const [scores, setScores] = useState<Record<string, number>>({
@@ -72,6 +74,7 @@ export function EmployerReviewForm({
         score_punctuality: scores.score_punctuality,
         score_attitude: scores.score_attitude,
         comment: comment || null,
+        eval_phase: evalPhase,
       }),
     });
     const data = await res.json();
@@ -98,13 +101,25 @@ export function EmployerReviewForm({
     );
   }
 
+  const phaseLabel =
+    evalPhase === "IN_PROGRESS"
+      ? "ระหว่างทำงาน (Interim)"
+      : evalPhase === "PRE_WORK"
+        ? "ก่อนเริ่มงาน"
+        : "หลังงานเสร็จ (Final)";
+
   return (
     <form onSubmit={handleSubmit}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-foreground">
-            ให้คะแนนนักศึกษา: {studentName}
-          </CardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <CardTitle className="text-foreground">
+              ให้คะแนนนักศึกษา: {studentName}
+            </CardTitle>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">
+              {phaseLabel}
+            </span>
+          </div>
           <p className="text-sm text-muted-foreground">งาน: {jobTitle}</p>
         </CardHeader>
         <CardContent className="space-y-6">

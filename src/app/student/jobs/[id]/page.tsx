@@ -17,6 +17,7 @@ import {
 import { toast } from "sonner";
 import { ImageUpload } from "@/components/image-upload";
 import { ImageGallery } from "@/components/image-gallery";
+import { StudentReviewForm } from "@/components/reviews/student-review-form";
 
 const STATUS_TH: Record<string, { label: string; color: string }> = {
   ASSIGNED: { label: "ได้รับมอบหมาย", color: "bg-blue-100 text-blue-800" },
@@ -455,6 +456,32 @@ export default function StudentJobDetailPage({ params }: { params: Promise<{ id:
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Interim review (IN_PROGRESS) — นศ. ประเมินผู้ว่าจ้างระหว่างทำงาน */}
+      {isMine && job.status === "IN_PROGRESS" && job.employer && job.employer_id && userId && (
+        <StudentReviewForm
+          jobId={job.id}
+          studentId={userId}
+          employerId={job.employer_id}
+          employerName={job.employer.name}
+          jobTitle={job.title}
+          evalPhase="IN_PROGRESS"
+          onSuccess={() => load()}
+        />
+      )}
+
+      {/* Final review (COMPLETED+) — นศ. ประเมินผู้ว่าจ้างหลังงานเสร็จ */}
+      {isMine && (job.status === "COMPLETED" || job.status === "IN_WARRANTY" || job.status === "CLOSED") && job.employer && job.employer_id && userId && (
+        <StudentReviewForm
+          jobId={job.id}
+          studentId={userId}
+          employerId={job.employer_id}
+          employerName={job.employer.name}
+          jobTitle={job.title}
+          evalPhase="POST_WORK"
+          onSuccess={() => load()}
+        />
       )}
 
       {/* Read-only message for non-mine staff/admin viewing */}
