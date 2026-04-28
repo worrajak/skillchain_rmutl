@@ -3,16 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Briefcase, PlusCircle, Users, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, Briefcase, PlusCircle, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TrpbBalance } from "@/components/trpb-balance";
 
+// นศ. ไม่มีในเมนูผู้จ้าง — จัดการโดย staff/admin/อาจารย์
+// ผู้จ้างเห็นชื่อ นศ. ที่รับงานในการ์ดแต่ละงานอยู่แล้ว
 const navItems = [
   { href: "/employer/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/employer/jobs/new", label: "ลงงานใหม่", icon: PlusCircle },
   { href: "/employer/jobs", label: "งานของฉัน", icon: Briefcase },
-  { href: "/employer/students", label: "นักศึกษา", icon: Users },
 ];
 
 export default function EmployerLayout({ children }: { children: React.ReactNode }) {
