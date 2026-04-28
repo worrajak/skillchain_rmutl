@@ -24,24 +24,50 @@ export default function StaffActiveJobsPage() {
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState<string | null>(null);
   const [releasing, setReleasing] = useState<string | null>(null);
+  const [view, setView] = useState<"mine" | "all">("mine");  // Tab toggle
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const supabase = createClient();
 
   async function loadJobs() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
+    setCurrentUserId(user.id);
 
-    const { data } = await supabase
+    let query = supabase
       .from("skc_jobs")
       .select("*, student:skc_users!skc_jobs_student_id_fkey(name), employer:skc_users!skc_jobs_employer_id_fkey(name)")
-      .eq("approved_by_staff", user.id)
       .in("status", ["ASSIGNED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"])
       .order("updated_at", { ascending: false });
-    setJobs(data ?? []);
+
+    // Filter: "mine" = supervised by current user, "all" = all jobs
+    if (view === "mine") {
+      query = query.eq("approved_by_staff", user.id);
+    }
+
+    const { data } = await query;
+
+    // Resolve supervisor names (separate query — approved_by_staff is not a FK)
+    const supIds = [...new Set((data ?? []).map((j) => j.approved_by_staff).filter(Boolean))];
+    let supMap: Record<string, string> = {};
+    if (supIds.length > 0) {
+      const { data: sups } = await supabase
+        .from("skc_users")
+        .select("id, name")
+        .in("id", supIds);
+      supMap = Object.fromEntries((sups ?? []).map((s) => [s.id, s.name]));
+    }
+
+    setJobs(
+      (data ?? []).map((j) => ({
+        ...j,
+        supervisor: j.approved_by_staff ? { id: j.approved_by_staff, name: supMap[j.approved_by_staff] } : null,
+      }))
+    );
     setLoading(false);
   }
 
-  useEffect(() => { loadJobs(); }, []);
+  useEffect(() => { loadJobs(); }, [view]);
 
   async function handleConfirm(jobId: string) {
     setConfirming(jobId);
@@ -54,10 +80,37 @@ export default function StaffActiveJobsPage() {
 
   return (
     <div className="space-y-4">
+      {/* Tab toggle: ของฉัน / ทุกงาน */}
+      <div className="flex gap-2 border-b">
+        <button
+          onClick={() => setView("mine")}
+          className={cn(
+            "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+            view === "mine"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          👤 งานที่ฉันกำกับ
+        </button>
+        <button
+          onClick={() => setView("all")}
+          className={cn(
+            "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+            view === "all"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          🌐 งานทั้งหมด (ทีม)
+        </button>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-foreground flex items-center gap-2">
-            <Briefcase className="size-5" />งานที่กำกับ ({jobs.length})
+            <Briefcase className="size-5" />
+            {view === "mine" ? "งานที่ฉันกำกับ" : "งานทั้งหมดของทีม"} ({jobs.length})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -93,6 +146,11 @@ export default function StaffActiveJobsPage() {
                     <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1"><User className="size-3 text-blue-600" />นศ.: {job.student?.name ?? "-"}</span>
                       <span className="flex items-center gap-1"><User className="size-3 text-green-600" />ผู้จ้าง: {job.employer?.name ?? "-"}</span>
+                      <span className="flex items-center gap-1">
+                        <Shield className="size-3 text-amber-600" />
+                        ผู้กำกับ: {job.supervisor?.name ?? "(ยังไม่มี)"}
+                        {job.supervisor?.id === currentUserId && <span className="text-blue-600 font-medium">(คุณ)</span>}
+                      </span>
                       {job.work_start_date && (
                         <span className="flex items-center gap-1">
                           <Calendar className="size-3" />{new Date(job.work_start_date).toLocaleDateString("th-TH")} — {new Date(job.work_end_date).toLocaleDateString("th-TH")}

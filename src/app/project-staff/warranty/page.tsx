@@ -21,43 +21,78 @@ export default function WarrantyDashboardPage() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [claims, setClaims] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<"mine" | "all">("mine");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const supabase = createClient();
 
   async function load() {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoading(false); return; }
+    setCurrentUserId(user.id);
 
-    // Jobs in warranty assigned to this staff
-    const { data: jobsData } = await supabase
+    // Jobs in warranty
+    let jobsQuery = supabase
       .from("skc_jobs")
       .select(`
         id, title, status, warranty_status, warranty_start_at, warranty_end_at, warranty_period_days,
+        approved_by_staff,
         student:skc_users!skc_jobs_student_id_fkey(name),
         employer:skc_users!skc_jobs_employer_id_fkey(name)
       `)
-      .eq("approved_by_staff", user.id)
       .in("warranty_status", ["ACTIVE", "CLAIMED"])
       .order("warranty_end_at", { ascending: true });
-    setJobs(jobsData ?? []);
 
-    // Open warranty claims for jobs supervised by this staff
-    const { data: claimsData } = await supabase
+    if (view === "mine") jobsQuery = jobsQuery.eq("approved_by_staff", user.id);
+
+    const { data: jobsData } = await jobsQuery;
+
+    // Resolve supervisor names
+    const supIds = [...new Set((jobsData ?? []).map((j) => j.approved_by_staff).filter(Boolean))];
+    let supMap: Record<string, string> = {};
+    if (supIds.length > 0) {
+      const { data: sups } = await supabase.from("skc_users").select("id, name").in("id", supIds);
+      supMap = Object.fromEntries((sups ?? []).map((s) => [s.id, s.name]));
+    }
+    setJobs(
+      (jobsData ?? []).map((j) => ({
+        ...j,
+        supervisor: j.approved_by_staff ? { id: j.approved_by_staff, name: supMap[j.approved_by_staff] } : null,
+      }))
+    );
+
+    // Open warranty claims
+    let claimsQuery = supabase
       .from("skc_warranty_claims")
       .select(`
         *,
-        job:skc_jobs!inner(id, title, approved_by_staff),
-        claimer:skc_users!skc_warranty_claims_claimed_by_fkey(name)
+        job:skc_jobs!inner(id, title, approved_by_staff)
       `)
       .in("status", ["OPEN", "IN_PROGRESS"])
-      .eq("job.approved_by_staff", user.id)
       .order("claimed_at", { ascending: false });
-    setClaims(claimsData ?? []);
+
+    if (view === "mine") claimsQuery = claimsQuery.eq("job.approved_by_staff", user.id);
+
+    const { data: claimsData } = await claimsQuery;
+
+    // Resolve claimer names
+    const claimerIds = [...new Set((claimsData ?? []).map((c) => c.claimed_by).filter(Boolean))];
+    let claimerMap: Record<string, string> = {};
+    if (claimerIds.length > 0) {
+      const { data: u } = await supabase.from("skc_users").select("id, name").in("id", claimerIds);
+      claimerMap = Object.fromEntries((u ?? []).map((x) => [x.id, x.name]));
+    }
+    setClaims(
+      (claimsData ?? []).map((c) => ({
+        ...c,
+        claimer: c.claimed_by ? { name: claimerMap[c.claimed_by] } : null,
+      }))
+    );
 
     setLoading(false);
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [view]);
 
   if (loading) return <div className="p-8 text-center">กำลังโหลด...</div>;
 
@@ -71,6 +106,32 @@ export default function WarrantyDashboardPage() {
         <p className="text-sm text-muted-foreground mt-1">
           ติดตามงานที่อยู่ในระยะประกัน + จัดการ warranty claims
         </p>
+      </div>
+
+      {/* Tab toggle */}
+      <div className="flex gap-2 border-b">
+        <button
+          onClick={() => setView("mine")}
+          className={cn(
+            "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+            view === "mine"
+              ? "border-purple-600 text-purple-600"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          👤 ของฉันกำกับ
+        </button>
+        <button
+          onClick={() => setView("all")}
+          className={cn(
+            "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
+            view === "all"
+              ? "border-purple-600 text-purple-600"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          🌐 ทั้งหมดของทีม
+        </button>
       </div>
 
       {/* Stats */}
@@ -176,6 +237,10 @@ export default function WarrantyDashboardPage() {
                       </div>
                       <div className="text-xs text-muted-foreground">
                         นศ.: {j.student?.name ?? "-"} · ผู้จ้าง: {j.employer?.name ?? "-"}
+                      </div>
+                      <div className="text-xs text-amber-700 mt-0.5">
+                        🛡️ ผู้กำกับ: {j.supervisor?.name ?? "(ยังไม่มี)"}
+                        {j.supervisor?.id === currentUserId && <span className="ml-1 font-bold">(คุณ)</span>}
                       </div>
                     </div>
                   </Link>
