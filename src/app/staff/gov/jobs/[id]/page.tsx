@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { STATUS_LABELS, getNextAction, type GovStatus } from "@/lib/gov-workflow";
 import Link from "next/link";
+import { GenerateDocButton } from "@/components/gov/generate-doc-button";
 
 export default async function GovJobDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -147,11 +148,31 @@ export default async function GovJobDetail({ params }: { params: Promise<{ id: s
         <CardHeader>
           <CardTitle>📄 เอกสารราชการ</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          {/* Generate button — only when activity exists */}
+          {activity && (
+            <div className="border rounded-lg p-3 bg-blue-50/50 flex items-center justify-between gap-3 flex-wrap">
+              <div className="text-sm">
+                <p className="font-medium">บันทึกขออนุมัติกิจกรรม</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {activity.activity_title} · {activity.num_students} คน · {activity.total_hours} ชม. · {Number(activity.total_compensation).toLocaleString("th-TH")} บาท
+                </p>
+              </div>
+              <GenerateDocButton activityId={activity.id} variant="activity-approval" />
+            </div>
+          )}
+          {!activity && (
+            <p className="text-xs text-amber-700 bg-amber-50 rounded p-2">
+              ⚠️ งานนี้ยังไม่มี activity approval — DB trigger ควรสร้างให้อัตโนมัติเมื่อสร้างงาน
+            </p>
+          )}
+
+          {/* Existing documents list */}
           {(documents || []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">ยังไม่มีเอกสาร</p>
+            <p className="text-sm text-muted-foreground">ยังไม่เคยออกเอกสารสำหรับงานนี้</p>
           ) : (
             <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">เอกสารที่ออกแล้ว ({documents?.length})</p>
               {(documents || []).map((doc: any) => (
                 <div key={doc.id} className="flex justify-between items-center p-2 border rounded">
                   <div>
