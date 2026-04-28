@@ -181,7 +181,8 @@ export default function StudentJobDetailPage({ params }: { params: Promise<{ id:
   const status = STATUS_TH[job.status] ?? { label: job.status, color: "bg-gray-100" };
   const isMine = job.student_id === userId;
   const canUploadImages = isMine && ["ASSIGNED", "CONFIRMED", "IN_PROGRESS"].includes(job.status);
-  const canSubmit = isMine && job.status === "IN_PROGRESS";
+  // ส่งมอบงานได้ตั้งแต่ CONFIRMED (ยืนยันวันแล้ว) — ระบบจะข้ามไป SUBMITTED
+  const canSubmit = isMine && ["CONFIRMED", "IN_PROGRESS"].includes(job.status);
   const canProposeSchedule = isMine && job.status === "ASSIGNED";
   const canConfirmSchedule =
     isMine &&
@@ -367,7 +368,7 @@ export default function StudentJobDetailPage({ params }: { params: Promise<{ id:
         </CardContent>
       </Card>
 
-      {/* Submit button (IN_PROGRESS only) */}
+      {/* Submit button (CONFIRMED or IN_PROGRESS) */}
       {canSubmit && (
         <Card className="border-green-300 bg-green-50/40">
           <CardContent className="pt-6 space-y-3">

@@ -12,7 +12,27 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
   const { data: job } = await supabase.from("skc_jobs").select("*").eq("id", id).single();
   if (!job) return NextResponse.json({ error: "ไม่พบงาน" }, { status: 404 });
   if (user.id !== job.student_id) return NextResponse.json({ error: "เฉพาะนักศึกษาที่รับงาน" }, { status: 403 });
-  if (job.status !== "IN_PROGRESS") return NextResponse.json({ error: "งานต้องอยู่ในสถานะ IN_PROGRESS" }, { status: 400 });
+
+  // อนุญาตส่งงานจาก CONFIRMED หรือ IN_PROGRESS (ข้าม start-work step ได้)
+  if (!["CONFIRMED", "IN_PROGRESS"].includes(job.status)) {
+    return NextResponse.json(
+      { error: `ไม่สามารถส่งงานในสถานะ "${job.status}" — งานต้องอยู่ในสถานะ CONFIRMED หรือ IN_PROGRESS` },
+      { status: 400 },
+    );
+  }
+
+  // ตรวจรูปงานเสร็จ — บังคับมีอย่างน้อย 1 รูป
+  const { count } = await supabase
+    .from("skc_job_images")
+    .select("id", { count: "exact", head: true })
+    .eq("job_id", id)
+    .eq("image_type", "completion");
+  if (!count || count < 1) {
+    return NextResponse.json(
+      { error: "ต้องอัปโหลดรูปงานเสร็จอย่างน้อย 1 รูปก่อนส่งมอบงาน" },
+      { status: 400 },
+    );
+  }
 
   // ส่งงาน
   await supabase.from("skc_jobs").update({
