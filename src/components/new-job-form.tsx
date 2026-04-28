@@ -73,35 +73,60 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!userId || !canPost) return;
+    console.log("[NewJobForm] submit clicked", { userId, canPost, userRole });
+
+    if (!userId) {
+      toast.error("ไม่พบข้อมูลผู้ใช้ — กรุณา login ใหม่");
+      console.error("[NewJobForm] missing userId");
+      return;
+    }
+    if (!canPost) {
+      toast.error(`role "${userRole}" ไม่มีสิทธิ์สร้างงาน`);
+      console.error("[NewJobForm] role cannot post:", userRole);
+      return;
+    }
+
     setLoading(true);
 
-    const { data: newJob, error } = await supabase
-      .from("skc_jobs")
-      .insert({
-        title,
-        description,
-        type: jobType,
-        job_category: jobCategory,
-        location,
-        campus,
-        pay_amount: parseFloat(payAmount) || 0,
-        deadline: new Date(deadline).toISOString(),
-        employer_id: userId,
-        is_mentorship: isMentorship,
-        status: "PENDING_REVIEW",
-      })
-      .select("id")
-      .single();
+    const payload = {
+      title,
+      description,
+      type: jobType,
+      job_category: jobCategory,
+      location,
+      campus,
+      pay_amount: parseFloat(payAmount) || 0,
+      deadline: new Date(deadline).toISOString(),
+      employer_id: userId,
+      is_mentorship: isMentorship,
+      status: "PENDING_REVIEW",
+    };
+    console.log("[NewJobForm] inserting:", payload);
 
-    setLoading(false);
-    if (error) {
-      console.error("Job insert error:", error);
-      toast.error(error.message + (error.details ? `\n${error.details}` : ""));
-    } else {
+    try {
+      const { data: newJob, error } = await supabase
+        .from("skc_jobs")
+        .insert(payload)
+        .select("id")
+        .single();
+
+      console.log("[NewJobForm] response:", { newJob, error });
+      setLoading(false);
+
+      if (error) {
+        console.error("[NewJobForm] insert error:", error);
+        toast.error(`สร้างงานไม่สำเร็จ: ${error.message}${error.details ? "\n" + error.details : ""}${error.hint ? "\n" + error.hint : ""}`);
+        return;
+      }
+
       toast.success("ลงงานสำเร็จ! — รอคณะทำงานพิจารณาค่าตอบแทน");
       setCreatedJobId(newJob?.id ?? null);
       setSuccess(true);
+    } catch (e) {
+      setLoading(false);
+      console.error("[NewJobForm] unexpected error:", e);
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error(`เกิดข้อผิดพลาด: ${msg}`);
     }
   }
 
