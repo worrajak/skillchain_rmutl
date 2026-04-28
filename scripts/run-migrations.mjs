@@ -15,6 +15,10 @@ import { Client } from "pg";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import dns from "node:dns";
+
+// Force IPv4 to avoid IPv6 timeout issues
+dns.setDefaultResultOrder("ipv4first");
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");

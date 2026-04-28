@@ -33,9 +33,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Search, Edit2, Trash2, UserPlus, Shield } from "lucide-react";
+import { Search, Edit2, Trash2, UserPlus, Shield, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { getCampusLabel } from "@/types/database";
+import Link from "next/link";
 
 interface User {
   id: string;
@@ -259,6 +260,11 @@ export default function AdminUsersPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
+                          <Link href={`/admin/permissions/${user.id}`}>
+                            <Button variant="ghost" size="sm" title="จัดการสิทธิ์">
+                              <ShieldCheck className="size-4 text-blue-600" />
+                            </Button>
+                          </Link>
                           <Button
                             variant="ghost"
                             size="sm"
