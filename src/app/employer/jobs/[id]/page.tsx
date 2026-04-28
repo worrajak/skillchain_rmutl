@@ -35,6 +35,8 @@ const STATUS_TH: Record<string, { label: string; color: string }> = {
   DISPUTED: { label: "มีข้อพิพาท", color: "bg-red-100 text-red-800" },
 };
 
+type JobImage = { id: string; image_url: string; caption?: string };
+
 export default function EmployerJobDetailPage() {
   const { id } = useParams<{ id: string }>();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -44,6 +46,7 @@ export default function EmployerJobDetailPage() {
   const [endDate, setEndDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [jobImages, setJobImages] = useState<JobImage[]>([]);
 
   const supabase = createClient();
 
@@ -58,6 +61,16 @@ export default function EmployerJobDetailPage() {
     setLoading(false);
   }
 
+  async function loadJobImages() {
+    const { data } = await supabase
+      .from("skc_job_images")
+      .select("id, image_url, caption")
+      .eq("job_id", id)
+      .eq("image_type", "job")
+      .order("sort_order");
+    setJobImages(data ?? []);
+  }
+
   useEffect(() => {
     async function init() {
       const { data: { user } } = await supabase.auth.getUser();
@@ -65,6 +78,7 @@ export default function EmployerJobDetailPage() {
     }
     init();
     loadJob();
+    loadJobImages();
   }, [id]);
 
   async function handleProposeSchedule() {
@@ -147,7 +161,7 @@ export default function EmployerJobDetailPage() {
       </Card>
 
       {/* Job Images — ผู้ว่าจ้างอัปโหลด/ดูรูปเครื่อง */}
-      {["PENDING_REVIEW", "OPEN", "ASSIGNED"].includes(job.status) && (
+      {["PENDING_REVIEW", "OPEN", "ASSIGNED"].includes(job.status) ? (
         <Card>
           <CardContent className="pt-4 pb-4">
             <ImageUpload
@@ -155,11 +169,12 @@ export default function EmployerJobDetailPage() {
               imageType="job"
               maxImages={4}
               label="รูปเครื่อง/ลักษณะงาน"
+              existingImages={jobImages}
+              onUploadComplete={loadJobImages}
             />
           </CardContent>
         </Card>
-      )}
-      {!["PENDING_REVIEW", "OPEN", "ASSIGNED"].includes(job.status) && (
+      ) : (
         <ImageGallery jobId={job.id} imageType="job" label="รูปเครื่อง/ลักษณะงาน" />
       )}
 

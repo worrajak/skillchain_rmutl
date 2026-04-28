@@ -1,16 +1,19 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Camera, X, Loader2, ImagePlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { toast } from "sonner";
 
+type ExistingImage = { id: string; image_url: string; caption?: string };
+
 interface ImageUploadProps {
   jobId: string;
   imageType: "job" | "progress" | "completion";
   maxImages?: number;
-  existingImages?: { id: string; image_url: string; caption?: string }[];
+  /** Pass to operate in controlled mode. Omit to let the component self-load from DB. */
+  existingImages?: ExistingImage[];
   onUploadComplete?: (images: { id: string; image_url: string }[]) => void;
   disabled?: boolean;
   label?: string;
@@ -20,17 +23,35 @@ export function ImageUpload({
   jobId,
   imageType,
   maxImages = 4,
-  existingImages = [],
+  existingImages,
   onUploadComplete,
   disabled = false,
   label,
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [previews, setPreviews] = useState<{ file: File; preview: string }[]>([]);
+  const [internalImages, setInternalImages] = useState<ExistingImage[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const supabase = createClient();
 
-  const totalImages = existingImages.length + previews.length;
+  const isControlled = existingImages !== undefined;
+  const images = isControlled ? existingImages : internalImages;
+
+  const refreshInternal = useCallback(async () => {
+    const { data } = await supabase
+      .from("skc_job_images")
+      .select("id, image_url, caption")
+      .eq("job_id", jobId)
+      .eq("image_type", imageType)
+      .order("sort_order");
+    setInternalImages(data ?? []);
+  }, [jobId, imageType, supabase]);
+
+  useEffect(() => {
+    if (!isControlled) refreshInternal();
+  }, [isControlled, refreshInternal]);
+
+  const totalImages = images.length + previews.length;
   const canAddMore = totalImages < maxImages;
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -97,7 +118,7 @@ export function ImageUpload({
             job_id: jobId,
             image_url: publicUrl,
             image_type: imageType,
-            sort_order: existingImages.length + i,
+            sort_order: images.length + i,
             uploaded_by: user.id,
           })
           .select("id, image_url")
@@ -117,6 +138,7 @@ export function ImageUpload({
 
       if (uploaded.length > 0) {
         toast.success(`อัปโหลด ${uploaded.length} รูปสำเร็จ`);
+        if (!isControlled) await refreshInternal();
         onUploadComplete?.(uploaded);
       }
     } catch (err) {
@@ -135,7 +157,8 @@ export function ImageUpload({
       toast.error("ลบไม่สำเร็จ");
     } else {
       toast.success("ลบรูปแล้ว");
-      onUploadComplete?.(existingImages.filter((img) => img.id !== imageId));
+      if (!isControlled) await refreshInternal();
+      onUploadComplete?.(images.filter((img) => img.id !== imageId));
     }
   }
 
@@ -152,14 +175,14 @@ export function ImageUpload({
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-foreground flex items-center gap-1.5">
           <Camera className="size-4" />
-          {typeLabel} ({existingImages.length + previews.length}/{maxImages})
+          {typeLabel} ({images.length + previews.length}/{maxImages})
         </p>
       </div>
 
       {/* Existing + Preview Grid */}
-      {(existingImages.length > 0 || previews.length > 0) && (
+      {(images.length > 0 || previews.length > 0) && (
         <div className="grid grid-cols-2 gap-2">
-          {existingImages.map((img) => (
+          {images.map((img) => (
             <div key={img.id} className="relative group rounded-lg overflow-hidden border aspect-video bg-muted">
               <img
                 src={img.image_url}
