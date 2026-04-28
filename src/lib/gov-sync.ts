@@ -85,7 +85,19 @@ export interface GateCheckResult {
   currentGovStatus?: string;
 }
 
+/**
+ * Whether gov workflow gates are enforced.
+ * Pilot mode: default OFF — set ENFORCE_GOV_GATE=true in .env to require
+ * full ACTIVITY_APPROVED / DISBURSEMENT_APPROVED before assign/release.
+ */
+function govGateEnforced(): boolean {
+  return process.env.ENFORCE_GOV_GATE === "true";
+}
+
 export async function checkCanAssign(supabase: any, jobId: string): Promise<GateCheckResult> {
+  // Pilot mode: skip gov gate entirely
+  if (!govGateEnforced()) return { allowed: true };
+
   const { data: job } = await supabase
     .from("skc_jobs")
     .select("gov_status, gov_activity_id")
@@ -185,6 +197,9 @@ export async function onWorkCompleted(supabase: any, jobId: string) {
 // ============================================================================
 
 export async function checkCanReleaseEscrow(supabase: any, jobId: string): Promise<GateCheckResult> {
+  // Pilot mode: skip gov gate entirely
+  if (!govGateEnforced()) return { allowed: true };
+
   const { data: job } = await supabase
     .from("skc_jobs")
     .select("gov_status, gov_activity_id, employer_id")
