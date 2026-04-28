@@ -137,7 +137,7 @@ export default function AdminJobsPage() {
       {/* Header with Create button */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">จัดการงาน</h1>
-        <Link href="/employer/jobs/new">
+        <Link href="/admin/jobs/new">
           <Button className="gap-2">
             <Plus className="size-4" />
             สร้างงานใหม่

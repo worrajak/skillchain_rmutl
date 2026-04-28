@@ -11,7 +11,7 @@ import { TrpbBalance } from "@/components/trpb-balance";
 
 const navItems = [
   { href: "/project-staff/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/employer/jobs/new", label: "+ สร้างงานใหม่", icon: PlusCircle },
+  { href: "/project-staff/jobs/new", label: "+ สร้างงานใหม่", icon: PlusCircle },
   { href: "/project-staff/review-jobs", label: "พิจารณางานใหม่", icon: ClipboardCheck },
   { href: "/project-staff/approvals", label: "อนุมัติรับงาน", icon: UserCheck },
   { href: "/project-staff/employers", label: "โควต้าผู้ว่าจ้าง", icon: Users },
