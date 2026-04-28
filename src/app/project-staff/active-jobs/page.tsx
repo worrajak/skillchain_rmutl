@@ -12,10 +12,15 @@ import { ImageGallery } from "@/components/image-gallery";
 import Link from "next/link";
 
 const STATUS_TH: Record<string, { label: string; color: string }> = {
+  PENDING_REVIEW: { label: "รอพิจารณา", color: "bg-orange-100 text-orange-800" },
+  CONFIRMED: { label: "ยืนยันแล้ว", color: "bg-cyan-100 text-cyan-800" },
+  OPEN: { label: "เปิดรับ", color: "bg-green-100 text-green-800" },
   ASSIGNED: { label: "มอบหมายแล้ว", color: "bg-blue-100 text-blue-800" },
   IN_PROGRESS: { label: "กำลังทำ", color: "bg-cyan-100 text-cyan-800" },
   SUBMITTED: { label: "ส่งงานแล้ว", color: "bg-yellow-100 text-yellow-800" },
   COMPLETED: { label: "เสร็จสิ้น", color: "bg-green-100 text-green-800" },
+  IN_WARRANTY: { label: "อยู่ในประกัน", color: "bg-purple-100 text-purple-800" },
+  CLOSED: { label: "ปิดงาน", color: "bg-gray-100 text-gray-800" },
 };
 
 export default function StaffActiveJobsPage() {
@@ -37,12 +42,16 @@ export default function StaffActiveJobsPage() {
     let query = supabase
       .from("skc_jobs")
       .select("*, student:skc_users!skc_jobs_student_id_fkey(name), employer:skc_users!skc_jobs_employer_id_fkey(name)")
-      .in("status", ["ASSIGNED", "IN_PROGRESS", "SUBMITTED", "COMPLETED"])
       .order("updated_at", { ascending: false });
 
-    // Filter: "mine" = supervised by current user, "all" = all jobs
+    // Filter by view
     if (view === "mine") {
+      // เฉพาะที่ฉันเป็น supervisor (อนุมัติให้ นศ. รับงาน)
       query = query.eq("approved_by_staff", user.id);
+    } else {
+      // ทุกงาน (ของทีม) — ไม่ filter status
+      // แต่ exclude CANCELLED + CLOSED เพื่อให้เห็นเฉพาะที่ active
+      query = query.not("status", "in", "(CANCELLED)");
     }
 
     const { data } = await query;
