@@ -22,6 +22,7 @@ import Link from "next/link";
 import { UserAvatar } from "@/components/avatar-upload";
 import { QRCheckIn } from "@/components/qr-checkin";
 import JobQrCard from "@/components/job-qr-card";
+import WarrantyClaimForm from "@/components/warranty-claim-form";
 
 const STATUS_TH: Record<string, { label: string; color: string }> = {
   PENDING_REVIEW: { label: "รอพิจารณา", color: "bg-orange-100 text-orange-800" },
@@ -156,6 +157,16 @@ export default function EmployerJobDetailPage() {
       {/* Smart Job QR — แสดงตั้งแต่ ASSIGNED ขึ้นไป (ใช้ทุก stage) */}
       {!["OPEN", "PENDING_REVIEW"].includes(job.status) && (
         <JobQrCard jobId={job.id} jobTitle={job.title} />
+      )}
+
+      {/* Warranty Claim — แสดงเฉพาะเมื่ออยู่ในประกัน */}
+      {(job.status === "COMPLETED" || job.status === "IN_WARRANTY") && job.warranty_status === "ACTIVE" && (
+        <WarrantyClaimForm
+          jobId={job.id}
+          jobTitle={job.title}
+          warrantyEndAt={job.warranty_end_at}
+          warrantyStatus={job.warranty_status}
+        />
       )}
 
       {/* QR Check-in — เมื่อมอบหมายแล้วหรือกำลังทำ */}

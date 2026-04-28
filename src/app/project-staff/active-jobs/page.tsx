@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StaffSupervisorBadge } from "@/components/staff-supervisor-badge";
 import { cn } from "@/lib/utils";
-import { Briefcase, CheckCircle, XCircle, Calendar, User, Wallet, Loader2, ExternalLink } from "lucide-react";
+import { Briefcase, CheckCircle, XCircle, Calendar, User, Wallet, Loader2, ExternalLink, Eye, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { ImageGallery } from "@/components/image-gallery";
+import Link from "next/link";
 
 const STATUS_TH: Record<string, { label: string; color: string }> = {
   ASSIGNED: { label: "มอบหมายแล้ว", color: "bg-blue-100 text-blue-800" },
@@ -69,13 +70,24 @@ export default function StaffActiveJobsPage() {
                 return (
                   <div key={job.id} className="rounded-lg border p-4 space-y-2">
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="flex-1">
                         <div className="font-medium text-foreground">{job.title}</div>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
                           <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", status.color)}>{status.label}</span>
                           {job.pay_amount > 0 && <span className="text-xs text-green-700 font-medium">{job.pay_amount.toLocaleString()} TRPB</span>}
+                          {job.warranty_status === "ACTIVE" && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-purple-100 text-purple-800 px-2 py-0.5 text-xs">
+                              <Shield className="size-3" />
+                              ในประกัน
+                            </span>
+                          )}
                         </div>
                       </div>
+                      <Link href={`/project-staff/jobs/${job.id}`}>
+                        <Button size="sm" variant="outline" className="gap-1">
+                          <Eye className="size-4" /> ดูรายละเอียด
+                        </Button>
+                      </Link>
                     </div>
 
                     <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
