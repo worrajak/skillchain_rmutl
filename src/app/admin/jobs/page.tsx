@@ -32,9 +32,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Search, Edit2, Trash2, Eye } from "lucide-react";
+import { Search, Edit2, Trash2, Eye, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { getCampusLabel } from "@/types/database";
+import Link from "next/link";
 
 interface Job {
   id: string;
@@ -133,6 +134,17 @@ export default function AdminJobsPage() {
 
   return (
     <div className="space-y-4">
+      {/* Header with Create button */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">จัดการงาน</h1>
+        <Link href="/employer/jobs/new">
+          <Button className="gap-2">
+            <Plus className="size-4" />
+            สร้างงานใหม่
+          </Button>
+        </Link>
+      </div>
+
       {/* Filters */}
       <Card>
         <CardContent className="flex flex-wrap gap-3 pt-4 pb-4">
