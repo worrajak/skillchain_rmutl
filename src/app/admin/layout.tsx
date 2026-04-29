@@ -17,6 +17,7 @@ import {
   UserCheck,
   AlertTriangle,
   Coins,
+  Wallet,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ const navItems = [
   { href: "/admin/tier", label: "Student Tier", icon: Shield },
   { href: "/admin/fees", label: "ค่าธรรมเนียม TRPB", icon: Star },
   { href: "/admin/trpb", label: "TRPB Pool", icon: Coins },
+  { href: "/admin/wallets", label: "Wallets (TRON)", icon: Wallet },
   { href: "/admin/reports", label: "รายงาน", icon: BarChart3 },
 ];
 
