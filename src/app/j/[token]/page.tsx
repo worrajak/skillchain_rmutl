@@ -63,12 +63,13 @@ export default async function JobQrRouter({
     }
   }
 
-  // 3. Resolve action based on context
+  // 3. Resolve action based on context (pass token for proper return URL)
   const result = resolveJobQrAction({
     userRole,
     userId,
     jobStatus: job.status,
     jobId: job.id,
+    token,
     isAssignedStudent: job.student_id === userId,
     isJobEmployer: job.employer_id === userId,
     isJobMentor: job.mentor_id === userId,

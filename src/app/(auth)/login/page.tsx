@@ -56,15 +56,17 @@ export default function LoginPage() {
       .eq("id", authUser?.id)
       .single();
     const role = profile?.role ?? authUser?.user_metadata?.role ?? "student";
+    // Every role lands on its own /dashboard hub (consistent UX).
+    // teacher + donor dashboards are placeholders that link to their workflow pages.
     const routes: Record<string, string> = {
       student: "/student/dashboard",
       employer: "/employer/dashboard",
-      teacher: "/teacher/evaluation",
+      teacher: "/teacher/dashboard",
       admin: "/admin/dashboard",
       superadmin: "/admin/dashboard",
-      donor: "/donor/donate",
-      project_staff: "/project-staff/approvals",
-      rmutl_staff: "/project-staff/approvals",
+      donor: "/donor/dashboard",
+      project_staff: "/project-staff/dashboard",
+      rmutl_staff: "/project-staff/dashboard",
     };
     router.push(routes[role] ?? "/student/dashboard");
     router.refresh();

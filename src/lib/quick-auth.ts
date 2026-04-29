@@ -389,6 +389,8 @@ export interface SmartRouteContext {
   userId?: string;
   jobStatus: string;
   jobId: string;
+  /** QR token from URL — used to construct return URL after login. */
+  token?: string;
   isAssignedStudent?: boolean;
   isJobEmployer?: boolean;
   isJobMentor?: boolean;
@@ -406,10 +408,11 @@ export interface SmartRouteResult {
 export function resolveJobQrAction(ctx: SmartRouteContext): SmartRouteResult {
   const { userRole, jobStatus, jobId, isAssignedStudent, isJobEmployer, isJobMentor } = ctx;
 
-  // Anonymous → login then come back
+  // Anonymous → login then come back to the SAME QR (use token, not jobId)
   if (!userRole) {
+    const returnUrl = ctx.token ? `/j/${ctx.token}` : `/jobs/${jobId}`;
     return {
-      path: `/quick-login?next=/j/${ctx.jobId}`,
+      path: `/quick-login?next=${encodeURIComponent(returnUrl)}`,
       action: "LOGIN_REQUIRED",
       description: "กรุณาเข้าสู่ระบบเพื่อใช้งาน",
     };

@@ -1,196 +1,143 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createNotification } from "@/lib/telegram";
-import { TronWeb } from "tronweb";
-import JobEscrowABI from "@/lib/tron/abi/JobEscrow.json";
 import { checkCanReleaseEscrow } from "@/lib/gov-sync";
+import { escrowRelease, escrowHold, mint, getBalance, SYSTEM_POOL } from "@/lib/trpb-ledger";
 
 // POST /api/jobs/[id]/release-escrow
-// คณะทำงาน (project_staff/admin) กดปล่อยค่าจ้าง on-chain
-// Server ใช้ deployer key เรียก escrow.release()
+// Off-chain TRPB ledger version. TRON Nile is no longer called automatically;
+// admin can manually mirror via on_chain_ref later.
+//
+// Auto-fill behavior (pilot mode): if employer doesn't have enough held funds,
+// the system tops them up from their balance (and from SYSTEM pool if needed)
+// so testing works without manual mint+hold steps.
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: jobId } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user)
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  // ตรวจสอบ role: เฉพาะ staff/admin
+  // Role: only staff/admin
   const { data: profile } = await supabase
-    .from("skc_users")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
+    .from("skc_users").select("role").eq("id", user.id).single();
   const allowedRoles = ["project_staff", "rmutl_staff", "admin", "superadmin"];
   if (!profile || !allowedRoles.includes(profile.role)) {
-    return NextResponse.json(
-      { error: "เฉพาะคณะทำงาน/แอดมินเท่านั้น" },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: "เฉพาะคณะทำงาน/แอดมินเท่านั้น" }, { status: 403 });
   }
 
-  // ตรวจสอบ job status
   const { data: job } = await supabase
     .from("skc_jobs")
-    .select("status, escrow_tx, pay_amount, student_id, employer_id, type")
+    .select("status, escrow_tx, pay_amount, student_id, employer_id, type, title")
     .eq("id", jobId)
     .single();
 
   if (!job) return NextResponse.json({ error: "ไม่พบงาน" }, { status: 404 });
   if (job.status !== "COMPLETED")
     return NextResponse.json({ error: "งานยังไม่เสร็จสมบูรณ์" }, { status: 400 });
+  if (job.escrow_tx)
+    return NextResponse.json({ error: "จ่ายค่าจ้างไปแล้ว", tx_id: job.escrow_tx }, { status: 400 });
+  if (job.type !== "PAID" || !job.pay_amount)
+    return NextResponse.json({ error: "ไม่ใช่งานจ้าง" }, { status: 400 });
+  if (!job.student_id)
+    return NextResponse.json({ error: "งานนี้ยังไม่มี นศ. รับ" }, { status: 400 });
+  if (!job.employer_id)
+    return NextResponse.json({ error: "งานนี้ไม่มีผู้ว่าจ้าง" }, { status: 400 });
 
-  // ===== GOV GATE CHECK =====
-  // ห้ามปล่อย Escrow จนกว่า disbursement จะได้รับอนุมัติจากฝ่ายการเงิน
+  // Gov gate (default: skip in pilot mode)
   const gate = await checkCanReleaseEscrow(supabase, jobId);
   if (!gate.allowed) {
     return NextResponse.json({
       error: gate.reason,
       suggestedAction: gate.suggestedAction,
       currentGovStatus: gate.currentGovStatus,
-      hint: "ต้องผ่านการอนุมัติใบเบิกจากฝ่ายการเงินก่อนจึงจะปล่อย Escrow ได้",
     }, { status: 403 });
   }
-  if (job.escrow_tx)
-    return NextResponse.json({ error: "จ่ายค่าจ้างไปแล้ว", tx_hash: job.escrow_tx }, { status: 400 });
-  if (job.type !== "PAID" || !job.pay_amount)
-    return NextResponse.json({ error: "ไม่ใช่งานจ้าง" }, { status: 400 });
 
-  // ตรวจโควต้าผู้ว่าจ้าง (ถ้าตั้งไว้)
-  if (job.employer_id) {
-    const { data: employer } = await supabase
-      .from("skc_users")
-      .select("job_quota, job_quota_used")
-      .eq("id", job.employer_id)
-      .single();
+  const amount = Number(job.pay_amount);
 
-    if (employer && employer.job_quota > 0 && employer.job_quota_used >= employer.job_quota) {
-      return NextResponse.json(
-        { error: `ผู้ว่าจ้างใช้โควต้าครบแล้ว (${employer.job_quota_used}/${employer.job_quota})` },
-        { status: 400 }
-      );
-    }
-  }
+  // ===== Auto-fill held funds for employer (pilot test mode) =====
+  // Step 1: ensure employer has enough hold_balance for this payout
+  const employerBal = await getBalance(supabase, job.employer_id);
+  const employerHeld = employerBal?.hold_balance ?? 0;
 
-  // ---- On-chain: release escrow ----
-  const deployerKey = process.env.TRON_DEPLOYER_PRIVATE_KEY;
-  const escrowAddress = process.env.NEXT_PUBLIC_JOB_ESCROW_ADDRESS;
-  const tronHost = process.env.NEXT_PUBLIC_TRON_FULL_HOST || "https://nile.trongrid.io";
+  if (employerHeld < amount) {
+    const needed = amount - employerHeld;
+    const employerSpendable = employerBal?.balance ?? 0;
 
-  if (!deployerKey || !escrowAddress) {
-    return NextResponse.json(
-      { error: "TRON config ยังไม่พร้อม (ตรวจ .env)" },
-      { status: 500 }
-    );
-  }
-
-  try {
-    const tronWeb = new TronWeb({ fullHost: tronHost, privateKey: deployerKey });
-    const escrow = tronWeb.contract(JobEscrowABI, escrowAddress);
-
-    // UUID → bytes32
-    const jobIdBytes32 = "0x" + jobId.replace(/-/g, "").padEnd(64, "0");
-
-    // ตรวจ escrow on-chain
-    const info = await escrow.getEscrow(jobIdBytes32).call();
-    const escrowAmount = Number(info.amount) / 1e6;
-
-    if (escrowAmount === 0) {
-      // ยังไม่มี escrow → สร้างใหม่จาก deployer wallet (approve + create)
-      const tokenAddress = process.env.NEXT_PUBLIC_TRPB_TOKEN_ADDRESS;
-      if (!tokenAddress) {
-        return NextResponse.json({ error: "TRPB Token address ไม่พร้อม" }, { status: 500 });
+    // If employer's spendable also short, mint top-up from SYSTEM pool first
+    if (employerSpendable < needed) {
+      const topUp = needed - employerSpendable;
+      const mintRes = await mint(supabase, job.employer_id, topUp, {
+        jobId,
+        reason: `Auto top-up เพื่อ release escrow งาน "${job.title}"`,
+        createdBy: user.id,
+      });
+      if (!mintRes.ok) {
+        return NextResponse.json({
+          error: `Top-up ไม่สำเร็จ: ${mintRes.error}`,
+          hint: "ลองให้ admin จ่าย TRPB ให้ผู้จ้างก่อนผ่าน /admin/trpb",
+        }, { status: 500 });
       }
-
-      const TRPBTokenABI = (await import("@/lib/tron/abi/TRPBToken.json")).default;
-      const token = tronWeb.contract(TRPBTokenABI, tokenAddress);
-      const amountOnChain = Math.round(job.pay_amount * 1e6);
-
-      // ดึง wallet address ของนักศึกษา
-      let studentWallet: string | null = null;
-      if (job.student_id) {
-        const { data: studentProfile } = await supabase
-          .from("skc_users")
-          .select("wallet_address")
-          .eq("id", job.student_id)
-          .single();
-        studentWallet = studentProfile?.wallet_address ?? null;
-      }
-      // ถ้าไม่มี wallet → ใช้ deployer (fallback)
-      const recipientAddr = studentWallet || tronWeb.address.fromPrivateKey(deployerKey);
-
-      // Approve
-      await token.approve(escrowAddress, amountOnChain).send({ feeLimit: 100_000_000 });
-      await new Promise((r) => setTimeout(r, 4000));
-
-      // Create escrow
-      const zeroAddr = "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb";
-      await escrow
-        .createEscrow(jobIdBytes32, recipientAddr, zeroAddr, amountOnChain)
-        .send({ feeLimit: 100_000_000 });
-      await new Promise((r) => setTimeout(r, 4000));
     }
 
-    if (info.released) {
-      // On-chain released แล้วแต่ DB ยังไม่มี tx → sync
-      await supabase.from("skc_jobs").update({ escrow_tx: "already-released-on-chain" }).eq("id", jobId);
+    // Now hold the needed amount
+    const holdRes = await escrowHold(supabase, job.employer_id, needed, jobId, user.id);
+    if (!holdRes.ok) {
       return NextResponse.json({
-        message: "Escrow ถูก release ไปแล้ว on-chain — sync DB เรียบร้อย",
-        tx_hash: "already-released-on-chain",
-      });
+        error: `กัน TRPB ไม่สำเร็จ: ${holdRes.error}`,
+      }, { status: 500 });
     }
-
-    // Release
-    const releaseTx = await escrow.release(jobIdBytes32).send({ feeLimit: 100_000_000 });
-    const txHash = typeof releaseTx === "string" ? releaseTx : releaseTx.txid || releaseTx;
-
-    // บันทึก tx hash ใน DB
-    await supabase.from("skc_jobs").update({ escrow_tx: txHash }).eq("id", jobId);
-
-    // อัปเดตโควต้าผู้ว่าจ้าง (+1)
-    if (job.employer_id) {
-      const { data: emp } = await supabase
-        .from("skc_users")
-        .select("job_quota_used")
-        .eq("id", job.employer_id)
-        .single();
-      if (emp) {
-        await supabase
-          .from("skc_users")
-          .update({ job_quota_used: (emp.job_quota_used ?? 0) + 1 })
-          .eq("id", job.employer_id);
-      }
-    }
-
-    // แจ้ง student
-    if (job.student_id) {
-      await createNotification(supabase, {
-        user_id: job.student_id,
-        type: "payment_released",
-        title: "ได้รับค่าจ้าง",
-        body: `ค่าจ้าง ${job.pay_amount.toLocaleString()} TRPB ถูกปล่อยแล้ว`,
-        link: "/student/wallet",
-      });
-    }
-
-    return NextResponse.json({
-      message: `จ่ายค่าจ้าง ${job.pay_amount} TRPB สำเร็จ`,
-      tx_hash: txHash,
-      breakdown: {
-        student: Math.round(job.pay_amount * 0.9), // 90% (no mentor)
-        fund: Math.round(job.pay_amount * 0.05),
-        staff: Math.round(job.pay_amount * 0.05),
-      },
-    });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    console.error("release-escrow error:", msg);
-    return NextResponse.json({ error: `On-chain error: ${msg}` }, { status: 500 });
   }
+
+  // Step 2: release held → student
+  const releaseRes = await escrowRelease(
+    supabase,
+    job.employer_id,
+    job.student_id,
+    amount,
+    jobId,
+    user.id,
+  );
+  if (!releaseRes.ok) {
+    return NextResponse.json({
+      error: `ปล่อย escrow ไม่สำเร็จ: ${releaseRes.error}`,
+    }, { status: 500 });
+  }
+
+  // Mark job as paid (use ledger tx id as escrow_tx ref)
+  await supabase
+    .from("skc_jobs")
+    .update({ escrow_tx: `ledger:${releaseRes.txId}` })
+    .eq("id", jobId);
+
+  // Update employer quota counter
+  const { data: emp } = await supabase
+    .from("skc_users")
+    .select("job_quota_used")
+    .eq("id", job.employer_id)
+    .single();
+  if (emp) {
+    await supabase
+      .from("skc_users")
+      .update({ job_quota_used: (emp.job_quota_used ?? 0) + 1 })
+      .eq("id", job.employer_id);
+  }
+
+  await createNotification(supabase, {
+    user_id: job.student_id,
+    type: "payment_released",
+    title: "ได้รับค่าจ้าง",
+    body: `ค่าจ้าง ${amount.toLocaleString()} TRPB ถูกจ่ายเข้า wallet แล้ว`,
+    link: "/wallet",
+  });
+
+  return NextResponse.json({
+    message: `จ่ายค่าจ้าง ${amount.toLocaleString()} TRPB ให้ นศ. สำเร็จ`,
+    tx_id: releaseRes.txId,
+    ledger: true,
+    note: "การจ่ายผ่าน off-chain ledger — TRON mirror สามารถ sync ภายหลังโดย admin",
+  });
 }
