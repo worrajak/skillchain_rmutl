@@ -15,31 +15,7 @@
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- 1. Diagnose current state (read-only — won't modify anything)
--- ----------------------------------------------------------------------------
-
-SELECT '== DIAGNOSE ==' AS step;
-
-SELECT 'Tables' AS what,
-       string_agg(table_name, ', ') AS found
-  FROM information_schema.tables
- WHERE table_schema = 'public'
-   AND table_name IN ('skc_trpb_balances', 'skc_trpb_transactions');
-
-SELECT 'TrpbTxType enum' AS what,
-       (SELECT COUNT(*)::text FROM pg_type WHERE typname = 'TrpbTxType') AS found;
-
-SELECT 'Functions' AS what,
-       string_agg(proname, ', ') AS found
-  FROM pg_proc
- WHERE proname IN ('fn_trpb_transfer', 'fn_trpb_escrow_hold', 'fn_trpb_escrow_release');
-
-SELECT 'SYSTEM pool' AS what,
-       COALESCE(balance::text, 'MISSING') AS found
-  FROM "skc_trpb_balances" WHERE user_id = '__SYSTEM__';
-
--- ----------------------------------------------------------------------------
--- 2. Enum (idempotent)
+-- 1. Enum (idempotent)
 -- ----------------------------------------------------------------------------
 
 DO $$ BEGIN
