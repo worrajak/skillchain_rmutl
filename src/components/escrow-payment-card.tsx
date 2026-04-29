@@ -24,6 +24,9 @@ interface EscrowPaymentCardProps {
   payAmount: number;
   hasMentor: boolean;
   escrowTx: string | null;
+  /** Who is viewing — controls whether the release button shows.
+   * 'staff' (default) = can release. 'employer' = waiting card only. */
+  viewerRole?: "staff" | "employer";
   // Kept for back-compat with employer detail page; off-chain ledger doesn't
   // require these but the prop still exists at the call site.
   studentWallet?: string | null;
@@ -46,6 +49,7 @@ export function EscrowPaymentCard({
   payAmount,
   hasMentor,
   escrowTx,
+  viewerRole = "staff",
   onPaymentRecorded,
 }: EscrowPaymentCardProps) {
   const [submitting, setSubmitting] = useState(false);
@@ -137,7 +141,36 @@ export function EscrowPaymentCard({
     );
   }
 
-  // COMPLETED — release payment via API
+  // COMPLETED + employer is viewing — show waiting card (no button)
+  // Employer doesn't release; staff supervisor does. This avoids the
+  // confusing 403 from the API and matches the agreed flow.
+  if (viewerRole === "employer") {
+    return (
+      <Card className="border-yellow-200 bg-yellow-50/50">
+        <CardHeader>
+          <CardTitle className="text-foreground text-sm flex items-center gap-2">
+            <Loader2 className="size-5 text-yellow-600 animate-spin" />
+            รอคณะทำงานใต้ร่มฯ จ่าย TRPB
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <FeeBreakdown breakdown={breakdown} />
+          <p className="text-xs text-muted-foreground">
+            งานเสร็จสมบูรณ์แล้ว — คณะทำงานใต้ร่มฯ จะเป็นผู้ปล่อย TRPB ให้นักศึกษาตามสัดส่วน
+            {hasMentor ? " 85/5/5/5" : " 90/5/5"} ภายในระยะเวลาอันสั้น
+          </p>
+          <div className="text-xs text-yellow-800 bg-yellow-100 rounded p-2 flex items-start gap-2">
+            <Wallet className="size-3 mt-0.5 shrink-0" />
+            <span>
+              คุณไม่ต้องดำเนินการเพิ่มเติม — ระบบจะแจ้งเตือนเมื่อจ่ายเรียบร้อย
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // COMPLETED + staff viewing — release payment via API
   return (
     <Card className="border-amber-200 bg-amber-50/50">
       <CardHeader>
@@ -169,7 +202,7 @@ export function EscrowPaymentCard({
           )}
         </Button>
         <p className="text-[10px] text-muted-foreground text-center">
-          การจ่ายจะหักจากยอด TRPB ของคุณ — ถ้ายอดไม่พอระบบจะ top-up จาก SYSTEM pool อัตโนมัติ (โหมดทดสอบ)
+          การจ่ายจะหักจากยอด TRPB ของผู้ว่าจ้าง — ถ้ายอดไม่พอระบบจะ top-up จาก SYSTEM pool อัตโนมัติ (โหมดทดสอบ)
         </p>
       </CardContent>
     </Card>

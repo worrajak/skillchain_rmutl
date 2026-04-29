@@ -207,6 +207,7 @@ export default function EmployerJobDetailPage() {
           payAmount={job.pay_amount}
           hasMentor={!!job.mentor_id}
           escrowTx={job.escrow_tx}
+          viewerRole="employer"
           studentWallet={job.student?.wallet_address ?? null}
           mentorWallet={null}
         />
@@ -432,6 +433,7 @@ export default function EmployerJobDetailPage() {
               payAmount={job.pay_amount}
               hasMentor={!!job.mentor_id}
               escrowTx={job.escrow_tx}
+              viewerRole="employer"
               studentWallet={job.student?.wallet_address ?? null}
               mentorWallet={null}
               onPaymentRecorded={loadJob}
