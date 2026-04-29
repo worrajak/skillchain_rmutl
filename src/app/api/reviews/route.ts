@@ -82,6 +82,24 @@ export async function POST(request: NextRequest) {
   const check = await verifyReviewer(supabase, user.id, job_id, type, eval_phase);
   if (!check.ok) return NextResponse.json({ error: check.error }, { status: 403 });
 
+  // Helper: convert duplicate-key error into a friendly 'already reviewed' response
+  const handleInsertError = (
+    err: { code?: string; message: string },
+    existing?: unknown,
+  ) => {
+    if (err.code === "23505") {
+      return NextResponse.json(
+        {
+          error: "ประเมินไปแล้วในช่วงนี้",
+          already_reviewed: true,
+          existing,
+        },
+        { status: 409 },
+      );
+    }
+    return NextResponse.json({ error: err.message }, { status: 400 });
+  };
+
   if (type === "employer") {
     const { student_id, score_quality, score_punctuality, score_attitude, comment } = body;
     if (!student_id || !score_quality || !score_punctuality || !score_attitude) {
@@ -94,7 +112,17 @@ export async function POST(request: NextRequest) {
       comment: comment || null,
       eval_phase,
     }).select().single();
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error) {
+      const { data: existing } = await supabase
+        .from("skc_employer_reviews")
+        .select("*")
+        .eq("job_id", job_id)
+        .eq("employer_id", user.id)
+        .eq("student_id", student_id)
+        .eq("eval_phase", eval_phase)
+        .maybeSingle();
+      return handleInsertError(error, existing);
+    }
     return NextResponse.json(data, { status: 201 });
   }
 
@@ -110,7 +138,17 @@ export async function POST(request: NextRequest) {
       comment: comment || null,
       eval_phase,
     }).select().single();
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error) {
+      const { data: existing } = await supabase
+        .from("skc_student_reviews")
+        .select("*")
+        .eq("job_id", job_id)
+        .eq("student_id", user.id)
+        .eq("employer_id", employer_id)
+        .eq("eval_phase", eval_phase)
+        .maybeSingle();
+      return handleInsertError(error, existing);
+    }
     return NextResponse.json(data, { status: 201 });
   }
 
@@ -125,12 +163,13 @@ export async function POST(request: NextRequest) {
       score_effort, score_safety, score_skill_dev, weighted_score,
       comment: comment || null, recommend_promotion: recommend_promotion ?? false,
     }).select().single();
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+    if (error) return handleInsertError(error);
     return NextResponse.json(data, { status: 201 });
   }
 
   return NextResponse.json({ error: "Invalid review type" }, { status: 400 });
 }
+
 
 // GET /api/reviews?type=employer&student_id=xxx (ต้อง login)
 export async function GET(request: NextRequest) {
