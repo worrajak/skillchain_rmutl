@@ -15,21 +15,8 @@ import {
   ExternalLink,
   AlertTriangle,
 } from "lucide-react";
-import {
-  isTronLinkInstalled,
-  connectTronLink,
-  approveEscrow,
-  createEscrow,
-  releaseEscrow,
-  getEscrowInfo,
-  calculateFeeBreakdown,
-  formatTRPB,
-  getTronScanUrl,
-  CONTRACTS,
-} from "@/lib/tron/client";
+import { calculateFeeBreakdown, formatTRPB } from "@/lib/tron/client";
 import { toast } from "sonner";
-
-type Phase = "idle" | "connecting" | "checking" | "approving" | "creating" | "releasing" | "recording" | "done";
 
 interface EscrowPaymentCardProps {
   jobId: string;
@@ -37,132 +24,67 @@ interface EscrowPaymentCardProps {
   payAmount: number;
   hasMentor: boolean;
   escrowTx: string | null;
-  studentWallet: string | null;
-  mentorWallet: string | null;
+  // Kept for back-compat with employer detail page; off-chain ledger doesn't
+  // require these but the prop still exists at the call site.
+  studentWallet?: string | null;
+  mentorWallet?: string | null;
   onPaymentRecorded?: () => void;
 }
 
+/**
+ * Off-chain Escrow Payment.
+ *
+ * The previous version required TronLink + manual approve+create+release on
+ * Nile testnet. We now drive everything through the off-chain ledger:
+ *   - Employer's TRPB balance is auto-debited via fn_trpb_escrow_release
+ *   - The release-escrow API tops up from SYSTEM pool if needed (test mode)
+ *   - Payment record stores 'ledger:<tx_id>' so we can mirror to TRON later
+ */
 export function EscrowPaymentCard({
   jobId,
   jobStatus,
   payAmount,
   hasMentor,
   escrowTx,
-  studentWallet,
-  mentorWallet,
   onPaymentRecorded,
 }: EscrowPaymentCardProps) {
-  const [phase, setPhase] = useState<Phase>("idle");
-  const [txHash, setTxHash] = useState<string | null>(escrowTx);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paid, setPaid] = useState(!!escrowTx);
+  const [paidTx, setPaidTx] = useState<string | null>(escrowTx);
 
   const breakdown = calculateFeeBreakdown(payAmount, hasMentor);
 
-  // ===== Step 1: สร้าง Escrow (เรียกตอน job ASSIGNED/IN_PROGRESS ถ้ายังไม่มี) =====
-  async function handleCreateEscrow() {
-    setError(null);
-    try {
-      if (!isTronLinkInstalled()) {
-        setError("กรุณาติดตั้ง TronLink Extension");
-        return;
-      }
-      setPhase("connecting");
-      connectTronLink();
-
-      if (!studentWallet) {
-        setError("นักศึกษายังไม่ได้เชื่อมต่อ Wallet");
-        setPhase("idle");
-        return;
-      }
-
-      if (!CONTRACTS.JOB_ESCROW || !CONTRACTS.TRPB_TOKEN) {
-        setError("Contract address ยังไม่ได้ตั้งค่า (ตรวจสอบ .env)");
-        setPhase("idle");
-        return;
-      }
-
-      // Approve TRPB for escrow contract
-      setPhase("approving");
-      toast.info("กำลังขออนุญาตหัก TRPB...");
-      await approveEscrow(payAmount);
-
-      // Create escrow
-      setPhase("creating");
-      toast.info("กำลังสร้าง Escrow บน Blockchain...");
-      const tx = await createEscrow(jobId, studentWallet, mentorWallet, payAmount);
-      toast.success(`สร้าง Escrow สำเร็จ — TX: ${tx.slice(0, 12)}...`);
-      setPhase("idle");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
-      setPhase("idle");
-    }
-  }
-
-  // ===== Step 2: Release Escrow (เรียกตอน job COMPLETED) =====
   async function handleRelease() {
     setError(null);
+    setSubmitting(true);
     try {
-      if (!isTronLinkInstalled()) {
-        setError("กรุณาติดตั้ง TronLink Extension");
-        return;
-      }
-      setPhase("connecting");
-      connectTronLink();
-
-      if (!CONTRACTS.JOB_ESCROW) {
-        setError("Contract address ยังไม่ได้ตั้งค่า (ตรวจสอบ .env)");
-        setPhase("idle");
-        return;
-      }
-
-      // Check escrow exists
-      setPhase("checking");
-      let escrowInfo;
-      try {
-        escrowInfo = await getEscrowInfo(jobId);
-      } catch {
-        setError("ไม่พบ Escrow สำหรับงานนี้ — อาจยังไม่ได้ฝากเงิน");
-        setPhase("idle");
-        return;
-      }
-
-      if (escrowInfo.released) {
-        setError("Escrow ถูก release แล้ว");
-        setPhase("idle");
-        return;
-      }
-
-      // Release
-      setPhase("releasing");
-      toast.info("กำลังปล่อยค่าจ้างบน Blockchain...");
-      const tx = await releaseEscrow(jobId);
-
-      // Record tx in DB
-      setPhase("recording");
-      const res = await fetch(`/api/jobs/${jobId}/record-payment`, {
+      const res = await fetch(`/api/jobs/${jobId}/release-escrow`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tx_hash: tx }),
       });
       const data = await res.json();
       if (!res.ok) {
-        toast.warning(data.error || "บันทึก tx ใน DB ไม่สำเร็จ แต่ on-chain สำเร็จแล้ว");
+        setError(data.error || "จ่ายค่าจ้างไม่สำเร็จ");
+        toast.error(data.error || "จ่ายค่าจ้างไม่สำเร็จ", { duration: 8000 });
+        return;
       }
-
-      setTxHash(tx);
-      setPhase("done");
-      toast.success("จ่ายค่าจ้างสำเร็จ!");
+      toast.success(data.message);
+      setPaid(true);
+      setPaidTx(data.tx_id ? `ledger:${data.tx_id}` : "ledger:done");
       onPaymentRecorded?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "เกิดข้อผิดพลาด");
-      setPhase("idle");
+    } finally {
+      setSubmitting(false);
     }
   }
 
-  // Already paid
-  if (txHash) {
+  // Already paid — show summary + audit link
+  if (paid) {
+    const isLedger = paidTx?.startsWith("ledger:");
+    const hash = paidTx?.replace(/^ledger:/, "");
     return (
-      <Card className="border-green-200">
+      <Card className="border-green-200 bg-green-50/40">
         <CardHeader>
           <CardTitle className="text-foreground text-sm flex items-center gap-2">
             <CheckCircle className="size-5 text-green-600" />
@@ -171,62 +93,51 @@ export function EscrowPaymentCard({
         </CardHeader>
         <CardContent className="space-y-3">
           <FeeBreakdown breakdown={breakdown} />
-          <a
-            href={getTronScanUrl(txHash, "transaction")}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
-          >
-            <ExternalLink className="size-3" />
-            ดู Transaction บน TronScan
-          </a>
+          {isLedger ? (
+            <div className="text-xs text-muted-foreground flex items-center gap-1">
+              <span>📒 Ledger TX:</span>
+              <code className="font-mono">{hash?.slice(0, 12)}...</code>
+            </div>
+          ) : paidTx ? (
+            <a
+              href={`https://nile.tronscan.org/#/transaction/${paidTx}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
+            >
+              <ExternalLink className="size-3" />
+              ดู Transaction บน TronScan
+            </a>
+          ) : null}
         </CardContent>
       </Card>
     );
   }
 
-  // Job not completed yet — show escrow creation
+  // Job not completed yet — escrow auto-handled when staff releases
   if (jobStatus !== "COMPLETED") {
     return (
-      <Card className="border-blue-200">
+      <Card className="border-blue-200 bg-blue-50/40">
         <CardHeader>
           <CardTitle className="text-foreground text-sm flex items-center gap-2">
             <Wallet className="size-5 text-blue-600" />
-            Escrow — ฝากค่าจ้าง
+            Escrow — ค่าจ้าง
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
           <FeeBreakdown breakdown={breakdown} />
-          <p className="text-xs text-muted-foreground">
-            ฝากเงินค่าจ้างเข้า Smart Contract เพื่อความโปร่งใส — เงินจะถูกปล่อยเมื่องานเสร็จ
+          <p className="text-xs">
+            ค่าจ้างจะถูกหักจากยอด TRPB ของคุณเมื่อ <strong>คณะทำงานยืนยันงานเสร็จ</strong> และ <strong>กดปล่อย Escrow</strong>
           </p>
-          {error && (
-            <p className="text-sm text-red-600 flex items-center gap-1">
-              <AlertTriangle className="size-3" />
-              {error}
-            </p>
-          )}
-          <Button
-            onClick={handleCreateEscrow}
-            disabled={phase !== "idle"}
-            className="w-full"
-          >
-            {phase !== "idle" ? (
-              <><Loader2 className="size-4 mr-2 animate-spin" />
-              {phase === "connecting" && "กำลังเชื่อมต่อ TronLink..."}
-              {phase === "approving" && "กำลัง Approve TRPB..."}
-              {phase === "creating" && "กำลังสร้าง Escrow..."}
-              </>
-            ) : (
-              <><Wallet className="size-4 mr-2" />ฝากค่าจ้าง {formatTRPB(payAmount)}</>
-            )}
-          </Button>
+          <p className="text-xs">
+            (ไม่ต้องเชื่อมต่อ TronLink — ระบบใช้ off-chain ledger แล้ว)
+          </p>
         </CardContent>
       </Card>
     );
   }
 
-  // COMPLETED — release payment
+  // COMPLETED — release payment via API
   return (
     <Card className="border-amber-200 bg-amber-50/50">
       <CardHeader>
@@ -238,7 +149,7 @@ export function EscrowPaymentCard({
       <CardContent className="space-y-3">
         <FeeBreakdown breakdown={breakdown} />
         <p className="text-xs text-muted-foreground">
-          ปล่อยค่าจ้างจาก Escrow → แบ่งอัตโนมัติตามสัดส่วน 85/5/5/5
+          ปล่อยค่าจ้างจาก Escrow → แบ่งอัตโนมัติตามสัดส่วน {hasMentor ? "85/5/5/5" : "90/5/5"}
         </p>
         {error && (
           <p className="text-sm text-red-600 flex items-center gap-1">
@@ -248,20 +159,18 @@ export function EscrowPaymentCard({
         )}
         <Button
           onClick={handleRelease}
-          disabled={phase !== "idle"}
-          className="w-full bg-amber-600 hover:bg-amber-700"
+          disabled={submitting}
+          className="w-full bg-amber-600 hover:bg-amber-700 h-11"
         >
-          {phase !== "idle" ? (
-            <><Loader2 className="size-4 mr-2 animate-spin" />
-            {phase === "connecting" && "กำลังเชื่อมต่อ TronLink..."}
-            {phase === "checking" && "ตรวจสอบ Escrow..."}
-            {phase === "releasing" && "กำลังปล่อยค่าจ้าง..."}
-            {phase === "recording" && "บันทึก Transaction..."}
-            </>
+          {submitting ? (
+            <><Loader2 className="size-4 mr-2 animate-spin" />กำลังจ่ายค่าจ้าง...</>
           ) : (
             <><Wallet className="size-4 mr-2" />จ่ายค่าจ้าง {formatTRPB(payAmount)}</>
           )}
         </Button>
+        <p className="text-[10px] text-muted-foreground text-center">
+          การจ่ายจะหักจากยอด TRPB ของคุณ — ถ้ายอดไม่พอระบบจะ top-up จาก SYSTEM pool อัตโนมัติ (โหมดทดสอบ)
+        </p>
       </CardContent>
     </Card>
   );
