@@ -13,6 +13,7 @@ import {
   ExternalLink, Eye, Shield, Search, Image as ImageIcon, Camera,
 } from "lucide-react";
 import { toast } from "sonner";
+import { UserAvatar } from "@/components/user-avatar";
 import { ImageGallery } from "@/components/image-gallery";
 
 const STATUS_TH: Record<string, { label: string; color: string }> = {
@@ -243,19 +244,30 @@ export default function StaffActiveJobsPage() {
                       </Link>
                     </div>
 
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground pt-1 border-t">
-                      <span className="flex items-center gap-1">
-                        <User className="size-3 text-blue-600" />
-                        นศ.: <strong>{job.student?.name ?? "-"}</strong>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <User className="size-3 text-green-600" />
-                        ผู้จ้าง: <strong>{job.employer?.name ?? "-"}</strong>
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Shield className="size-3 text-amber-600" />
-                        ผู้กำกับ: <strong>{job.supervisor?.name ?? "(ยังไม่มี)"}</strong>
-                        {isMine && <span className="text-blue-600 font-medium ml-0.5">(คุณ)</span>}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground pt-2 border-t">
+                      {job.student_id && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <UserAvatar userId={job.student_id} size="xs" />
+                          <span><span className="text-[10px] text-muted-foreground">นศ.</span> <strong>{job.student?.name ?? "-"}</strong></span>
+                        </span>
+                      )}
+                      {job.employer_id && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <UserAvatar userId={job.employer_id} size="xs" />
+                          <span><span className="text-[10px] text-muted-foreground">ผู้จ้าง</span> <strong>{job.employer?.name ?? "-"}</strong></span>
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1.5">
+                        {job.approved_by_staff ? (
+                          <UserAvatar userId={job.approved_by_staff} size="xs" />
+                        ) : (
+                          <Shield className="size-3 text-amber-600" />
+                        )}
+                        <span>
+                          <span className="text-[10px] text-muted-foreground">ผู้กำกับ</span>{" "}
+                          <strong>{job.supervisor?.name ?? "(ยังไม่มี)"}</strong>
+                          {isMine && <span className="text-blue-600 font-medium ml-0.5">(คุณ)</span>}
+                        </span>
                       </span>
                       {job.work_start_date && (
                         <span className="flex items-center gap-1">

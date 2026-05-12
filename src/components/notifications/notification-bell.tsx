@@ -23,9 +23,11 @@ export function NotificationBell() {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let cancelled = false;
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (cancelled || !user) return;
 
       const { data } = await supabase
         .from("skc_notifications")
@@ -33,22 +35,33 @@ export function NotificationBell() {
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(20);
+      if (cancelled) return;
       setNotifications((data as Notification[]) ?? []);
 
-      // Realtime subscription
-      supabase
-        .channel("notifications")
-        .on("postgres_changes", {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        }, (payload) => {
-          setNotifications((prev) => [payload.new as Notification, ...prev]);
-        })
+      // Realtime subscription — register .on() BEFORE .subscribe()
+      // Use unique channel name per user so it doesn't conflict on remount
+      channel = supabase.channel(`notifications:${user.id}`);
+      channel
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "skc_notifications",
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            setNotifications((prev) => [payload.new as Notification, ...prev]);
+          }
+        )
         .subscribe();
     }
     load();
+    return () => {
+      cancelled = true;
+      if (channel) supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function markAllRead() {

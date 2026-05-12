@@ -17,6 +17,7 @@ import {
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TrpbBalance } from "@/components/trpb-balance";
+import { UserMenu } from "@/components/user-menu";
 
 const navItems = [
   { href: "/student/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -78,6 +79,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
             {navItems.find((i) => pathname.startsWith(i.href))?.label ?? "นักศึกษา"}
           </h1>
           <TrpbBalance />
+          <UserMenu />
         </header>
         <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>

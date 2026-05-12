@@ -7,6 +7,7 @@ import { LayoutDashboard, Briefcase, PlusCircle, LogOut, Menu, X } from "lucide-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TrpbBalance } from "@/components/trpb-balance";
+import { UserMenu } from "@/components/user-menu";
 
 // นศ. ไม่มีในเมนูผู้จ้าง — จัดการโดย staff/admin/อาจารย์
 // ผู้จ้างเห็นชื่อ นศ. ที่รับงานในการ์ดแต่ละงานอยู่แล้ว
@@ -63,6 +64,7 @@ export default function EmployerLayout({ children }: { children: React.ReactNode
             {navItems.find((i) => pathname.startsWith(i.href))?.label ?? "ผู้จ้าง"}
           </h1>
           <TrpbBalance />
+          <UserMenu />
         </header>
         <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>

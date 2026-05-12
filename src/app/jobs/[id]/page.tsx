@@ -76,7 +76,7 @@ export default async function JobDetailPage({ params }: { params: Promise<{ id: 
             <Badge variant="outline">{TYPE_TH[job.type] ?? job.type}</Badge>
             <Badge variant="outline">{CAT_TH[job.job_category] ?? job.job_category}</Badge>
             {job.is_mentorship && <Badge variant="outline">ต้องมี Mentor</Badge>}
-            <StaffSupervisorBadge name={staffSupervisorName} />
+            <StaffSupervisorBadge name={staffSupervisorName} userId={job.approved_by_staff as string | null} />
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">{job.title}</h1>
         </div>

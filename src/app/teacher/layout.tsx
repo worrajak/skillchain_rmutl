@@ -7,6 +7,7 @@ import { ClipboardCheck, Clock, LogOut, Menu, X, GraduationCap, PlusCircle, User
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TrpbBalance } from "@/components/trpb-balance";
+import { UserMenu } from "@/components/user-menu";
 
 const navItems = [
   { href: "/teacher/evaluation", label: "ประเมินผลงาน", icon: ClipboardCheck },
@@ -67,6 +68,7 @@ export default function TeacherLayout({ children }: { children: React.ReactNode 
             {navItems.find((i) => pathname.startsWith(i.href))?.label ?? "อาจารย์"}
           </h1>
           <TrpbBalance />
+          <UserMenu />
         </header>
         <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>

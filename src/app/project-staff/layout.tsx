@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { TrpbBalance } from "@/components/trpb-balance";
+import { UserMenu } from "@/components/user-menu";
 
 const navItems = [
   { href: "/project-staff/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -66,6 +67,7 @@ export default function ProjectStaffLayout({ children }: { children: React.React
           </h1>
           <TrpbBalance />
           <NotificationBell />
+          <UserMenu />
         </header>
         <main className="flex-1 p-4 lg:p-6">{children}</main>
       </div>

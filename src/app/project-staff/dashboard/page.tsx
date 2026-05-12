@@ -118,7 +118,7 @@ export default function ProjectStaffDashboardPage() {
       // Disputes
       const { data: disputes, count: disputesCount } = await supabase
         .from("skc_disputes")
-        .select("id, status, dispute_reason, created_at, job:skc_jobs(title)", { count: "exact" })
+        .select("id, status, description, created_at, job:skc_jobs(title)", { count: "exact" })
         .in("status", ["RAISED", "UNDER_REVIEW", "MEDIATION"])
         .order("created_at", { ascending: false })
         .limit(10);
@@ -161,7 +161,7 @@ export default function ProjectStaffDashboardPage() {
       // Credentials
       const { data: credentials, count: credentialsCount } = await supabase
         .from("skc_student_credentials")
-        .select("id, level, issued_at, student:skc_users!skc_student_credentials_student_id_fkey(name)", { count: "exact" })
+        .select("id, credential_level, issued_at, student:skc_users!skc_student_credentials_student_id_fkey(name)", { count: "exact" })
         .eq("is_active", true)
         .order("issued_at", { ascending: false })
         .limit(10);
@@ -258,7 +258,7 @@ export default function ProjectStaffDashboardPage() {
           items={data.disputes.map((d: any) => ({
             id: d.id,
             primary: d.job?.title ?? "-",
-            secondary: d.dispute_reason?.slice(0, 60),
+            secondary: d.description?.slice(0, 60),
             badge: d.status,
             badgeColor: "bg-red-100 text-red-800",
           }))}
@@ -345,7 +345,7 @@ export default function ProjectStaffDashboardPage() {
             id: c.id,
             primary: c.student?.name ?? "-",
             secondary: c.issued_at ? new Date(c.issued_at).toLocaleDateString("th-TH") : "",
-            badge: c.level,
+            badge: c.credential_level,
             badgeColor: "bg-amber-100 text-amber-800",
           }))}
         />

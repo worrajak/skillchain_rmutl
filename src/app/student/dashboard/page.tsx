@@ -305,7 +305,7 @@ export default function StudentDashboardPage() {
                           <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", STATUS_LABELS[job.status as string]?.color ?? "bg-gray-100")}>
                             {STATUS_LABELS[job.status as string]?.label ?? job.status}
                           </span>
-                          <StaffSupervisorBadge name={staffSup?.name} />
+                          <StaffSupervisorBadge name={staffSup?.name} userId={job.approved_by_staff as string | null} />
                           {(job.pay_amount as number) > 0 && (
                             <span className="text-xs text-green-700 font-medium">{(job.pay_amount as number).toLocaleString()} TRPB</span>
                           )}

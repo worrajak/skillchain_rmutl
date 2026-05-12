@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { TrpbBalance } from "@/components/trpb-balance";
 import PermissionsBadge from "@/components/permissions-badge";
+import { UserMenu } from "@/components/user-menu";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -134,6 +135,7 @@ export default function AdminLayout({
           <PermissionsBadge />
           <TrpbBalance />
           <NotificationBell />
+          <UserMenu />
         </header>
 
         {/* Content */}

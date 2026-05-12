@@ -10,6 +10,7 @@ import {
   Coins, History, Loader2, ArrowDownLeft, ArrowUpRight, ExternalLink, Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UserAvatar } from "@/components/user-avatar";
 
 const TX_TYPE_LABELS: Record<string, { label: string; color: string }> = {
   MINT: { label: "ได้รับจากระบบ", color: "bg-blue-100 text-blue-800" },
@@ -123,17 +124,36 @@ export default function WalletPage() {
                 {transactions.map((t: AnyRow) => {
                   const type = TX_TYPE_LABELS[t.tx_type] ?? { label: t.tx_type, color: "bg-gray-100" };
                   const isOutgoing = t.from_user === ownId;
+                  const counterpartyId = isOutgoing ? t.to_user : t.from_user;
+                  const isSystem = counterpartyId === "SYSTEM" || !counterpartyId;
                   return (
                     <div
                       key={t.id}
                       className="flex items-center justify-between py-2 px-3 rounded hover:bg-muted/50 text-sm border"
                     >
                       <div className="flex items-center gap-2 flex-1 min-w-0">
-                        {isOutgoing ? (
-                          <ArrowUpRight className="size-4 text-red-500 shrink-0" />
-                        ) : (
-                          <ArrowDownLeft className="size-4 text-green-500 shrink-0" />
-                        )}
+                        {/* Counterparty avatar + direction arrow stacked */}
+                        <div className="relative shrink-0">
+                          {isSystem ? (
+                            <div className="size-8 rounded-full bg-gradient-to-br from-slate-300 to-slate-500 flex items-center justify-center text-white text-[10px] font-bold">
+                              SYS
+                            </div>
+                          ) : (
+                            <UserAvatar userId={counterpartyId} size="sm" />
+                          )}
+                          <span
+                            className={cn(
+                              "absolute -bottom-1 -right-1 size-4 rounded-full flex items-center justify-center ring-2 ring-card",
+                              isOutgoing ? "bg-red-500" : "bg-emerald-500",
+                            )}
+                          >
+                            {isOutgoing ? (
+                              <ArrowUpRight className="size-2.5 text-white" />
+                            ) : (
+                              <ArrowDownLeft className="size-2.5 text-white" />
+                            )}
+                          </span>
+                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <Badge className={cn(type.color, "text-[10px]")}>{type.label}</Badge>

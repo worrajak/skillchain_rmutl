@@ -146,7 +146,7 @@ export default function EmployerJobDetailPage() {
         <CardHeader>
           <div className="flex items-center gap-2 flex-wrap mb-2">
             <span className={cn("inline-flex rounded-full px-3 py-1 text-sm font-medium", status.color)}>{status.label}</span>
-            <StaffSupervisorBadge name={staffName} />
+            <StaffSupervisorBadge name={staffName} userId={job.approved_by_staff} />
           </div>
           <CardTitle className="text-foreground">{job.title}</CardTitle>
         </CardHeader>
