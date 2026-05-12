@@ -338,6 +338,31 @@ export async function createBatch(
   return batch as BatchRow;
 }
 
+/**
+ * Vice rector pre-approval (รองอธิการ) — middle step before rector's APPROVED.
+ * Optional in single-approver flow; required if batch must pass through dean review.
+ */
+export async function reviewBatch(
+  supabase: SupabaseClient,
+  batchId: string,
+  reviewerId: string,
+  note?: string,
+): Promise<BatchRow> {
+  const { data: batch, error } = await supabase
+    .from("skc_gov_approval_batches")
+    .update({
+      status: "REVIEWED",
+      reviewed_by: reviewerId,
+      reviewed_at: new Date().toISOString(),
+      review_note: note ?? null,
+    })
+    .eq("id", batchId)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return batch as BatchRow;
+}
+
 export async function approveBatch(
   supabase: SupabaseClient,
   batchId: string,

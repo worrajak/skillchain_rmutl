@@ -230,6 +230,29 @@ export default function GovBatchesPage() {
             </div>
 
             <div className="p-5 space-y-4">
+              {/* Period preset chips */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-muted-foreground">ช่วงเวลาด่วน:</span>
+                {[
+                  { days: 3, label: "3 วัน" },
+                  { days: 7, label: "7 วัน" },
+                  { days: 14, label: "14 วัน" },
+                  { days: 30, label: "30 วัน" },
+                ].map((preset) => (
+                  <button
+                    key={preset.days}
+                    type="button"
+                    onClick={() => {
+                      setPeriodStart(daysAgo(preset.days));
+                      setPeriodEnd(today());
+                    }}
+                    className="px-2.5 py-1 rounded-full text-xs border border-amber-200 hover:bg-amber-100 hover:border-amber-300 transition-colors"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">วันเริ่ม</Label>

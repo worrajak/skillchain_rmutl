@@ -24,14 +24,17 @@ interface Batch {
   document_pdf_url: string | null;
   approval_note: string | null;
   reject_reason: string | null;
+  review_note: string | null;
   total_jobs: number;
   total_students: number;
   total_amount: number;
   created_at: string;
   compiled_at: string | null;
+  reviewed_at: string | null;
   approved_at: string | null;
   rejected_at: string | null;
   creator?: { name: string };
+  reviewer?: { name: string } | null;
   approver?: { name: string } | null;
 }
 
@@ -49,7 +52,8 @@ interface Job {
 
 const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   PENDING: { label: "กำลังจัดทำ", color: "bg-slate-100 text-slate-700" },
-  COMPILED: { label: "รอลายเซ็น", color: "bg-amber-100 text-amber-800" },
+  COMPILED: { label: "รอลายเซ็นชั้นรอง", color: "bg-amber-100 text-amber-800" },
+  REVIEWED: { label: "ผ่านชั้นรอง — รออธิการ", color: "bg-sky-100 text-sky-800" },
   APPROVED: { label: "อนุมัติแล้ว", color: "bg-emerald-100 text-emerald-800" },
   REJECTED: { label: "ถูกปฏิเสธ", color: "bg-red-100 text-red-700" },
   CLOSED: { label: "ปิดรอบ", color: "bg-gray-200 text-gray-700" },
@@ -62,8 +66,10 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [showApprove, setShowApprove] = useState(false);
+  const [showReview, setShowReview] = useState(false);
   const [showReject, setShowReject] = useState(false);
   const [approvalNote, setApprovalNote] = useState("");
+  const [reviewNote, setReviewNote] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const [uploadingPdf, setUploadingPdf] = useState(false);
@@ -105,6 +111,24 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
 
   function downloadDocx() {
     window.location.href = `/api/gov/batches/${id}/docx`;
+  }
+
+  async function handleReview() {
+    setActionLoading(true);
+    const res = await fetch(`/api/gov/batches/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "review", note: reviewNote }),
+    });
+    const data = await res.json();
+    setActionLoading(false);
+    if (!res.ok) {
+      toast.error(data.error || "อนุมัติชั้นรองไม่สำเร็จ");
+      return;
+    }
+    toast.success("📝 ผ่านชั้นรองอธิการ — รออธิการบดีอนุมัติชั้นสุดท้าย");
+    setShowReview(false);
+    load();
   }
 
   async function handleApprove() {
@@ -176,9 +200,10 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
   }
 
   const status = STATUS_LABEL[batch.status] ?? STATUS_LABEL.PENDING;
-  const canApprove = batch.status === "COMPILED";
-  const canReject = batch.status === "COMPILED";
-  const canUploadPdf = ["COMPILED", "APPROVED"].includes(batch.status);
+  const canReview = batch.status === "COMPILED";
+  const canApprove = ["COMPILED", "REVIEWED"].includes(batch.status); // อธิการ approve ได้แม้ไม่ผ่านรอง (กรณีอำนาจเด็ดขาด)
+  const canReject = ["COMPILED", "REVIEWED"].includes(batch.status);
+  const canUploadPdf = ["COMPILED", "REVIEWED", "APPROVED"].includes(batch.status);
 
   return (
     <div className="space-y-4 max-w-5xl">
@@ -229,9 +254,15 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
 
+          {batch.reviewed_at && (
+            <div className="mt-3 rounded-md bg-sky-100 border border-sky-300 p-2 text-xs text-sky-900">
+              📝 ผ่านชั้นรองอธิการเมื่อ {new Date(batch.reviewed_at).toLocaleString("th-TH")} โดย <strong>{batch.reviewer?.name ?? "-"}</strong>
+              {batch.review_note && <p className="mt-1">หมายเหตุ: {batch.review_note}</p>}
+            </div>
+          )}
           {batch.approved_at && (
             <div className="mt-3 rounded-md bg-emerald-100 border border-emerald-300 p-2 text-xs text-emerald-900">
-              ✅ อนุมัติเมื่อ {new Date(batch.approved_at).toLocaleString("th-TH")} โดย <strong>{batch.approver?.name ?? "-"}</strong>
+              ✅ อธิการบดีอนุมัติเมื่อ {new Date(batch.approved_at).toLocaleString("th-TH")} โดย <strong>{batch.approver?.name ?? "-"}</strong>
               {batch.approval_note && <p className="mt-1">หมายเหตุ: {batch.approval_note}</p>}
             </div>
           )}
@@ -302,24 +333,46 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
         </CardContent>
       </Card>
 
-      {/* Approve / Reject actions */}
-      {(canApprove || canReject) && (
+      {/* Approve / Review / Reject actions */}
+      {(canApprove || canReview || canReject) && (
         <Card className="border-amber-300 bg-amber-50/30">
           <CardHeader className="pb-2">
             <CardTitle className="text-base">การดำเนินการ</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
+            {/* Workflow steps indicator */}
+            <div className="flex items-center gap-2 text-xs">
+              <span className={`px-2 py-0.5 rounded-full ${batch.compiled_at ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                {batch.compiled_at ? "✓" : "○"} จัดทำเสร็จ
+              </span>
+              <span className="text-muted-foreground">→</span>
+              <span className={`px-2 py-0.5 rounded-full ${batch.reviewed_at ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                {batch.reviewed_at ? "✓" : "○"} รองอธิการ
+              </span>
+              <span className="text-muted-foreground">→</span>
+              <span className={`px-2 py-0.5 rounded-full ${batch.approved_at ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                {batch.approved_at ? "✓" : "○"} อธิการบดี
+              </span>
+            </div>
             <p className="text-xs text-muted-foreground">
-              เมื่อผู้บริหารเซ็นเอกสารแล้ว กดปุ่ม &ldquo;อนุมัติแล้ว&rdquo; เพื่อปลดล็อกงานทุกชิ้นในรอบ
+              💡 หลังเซ็นแต่ละชั้น กดปุ่มในระบบเพื่อบันทึก — ขั้นสุดท้าย (อธิการบดี) จะ unlock งานทั้งหมดในรอบ
             </p>
             <div className="flex gap-2 flex-wrap">
+              {canReview && (
+                <Button
+                  onClick={() => setShowReview(true)}
+                  className="bg-sky-500 hover:bg-sky-600 text-white"
+                >
+                  📝 รองอธิการเซ็นแล้ว
+                </Button>
+              )}
               <Button
                 onClick={() => setShowApprove(true)}
                 className="bg-emerald-500 hover:bg-emerald-600 text-white"
                 disabled={!canApprove}
               >
                 <CheckCircle2 className="size-4 mr-1" />
-                อนุมัติแล้ว
+                อธิการบดีอนุมัติแล้ว
               </Button>
               <Button
                 onClick={() => setShowReject(true)}
@@ -376,6 +429,32 @@ export default function BatchDetailPage({ params }: { params: Promise<{ id: stri
           )}
         </CardContent>
       </Card>
+
+      {/* Review modal (รองอธิการ) */}
+      {showReview && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-xl w-full max-w-md p-5 space-y-3">
+            <h2 className="font-bold text-lg">รองอธิการบดีพิจารณาเห็นชอบ</h2>
+            <p className="text-sm text-muted-foreground">
+              บันทึกการเห็นชอบของรองอธิการบดีฝ่ายกิจการนักศึกษา —
+              รอบจะอยู่ที่สถานะ <strong>REVIEWED</strong> และรออธิการบดีลงนามขั้นสุดท้าย
+            </p>
+            <Textarea
+              placeholder="หมายเหตุชั้นรอง (ไม่บังคับ)"
+              value={reviewNote}
+              onChange={(e) => setReviewNote(e.target.value)}
+              rows={3}
+            />
+            <div className="flex gap-2 pt-2">
+              <Button onClick={handleReview} disabled={actionLoading} className="flex-1 bg-sky-500 hover:bg-sky-600 text-white">
+                {actionLoading ? <Loader2 className="size-4 mr-1 animate-spin" /> : null}
+                บันทึก
+              </Button>
+              <Button variant="outline" onClick={() => setShowReview(false)}>ยกเลิก</Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Approve modal */}
       {showApprove && (

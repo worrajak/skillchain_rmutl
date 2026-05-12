@@ -1,6 +1,49 @@
 // Telegram Bot integration for SkillChain notifications
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const OWNER_CHAT_ID = process.env.TELEGRAM_OWNER_CHAT_ID;
 const BASE_URL = `https://api.telegram.org/bot${BOT_TOKEN}`;
+
+/**
+ * Notify the project owner (admin chat) — used for ops-level events:
+ * batches created/approved, payments released, disputes raised, etc.
+ *
+ * Owner chat_id is set via TELEGRAM_OWNER_CHAT_ID env var.
+ */
+export async function notifyOwner(text: string, link?: string | null): Promise<boolean> {
+  if (!OWNER_CHAT_ID) return false;
+  return sendTelegramMessage(OWNER_CHAT_ID, text, link);
+}
+
+/**
+ * Notify multiple users by ID — looks up telegram_chat_id for each and sends.
+ * Used for batch approvals where we notify all employers + students at once.
+ */
+export async function notifyUsersByTelegram(
+  supabase: { from: (table: string) => unknown },
+  userIds: string[],
+  title: string,
+  body: string,
+  link?: string | null,
+): Promise<void> {
+  if (!BOT_TOKEN || userIds.length === 0) return;
+  // Batch lookup chat ids
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data } = await (supabase as any)
+      .from("skc_users")
+      .select("id, telegram_chat_id")
+      .in("id", userIds);
+    const tasks: Promise<unknown>[] = [];
+    for (const u of data ?? []) {
+      if (u.telegram_chat_id) {
+        tasks.push(sendTelegramMessage(u.telegram_chat_id, `<b>${title}</b>\n${body}`, link));
+      }
+    }
+    await Promise.allSettled(tasks);
+  } catch {
+    // best-effort
+  }
+}
 
 export async function sendTelegramMessage(chatId: string, text: string, link?: string | null): Promise<boolean> {
   if (!BOT_TOKEN || !chatId) return false;

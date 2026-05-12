@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createBatch, listCandidateJobs } from "@/lib/gov-batch";
+import { notifyOwner } from "@/lib/telegram";
 
 /**
  * GET /api/gov/batches            — list batches (staff/admin)
@@ -81,6 +82,15 @@ export async function POST(req: NextRequest) {
       jobIds: job_ids,
       createdBy: user.id,
     });
+
+    // Telegram: notify owner that a new batch awaits signature
+    notifyOwner(
+      `📄 <b>รอบใหม่รอลายเซ็น</b>\n` +
+      `<code>${batch.batch_no}</code> · ${batch.total_jobs} งาน · ${batch.total_students} นศ. · ${Number(batch.total_amount).toLocaleString()} TRPB\n` +
+      `ช่วง ${batch.period_start} → ${batch.period_end}`,
+      `/project-staff/gov-batches/${batch.id}`,
+    ).catch(() => {});
+
     return NextResponse.json({ batch }, { status: 201 });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "failed" }, { status: 500 });
