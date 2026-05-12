@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createNotification } from "@/lib/telegram";
 import { checkCanReleaseEscrow } from "@/lib/gov-sync";
 import { escrowRelease, escrowHold, mint, getBalance, SYSTEM_POOL } from "@/lib/trpb-ledger";
+import { transferTRPBOnChain } from "@/lib/tron/server";
 
 // POST /api/jobs/[id]/release-escrow
 // Off-chain TRPB ledger version. TRON Nile is no longer called automatically;
@@ -30,7 +31,7 @@ export async function POST(
 
   const { data: job } = await supabase
     .from("skc_jobs")
-    .select("status, escrow_tx, pay_amount, student_id, employer_id, type, title")
+    .select("status, escrow_tx, pay_amount, student_id, employer_id, type, title, approved_by_staff, mentor_id")
     .eq("id", jobId)
     .single();
 
@@ -92,25 +93,93 @@ export async function POST(
     }
   }
 
-  // Step 2: release held → student
+  // Step 2: 3-way split release (90% นศ. / 5% กองทุน / 5% staff supervisor)
+  // Note: ถ้าไม่มี staff supervisor หรือ mentor → recyclable share กลับเข้า student
+  const hasMentor = !!job.mentor_id;
+  const STUDENT_BPS = hasMentor ? 8500 : 9000;
+  const FUND_BPS = 500;
+  const MENTOR_BPS = hasMentor ? 500 : 0;
+  // staff = remainder
+
+  const studentAmount = Math.floor((amount * STUDENT_BPS) / 10000);
+  const fundAmount = Math.floor((amount * FUND_BPS) / 10000);
+  const mentorAmount = Math.floor((amount * MENTOR_BPS) / 10000);
+  const staffAmount = amount - studentAmount - fundAmount - mentorAmount; // residual
+
+  // 2a) → student
   const releaseRes = await escrowRelease(
-    supabase,
-    job.employer_id,
-    job.student_id,
-    amount,
-    jobId,
-    user.id,
+    supabase, job.employer_id, job.student_id, studentAmount, jobId, user.id,
   );
   if (!releaseRes.ok) {
-    return NextResponse.json({
-      error: `ปล่อย escrow ไม่สำเร็จ: ${releaseRes.error}`,
-    }, { status: 500 });
+    return NextResponse.json({ error: `ปล่อย escrow ไม่สำเร็จ: ${releaseRes.error}` }, { status: 500 });
   }
 
-  // Mark job as paid (use ledger tx id as escrow_tx ref)
+  // 2b) → SYSTEM (fund pool) — silent log only
+  if (fundAmount > 0) {
+    await escrowRelease(supabase, job.employer_id, SYSTEM_POOL, fundAmount, jobId, user.id);
+  }
+
+  // 2c) → staff supervisor
+  if (staffAmount > 0 && job.approved_by_staff) {
+    await escrowRelease(supabase, job.employer_id, job.approved_by_staff, staffAmount, jobId, user.id);
+  } else if (staffAmount > 0) {
+    // No staff supervisor — recycle to student
+    await escrowRelease(supabase, job.employer_id, job.student_id, staffAmount, jobId, user.id);
+  }
+
+  // 2d) → mentor (if any)
+  if (mentorAmount > 0 && job.mentor_id) {
+    await escrowRelease(supabase, job.employer_id, job.mentor_id, mentorAmount, jobId, user.id);
+  }
+
+  // ===== Step 3 (optional): Mirror payment on TRON Nile testnet =====
+  // For each recipient with a bound TRON wallet, fire a TRC-20 transfer from
+  // the deployer treasury. The off-chain ledger remains the source of truth.
+  let onChainTxId: string | null = null;
+  let onChainError: string | null = null;
+  let escrowTxRef = `ledger:${releaseRes.txId}`;
+  const onChainTxs: { recipient: string; amount: number; txId: string; role: string }[] = [];
+
+  // Resolve wallet addresses for recipients
+  const recipientIds = [job.student_id, job.approved_by_staff, job.mentor_id].filter(Boolean) as string[];
+  const { data: walletRows } = await supabase
+    .from("skc_users")
+    .select("id, wallet_address")
+    .in("id", recipientIds);
+  const walletMap = Object.fromEntries((walletRows ?? []).map((u: { id: string; wallet_address: string | null }) => [u.id, u.wallet_address]));
+
+  // Helper: try on-chain transfer for a single recipient
+  async function mirror(userId: string | null | undefined, mirrorAmount: number, role: string) {
+    if (!userId || mirrorAmount <= 0) return;
+    const addr = walletMap[userId];
+    if (!addr) return;
+    const r = await transferTRPBOnChain(addr, mirrorAmount);
+    if (r.ok) {
+      onChainTxs.push({ recipient: addr, amount: mirrorAmount, txId: r.txId, role });
+      if (!onChainTxId) onChainTxId = r.txId; // first success → primary tx
+    } else {
+      onChainError = onChainError ?? r.error;
+      console.warn(`[release-escrow] On-chain mirror failed for ${role} (${addr}):`, r.error);
+    }
+  }
+
+  await mirror(job.student_id, studentAmount + (job.approved_by_staff ? 0 : staffAmount), "student");
+  await mirror(job.approved_by_staff, staffAmount, "staff");
+  await mirror(job.mentor_id, mentorAmount, "mentor");
+  // Note: SYSTEM/fund pool ไม่มี wallet_address บน-chain (off-chain only)
+
+  if (onChainTxId) {
+    escrowTxRef = onChainTxId; // Use first tx hash for TronScan deep-link
+    await supabase
+      .from("skc_trpb_transactions")
+      .update({ on_chain_ref: onChainTxId })
+      .eq("id", releaseRes.txId);
+  }
+
+  // Mark job as paid (escrow_tx = on-chain hash if available, else ledger:<id>)
   await supabase
     .from("skc_jobs")
-    .update({ escrow_tx: `ledger:${releaseRes.txId}` })
+    .update({ escrow_tx: escrowTxRef })
     .eq("id", jobId);
 
   // Update employer quota counter
@@ -135,9 +204,23 @@ export async function POST(
   });
 
   return NextResponse.json({
-    message: `จ่ายค่าจ้าง ${amount.toLocaleString()} TRPB ให้ นศ. สำเร็จ`,
+    message: onChainTxId
+      ? `จ่ายค่าจ้าง ${amount.toLocaleString()} TRPB สำเร็จ (on-chain mirror ผ่าน TRON Nile)`
+      : `จ่ายค่าจ้าง ${amount.toLocaleString()} TRPB ให้ นศ. สำเร็จ`,
     tx_id: releaseRes.txId,
+    on_chain_tx: onChainTxId,
+    on_chain_error: onChainError,
+    on_chain_breakdown: onChainTxs,
+    split: {
+      student: studentAmount,
+      fund: fundAmount,
+      mentor: mentorAmount,
+      staff: staffAmount,
+      total: amount,
+    },
     ledger: true,
-    note: "การจ่ายผ่าน off-chain ledger — TRON mirror สามารถ sync ภายหลังโดย admin",
+    note: onChainTxId
+      ? `On-chain TX: https://nile.tronscan.org/#/transaction/${onChainTxId}`
+      : "On-chain mirror ไม่สำเร็จ หรือยังไม่มี wallet ผูก — Off-chain ledger สำเร็จ",
   });
 }

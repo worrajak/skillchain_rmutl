@@ -210,6 +210,25 @@ export function EscrowPaymentCard({
 }
 
 function FeeBreakdown({ breakdown }: { breakdown: ReturnType<typeof calculateFeeBreakdown> }) {
+  // 3-way split (90/5/5) implemented in /api/jobs/[id]/release-escrow as of v2:
+  // - 90% นักศึกษา (95% ถ้าไม่มี mentor)
+  // - 5% กองทุนกลาง (SYSTEM pool)
+  // - 5% คณะทำงาน (staff supervisor)
+  // - 5% Mentor (เฉพาะงานที่ require mentor)
+  const USE_FULL_SPLIT = true;
+  if (!USE_FULL_SPLIT) {
+    return (
+      <div className="space-y-2 text-xs">
+        <div className="flex justify-between bg-green-50 rounded p-3 border border-green-200">
+          <span className="text-muted-foreground">นักศึกษาได้รับ</span>
+          <span className="font-medium text-green-700 text-base">{formatTRPB(breakdown.total)}</span>
+        </div>
+        <p className="text-[10px] text-muted-foreground italic">
+          ⚠️ โหมด Pilot: นักศึกษาได้เต็มจำนวน · กองทุนกลาง/คณะทำงาน/Mentor ยังไม่หัก (จะเปิดในเฟสถัดไป)
+        </p>
+      </div>
+    );
+  }
   return (
     <div className="grid grid-cols-2 gap-2 text-xs">
       <div className="flex justify-between bg-green-50 rounded p-2">
