@@ -13,6 +13,7 @@ const navLinks = [
   { href: "/training", label: "หลักสูตรอบรม" },
   { href: "/verify", label: "ตรวจสอบใบรับรอง" },
   { href: "/about", label: "เกี่ยวกับระบบ" },
+  { href: "/guides", label: "คู่มือ" },
 ];
 
 export function Navbar() {

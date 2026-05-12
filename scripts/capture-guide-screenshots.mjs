@@ -122,6 +122,17 @@ async function captureRole(browser, roleKey, role) {
       if (cap.afterLogin === false && cap.url === "/login") {
         await page.goto(`${BASE}${cap.url}`);
         await page.waitForTimeout(1500);
+        // Form is vertically centered (justify-center) — push it to the top
+        // so the screenshot doesn't show a huge empty header
+        await page.addStyleTag({
+          content: `
+            body > div.flex.min-h-screen {
+              align-items: flex-start !important;
+              padding-top: 24px !important;
+            }
+          `,
+        });
+        await page.waitForTimeout(300);
         const out = join(outDir, `${cap.name}.png`);
         await captureScrolledScreenshot(page, out, cap.scrollY);
         console.log(`  ✓ ${cap.name}.png`);
