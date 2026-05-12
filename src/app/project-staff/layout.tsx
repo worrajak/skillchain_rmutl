@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, UserCheck, AlertTriangle, FileCheck, LogOut, Menu, X, Shield, Briefcase, ClipboardCheck, Users, GraduationCap, PlusCircle, ShieldCheck, Coins } from "lucide-react";
+import { LayoutDashboard, UserCheck, AlertTriangle, FileCheck, LogOut, Menu, X, Shield, Briefcase, ClipboardCheck, Users, GraduationCap, PlusCircle, ShieldCheck, Coins, FileText } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -19,6 +19,7 @@ const navItems = [
   { href: "/project-staff/trpb", label: "💰 จ่าย TRPB", icon: Coins },
   { href: "/training/manage/new", label: "สร้างหลักสูตร", icon: GraduationCap },
   { href: "/project-staff/active-jobs", label: "ติดตามงาน", icon: Briefcase },
+  { href: "/project-staff/gov-batches", label: "📄 เอกสารขออนุมัติ (รอบ)", icon: FileText },
   { href: "/project-staff/warranty", label: "Warranty (ประกันงาน)", icon: ShieldCheck },
   { href: "/project-staff/disputes", label: "ข้อพิพาท", icon: AlertTriangle },
   { href: "/project-staff/cancellations", label: "คำขอยกเลิก", icon: FileCheck },
