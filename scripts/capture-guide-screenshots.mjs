@@ -122,19 +122,38 @@ async function captureRole(browser, roleKey, role) {
       if (cap.afterLogin === false && cap.url === "/login") {
         await page.goto(`${BASE}${cap.url}`);
         await page.waitForTimeout(1500);
-        // Form is vertically centered (justify-center) — push it to the top
-        // so the screenshot doesn't show a huge empty header
-        await page.addStyleTag({
-          content: `
-            body > div.flex.min-h-screen {
-              align-items: flex-start !important;
-              padding-top: 24px !important;
-            }
-          `,
-        });
-        await page.waitForTimeout(300);
         const out = join(outDir, `${cap.name}.png`);
-        await captureScrolledScreenshot(page, out, cap.scrollY);
+
+        // Crop tightly to the login card (title + email/password + button + sign-up link)
+        // — avoids the white space caused by `flex items-center` centering
+        try {
+          const cardBox = await page
+            .locator('form')
+            .locator('xpath=ancestor::*[contains(@class, "max-w-md")]')
+            .first()
+            .boundingBox();
+          if (cardBox) {
+            const padding = 24;
+            const clip = {
+              x: Math.max(0, Math.floor(cardBox.x - padding)),
+              y: Math.max(0, Math.floor(cardBox.y - padding)),
+              width: Math.min(
+                VIEWPORT.width - Math.max(0, Math.floor(cardBox.x - padding)),
+                Math.ceil(cardBox.width + padding * 2),
+              ),
+              height: Math.min(
+                VIEWPORT.height - Math.max(0, Math.floor(cardBox.y - padding)),
+                Math.ceil(cardBox.height + padding * 2),
+              ),
+            };
+            await page.screenshot({ path: out, clip });
+          } else {
+            await captureScrolledScreenshot(page, out, cap.scrollY);
+          }
+        } catch {
+          await captureScrolledScreenshot(page, out, cap.scrollY);
+        }
+
         console.log(`  ✓ ${cap.name}.png`);
         // Then login for subsequent steps
         await login(page, role.email, password);
