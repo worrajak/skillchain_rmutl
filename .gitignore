@@ -42,3 +42,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .solc-output/
+
+
+# graphify knowledge graph outputs (large + regenerable)
+/graphify-out/
+

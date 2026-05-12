@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { ImageGallery } from "@/components/image-gallery";
+import { JobCardCover, DeadlineUrgency } from "@/components/job-card-cover";
+import { UserAvatar } from "@/components/user-avatar";
 import { getCampusLabel } from "@/types/database";
 
 const TYPE_LABELS: Record<string, string> = { PAID: "งานจ้าง", VOLUNTEER: "จิตอาสา", TRAINING: "ฝึกทักษะ", EXEMPTED: "ยกเว้นค่าบริการ" };
@@ -98,6 +100,14 @@ export default function StudentJobsPage() {
 
         const { data } = await query;
         setOpenJobs(data ?? []);
+
+        // Also load pending requests so the apply button knows which jobs already requested
+        const { data: reqs } = await supabase
+          .from("skc_job_assignment_requests")
+          .select("id, job_id, status")
+          .eq("student_id", userId)
+          .in("status", ["PENDING"]);
+        setPendingRequests(reqs ?? []);
       }
       setLoading(false);
     }
@@ -116,6 +126,8 @@ export default function StudentJobsPage() {
       else toast.error("ส่งคำขอไม่สำเร็จ: " + error.message);
     } else {
       toast.success("ส่งคำขอรับงานแล้ว — รอคณะทำงานอนุมัติ");
+      // Optimistic UI: append the new request so the button flips immediately
+      setPendingRequests((prev) => [...prev, { id: `tmp-${jobId}`, job_id: jobId, status: "PENDING" }]);
       const { data: staffUsers } = await supabase.from("skc_users").select("id")
         .in("role", ["project_staff", "admin", "superadmin"]).eq("approval_status", "APPROVED");
       if (staffUsers) {
@@ -125,6 +137,9 @@ export default function StudentJobsPage() {
       }
     }
   }
+
+  // Set of job IDs the student already requested (and is still pending)
+  const pendingJobIds = new Set(pendingRequests.map((r: any) => r.job_id || r.job?.id).filter(Boolean));
 
   return (
     <div className="space-y-4">
@@ -243,15 +258,23 @@ export default function StudentJobsPage() {
                           )}
                         </div>
 
-                        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mt-2 pt-2 border-t">
-                          <span className="flex items-center gap-1">
-                            <User className="size-3 text-green-600" />
-                            ผู้จ้าง: {job.employer?.name ?? "-"}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Shield className="size-3 text-amber-600" />
-                            ผู้กำกับ: {job.supervisor_name ?? "(ยังไม่มี)"}
-                          </span>
+                        {/* Actor trio: employer · supervisor (student is current user, implicit) */}
+                        <div className="flex items-center gap-3 mt-2 pt-2 border-t text-xs text-muted-foreground">
+                          {job.employer_id && (
+                            <span className="inline-flex items-center gap-1.5">
+                              <UserAvatar userId={job.employer_id} size="xs" />
+                              <span className="truncate max-w-[100px]">{job.employer?.name ?? "ผู้จ้าง"}</span>
+                            </span>
+                          )}
+                          {job.approved_by_staff && (
+                            <span className="inline-flex items-center gap-1.5">
+                              <UserAvatar userId={job.approved_by_staff} size="xs" />
+                              <span className="truncate max-w-[100px]">{job.supervisor_name ?? "ผู้กำกับ"}</span>
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mt-2">
                           <span className="flex items-center gap-1">
                             <MapPin className="size-3" />
                             {job.location}
@@ -304,9 +327,13 @@ export default function StudentJobsPage() {
         openJobs.length > 0 ? (
           <div className="grid md:grid-cols-2 gap-4">
             {openJobs.map((job: any) => (
-              <Card key={job.id} className="hover:ring-2 hover:ring-blue-200 transition-all">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base text-foreground">{job.title}</CardTitle>
+              <Card key={job.id} className="overflow-hidden hover:ring-2 hover:ring-sky-200 transition-all p-0">
+                <JobCardCover jobId={job.id} category={job.job_category} />
+                <CardHeader className="pb-3 pt-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="text-base text-foreground line-clamp-2 flex-1">{job.title}</CardTitle>
+                    <DeadlineUrgency deadline={job.deadline} />
+                  </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", BADGE_COLORS[job.type] ?? "")}>
                       {TYPE_LABELS[job.type] ?? job.type}
@@ -322,13 +349,18 @@ export default function StudentJobsPage() {
                     <span className="flex items-center gap-1"><MapPin className="size-3" />{job.location} ({getCampusLabel(job.campus)})</span>
                     <span className="flex items-center gap-1"><Clock className="size-3" />กำหนดส่ง: {new Date(job.deadline).toLocaleDateString("th-TH")}</span>
                     {job.pay_amount > 0 && (
-                      <span className="flex items-center gap-1 text-green-700 font-medium"><Wallet className="size-3" />{job.pay_amount.toLocaleString()} TRPB</span>
+                      <span className="flex items-center gap-1 text-green-700 font-semibold text-sm"><Wallet className="size-3.5" />{job.pay_amount.toLocaleString()} TRPB</span>
                     )}
                   </div>
-                  <ImageGallery jobId={job.id} imageType="job" />
                   <div className="flex items-center justify-between pt-2 border-t">
                     <span className="text-xs text-muted-foreground">โดย: {job.employer?.name ?? "-"}</span>
-                    <Button size="sm" onClick={() => handleApply(job.id)}>ส่งคำขอรับงาน</Button>
+                    {pendingJobIds.has(job.id) ? (
+                      <Button size="sm" variant="secondary" disabled className="opacity-70">
+                        ⏳ ส่งคำขอแล้ว
+                      </Button>
+                    ) : (
+                      <Button size="sm" onClick={() => handleApply(job.id)}>ส่งคำขอรับงาน</Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>

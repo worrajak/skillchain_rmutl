@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   Briefcase,
   Users,
@@ -17,6 +18,9 @@ import {
   Trophy,
   Shield,
   Wrench,
+  ArrowRight,
+  ScanLine,
+  Sparkles,
 } from "lucide-react";
 import { getCampusLabel } from "@/types/database";
 
@@ -111,11 +115,46 @@ export default async function HomePage() {
               <p className="text-base text-blue-100 leading-relaxed">
                 SkillChain เชื่อมต่อ<strong>ผู้ว่าจ้าง</strong>กับ<strong>นักศึกษาช่าง มทร.ล้านนา</strong>
                 ผ่านระบบ Blockchain — ทุกงาน ทุกการจ่ายเงิน ทุกการประเมิน บันทึกบน TRON
-                แก้ไขย้อนหลังไม่ได้ ตรวจสอบได้ตลอด
               </p>
 
+              {/* Primary CTAs */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-1">
+                <Link href="/register" className="flex-1">
+                  <Button
+                    size="lg"
+                    className="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-semibold shadow-lg shadow-amber-500/30 ring-1 ring-amber-300/50 h-12"
+                  >
+                    <Sparkles className="size-5 mr-2" />
+                    เริ่มต้น — สมัคร
+                  </Button>
+                </Link>
+                <Link href="/login" className="flex-1">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full bg-white/10 hover:bg-white/20 text-white border-white/30 h-12"
+                  >
+                    เข้าสู่ระบบ
+                    <ArrowRight className="size-5 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+
+              {/* Secondary actions */}
+              <div className="flex items-center gap-4 text-sm text-blue-200 pt-1">
+                <Link href="/verify" className="hover:text-white inline-flex items-center gap-1.5">
+                  <ScanLine className="size-4" />
+                  ตรวจสอบใบรับรอง
+                </Link>
+                <span className="text-blue-300/50">·</span>
+                <Link href="/training" className="hover:text-white inline-flex items-center gap-1.5">
+                  <Award className="size-4" />
+                  หลักสูตรอบรม
+                </Link>
+              </div>
+
               {/* Key Value Props */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3 pt-2">
                 {[
                   { icon: Shield, text: "Escrow จ่ายเมื่องานเสร็จ" },
                   { icon: Award, text: "NFT ใบรับรองทักษะ 5 ระดับ" },

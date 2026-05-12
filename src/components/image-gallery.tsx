@@ -30,6 +30,7 @@ export function ImageGallery({
   const supabase = createClient();
 
   useEffect(() => {
+    let cancelled = false;
     async function load() {
       let query = supabase
         .from("skc_job_images")
@@ -39,10 +40,20 @@ export function ImageGallery({
 
       if (imageType) query = query.eq("image_type", imageType);
 
-      const { data } = await query;
+      const { data, error } = await query;
+      if (cancelled) return;
+      if (error) {
+        console.warn("[ImageGallery] failed to load images for", jobId, imageType, error);
+        setImages([]);
+        return;
+      }
       setImages(data ?? []);
     }
     load();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId, imageType]);
 
   if (images.length === 0 && !showEmpty) return null;
