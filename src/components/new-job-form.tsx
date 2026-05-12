@@ -12,6 +12,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { AlertTriangle, CheckCircle, Home, Camera } from "lucide-react";
+import { AIJobEstimator } from "@/components/ai-job-estimator";
 import { toast } from "sonner";
 import { JOB_POSTER_ROLES } from "@/types/database";
 import type { UserRole } from "@/types/database";
@@ -218,6 +219,17 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
           <span className="font-bold">เหลือ {Math.max(0, quota.job_quota - quota.job_quota_used)} ครั้ง</span>
         </div>
       )}
+
+      {/* AI Job Estimator — ถ่ายรูปแล้ว AI ช่วยกรอกฟอร์ม */}
+      <AIJobEstimator
+        onApply={(e) => {
+          setTitle(e.title);
+          setDescription(e.description);
+          setJobCategory(e.category);
+          const mid = Math.round((e.estimated_pay_min + e.estimated_pay_max) / 2);
+          setPayAmount(String(mid));
+        }}
+      />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>

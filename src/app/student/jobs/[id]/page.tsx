@@ -17,6 +17,8 @@ import {
 import { toast } from "sonner";
 import { ImageUpload } from "@/components/image-upload";
 import { ImageGallery } from "@/components/image-gallery";
+import { CameraCapture } from "@/components/camera-capture";
+import { UserAvatar } from "@/components/user-avatar";
 import { StudentReviewForm } from "@/components/reviews/student-review-form";
 
 const STATUS_TH: Record<string, { label: string; color: string }> = {
@@ -51,6 +53,9 @@ export default function StudentJobDetailPage({ params }: { params: Promise<{ id:
   const [scheduling, setScheduling] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  // Camera capture state (replaces drag-and-drop on mobile)
+  const [cameraType, setCameraType] = useState<"progress" | "completion" | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -230,11 +235,19 @@ export default function StudentJobDetailPage({ params }: { params: Promise<{ id:
               <span>กำหนดส่ง: {new Date(job.deadline).toLocaleDateString("th-TH")}</span>
             </div>
             <div className="flex items-center gap-2">
-              <User className="size-4 text-green-600" />
+              {job.employer_id ? (
+                <UserAvatar userId={job.employer_id} size="sm" />
+              ) : (
+                <User className="size-4 text-green-600" />
+              )}
               <span>ผู้ว่าจ้าง: <strong>{job.employer?.name ?? "-"}</strong></span>
             </div>
             <div className="flex items-center gap-2">
-              <Shield className="size-4 text-amber-600" />
+              {job.approved_by_staff ? (
+                <UserAvatar userId={job.approved_by_staff} size="sm" />
+              ) : (
+                <Shield className="size-4 text-amber-600" />
+              )}
               <span>ผู้กำกับ: <strong>{supervisorName ?? "(ยังไม่มี)"}</strong></span>
             </div>
             {job.work_start_date && (
@@ -268,30 +281,34 @@ export default function StudentJobDetailPage({ params }: { params: Promise<{ id:
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            {job.work_start_date && job.schedule_proposed_by === userId && !job.schedule_confirmed && (
-              <p className="text-xs text-yellow-700 bg-yellow-50 rounded p-2">
+            {job.work_start_date && job.schedule_proposed_by === userId && !job.schedule_confirmed ? (
+              // Already proposed by this student — only show waiting card, hide inputs
+              <p className="text-sm text-yellow-700 bg-yellow-50 rounded p-3 border border-yellow-200">
                 ⏳ คุณเสนอวัน {new Date(job.work_start_date).toLocaleDateString("th-TH")}
-                {job.work_end_date && ` — ${new Date(job.work_end_date).toLocaleDateString("th-TH")}`} แล้ว — รอผู้ว่าจ้างยืนยัน
+                {job.work_end_date && ` — ${new Date(job.work_end_date).toLocaleDateString("th-TH")}`} แล้ว — <strong>รอผู้ว่าจ้างยืนยัน</strong>
               </p>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs text-muted-foreground">วันเริ่ม</label>
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">วันสิ้นสุด</label>
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-              </div>
-            </div>
-            <Button onClick={handleProposeSchedule} disabled={scheduling} className="w-full">
-              {scheduling ? <><Loader2 className="size-4 mr-1 animate-spin" />กำลังบันทึก...</> : <><Send className="size-4 mr-1" />เสนอวันทำงาน</>}
-            </Button>
-
-            {canConfirmSchedule && (
+            ) : canConfirmSchedule ? (
+              // Employer proposed dates — student should confirm
               <Button onClick={handleConfirmSchedule} disabled={confirming} variant="outline" className="w-full border-green-300 text-green-700 hover:bg-green-50">
                 {confirming ? <><Loader2 className="size-4 mr-1 animate-spin" />กำลังยืนยัน...</> : <><CheckCircle className="size-4 mr-1" />ยืนยันวันที่ผู้ว่าจ้างเสนอ → เริ่มงาน</>}
               </Button>
+            ) : (
+              // No proposal yet — student can propose
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs text-muted-foreground">วันเริ่ม</label>
+                    <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">วันสิ้นสุด</label>
+                    <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+                  </div>
+                </div>
+                <Button onClick={handleProposeSchedule} disabled={scheduling} className="w-full">
+                  {scheduling ? <><Loader2 className="size-4 mr-1 animate-spin" />กำลังบันทึก...</> : <><Send className="size-4 mr-1" />เสนอวันทำงาน</>}
+                </Button>
+              </>
             )}
           </CardContent>
         </Card>
@@ -320,14 +337,24 @@ export default function StudentJobDetailPage({ params }: { params: Promise<{ id:
         </CardHeader>
         <CardContent>
           {canUploadImages ? (
-            <ImageUpload
-              jobId={id}
-              imageType="progress"
-              maxImages={8}
-              existingImages={progressImages}
-              onUploadComplete={() => load()}
-              label="รูประหว่างทำงาน"
-            />
+            <>
+              <Button
+                onClick={() => setCameraType("progress")}
+                className="w-full bg-sky-500 hover:bg-sky-600 text-white mb-3"
+                size="lg"
+              >
+                <Camera className="size-5 mr-2" />
+                📷 เปิดกล้อง — AI จะช่วยอธิบายรูปให้
+              </Button>
+              <ImageUpload
+                jobId={id}
+                imageType="progress"
+                maxImages={8}
+                existingImages={progressImages}
+                onUploadComplete={() => load()}
+                label="หรือเลือกจากคลังภาพ"
+              />
+            </>
           ) : (
             <ImageGallery jobId={id} imageType="progress" showEmpty />
           )}
@@ -349,14 +376,24 @@ export default function StudentJobDetailPage({ params }: { params: Promise<{ id:
         </CardHeader>
         <CardContent>
           {canUploadImages ? (
-            <ImageUpload
-              jobId={id}
-              imageType="completion"
-              maxImages={6}
-              existingImages={completionImages}
-              onUploadComplete={() => load()}
-              label="รูปงานเสร็จ"
-            />
+            <>
+              <Button
+                onClick={() => setCameraType("completion")}
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white mb-3"
+                size="lg"
+              >
+                <Camera className="size-5 mr-2" />
+                📷 ถ่ายรูปงานเสร็จ — AI จะตรวจสอบให้
+              </Button>
+              <ImageUpload
+                jobId={id}
+                imageType="completion"
+                maxImages={6}
+                existingImages={completionImages}
+                onUploadComplete={() => load()}
+                label="หรือเลือกจากคลังภาพ"
+              />
+            </>
           ) : (
             <ImageGallery jobId={id} imageType="completion" showEmpty />
           )}
@@ -493,6 +530,21 @@ export default function StudentJobDetailPage({ params }: { params: Promise<{ id:
             คุณกำลังดูงานในฐานะผู้ดูแล — ไม่สามารถอัปโหลดรูปหรือส่งงานแทนนักศึกษา
           </CardContent>
         </Card>
+      )}
+      {/* Camera fullscreen overlay */}
+      {cameraType && (
+        <CameraCapture
+          open={!!cameraType}
+          onClose={() => setCameraType(null)}
+          jobId={id}
+          imageType={cameraType}
+          maxImages={cameraType === "completion" ? 6 : 8}
+          jobTitle={job?.title}
+          onUploaded={() => {
+            setCameraType(null);
+            load();
+          }}
+        />
       )}
     </div>
   );

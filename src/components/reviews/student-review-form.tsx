@@ -12,6 +12,8 @@ import {
 import { StarRating } from "./star-rating";
 import { ScoreCircle } from "./badge-display";
 import { CheckCircle, Loader2 } from "lucide-react";
+import { VoiceNoteButton } from "@/components/voice-note-button";
+import { UserAvatar } from "@/components/user-avatar";
 
 const CRITERIA = [
   { key: "score_clarity", label: "งานชัดเจน", description: "อธิบายงานและความต้องการชัดเจน" },
@@ -223,8 +225,9 @@ export function StudentReviewForm({
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between gap-2">
-            <CardTitle className="text-foreground">
-              ให้คะแนนผู้ว่าจ้าง: {employerName}
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <UserAvatar userId={employerId} size="sm" />
+              <span>ให้คะแนนผู้ว่าจ้าง: {employerName}</span>
             </CardTitle>
             <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">
               {phaseLabel}
@@ -258,12 +261,17 @@ export function StudentReviewForm({
             </div>
           )}
 
-          <Textarea
-            placeholder="ความคิดเห็นเพิ่มเติม (ไม่บังคับ)"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            rows={3}
-          />
+          <div className="space-y-2">
+            <Textarea
+              placeholder="ความคิดเห็นเพิ่มเติม (ไม่บังคับ) — กดปุ่ม 🎙 เพื่อพูด"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={3}
+            />
+            <VoiceNoteButton
+              onTranscript={(t) => setComment((c) => (c ? c + " " : "") + t)}
+            />
+          </div>
 
           {error && <p className="text-sm text-red-600">{error}</p>}
           <Button
