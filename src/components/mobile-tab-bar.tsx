@@ -115,8 +115,8 @@ export function MobileTabBar() {
     return () => { cancelled = true; };
   }, [pathname]);
 
-  // Hide on auth pages + landing
-  const HIDE_ON = ["/login", "/register", "/verify", "/quick-login", "/j/"];
+  // Hide on auth pages + landing + print/guides
+  const HIDE_ON = ["/login", "/register", "/verify", "/quick-login", "/j/", "/guides/"];
   if (HIDE_ON.some((p) => pathname.startsWith(p))) return null;
   if (pathname === "/") return null;
   if (!authed) return null;

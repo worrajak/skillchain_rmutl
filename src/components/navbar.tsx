@@ -19,14 +19,15 @@ export function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  // ไม่แสดง navbar ในหน้า dashboard (มี sidebar แล้ว)
+  // ไม่แสดง navbar ในหน้า dashboard (มี sidebar แล้ว) หรือหน้า print/guides
   if (
     pathname.startsWith("/admin") ||
     pathname.startsWith("/student") ||
     pathname.startsWith("/employer") ||
     pathname.startsWith("/teacher") ||
     pathname.startsWith("/project-staff") ||
-    pathname.startsWith("/donor")
+    pathname.startsWith("/donor") ||
+    pathname.startsWith("/guides/")
   ) {
     return null;
   }

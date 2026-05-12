@@ -44,7 +44,9 @@ export async function updateSession(request: NextRequest) {
     || request.nextUrl.pathname.startsWith("/training/")
     || request.nextUrl.pathname.startsWith("/verify/")
     || request.nextUrl.pathname.startsWith("/invite/")
-    || request.nextUrl.pathname.startsWith("/j/");
+    || request.nextUrl.pathname.startsWith("/j/")
+    || request.nextUrl.pathname.startsWith("/guides")
+    || request.nextUrl.pathname.startsWith("/api/qr");
 
   if (!isAuthenticated && !isPublic) {
     const url = request.nextUrl.clone();
