@@ -19,11 +19,11 @@ const BASE = process.env.BASE_URL || "http://localhost:3000";
 const VIEWPORT = { width: 402, height: 874 };
 const DEVICE_SCALE = 2;
 
-const PASSWORD = "Test1234!";
+const PASSWORD = "Demo1234!"; // demo accounts seeded by seed-demo-users.mjs
 
 const ROLES = {
   student: {
-    email: "artid_lu67@live.rmutl.ac.th",
+    email: "demo-student@rmutl.ac.th",
     landing: "/student/dashboard",
     captures: [
       { name: "01-login", url: "/login", afterLogin: false, scrollY: 0 },
@@ -35,7 +35,7 @@ const ROLES = {
     ],
   },
   employer: {
-    email: "bizz@rmutl.ac.th",
+    email: "demo-employer@rmutl.ac.th",
     landing: "/employer/dashboard",
     captures: [
       { name: "01-login", url: "/login", afterLogin: false, scrollY: 0 },
@@ -47,7 +47,7 @@ const ROLES = {
     ],
   },
   project_staff: {
-    email: "ampai.pu@rmutl.ac.th",
+    email: "demo-staff@rmutl.ac.th",
     landing: "/project-staff/dashboard",
     captures: [
       { name: "01-review", url: "/project-staff/review-jobs", scrollY: 0 },
@@ -60,7 +60,7 @@ const ROLES = {
   },
   rmutl_staff: {
     // RMUTL staff uses project-staff layout, so capture same/similar pages
-    email: "rmutl@test.com",
+    email: "demo-rmutl@rmutl.ac.th",
     landing: "/project-staff/dashboard",
     captures: [
       { name: "01-dashboard", url: "/project-staff/dashboard", scrollY: 0 },
@@ -72,8 +72,7 @@ const ROLES = {
     ],
   },
   teacher: {
-    email: "worrajak@rmutl.ac.th", // superadmin (no teacher account); use it
-    password: "Prach4843#*",
+    email: "demo-teacher@rmutl.ac.th",
     landing: "/teacher/dashboard",
     captures: [
       { name: "01-login", url: "/login", afterLogin: false, scrollY: 0 },
