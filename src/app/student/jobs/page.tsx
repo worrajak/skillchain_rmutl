@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { ImageGallery } from "@/components/image-gallery";
 import { JobCardCover, DeadlineUrgency } from "@/components/job-card-cover";
 import { UserAvatar } from "@/components/user-avatar";
+import { TeamStrip } from "@/components/team-strip";
 import { getCampusLabel } from "@/types/database";
 
 const TYPE_LABELS: Record<string, string> = { PAID: "งานจ้าง", VOLUNTEER: "จิตอาสา", TRAINING: "ฝึกทักษะ", EXEMPTED: "ยกเว้นค่าบริการ" };
@@ -352,6 +353,12 @@ export default function StudentJobsPage() {
                       <span className="flex items-center gap-1 text-green-700 font-semibold text-sm"><Wallet className="size-3.5" />{job.pay_amount.toLocaleString()} TRPB</span>
                     )}
                   </div>
+                  {/* Team strip — show filled spots vs required */}
+                  {job.required_workers > 1 && (
+                    <div className="pt-2 border-t">
+                      <TeamStrip jobId={job.id} requiredWorkers={job.required_workers} compact />
+                    </div>
+                  )}
                   <div className="flex items-center justify-between pt-2 border-t">
                     <span className="text-xs text-muted-foreground">โดย: {job.employer?.name ?? "-"}</span>
                     {pendingJobIds.has(job.id) ? (

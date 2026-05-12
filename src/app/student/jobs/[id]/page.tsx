@@ -19,6 +19,7 @@ import { ImageUpload } from "@/components/image-upload";
 import { ImageGallery } from "@/components/image-gallery";
 import { CameraCapture } from "@/components/camera-capture";
 import { UserAvatar } from "@/components/user-avatar";
+import { TeamStrip } from "@/components/team-strip";
 import { StudentReviewForm } from "@/components/reviews/student-review-form";
 
 const STATUS_TH: Record<string, { label: string; color: string }> = {
@@ -270,6 +271,24 @@ export default function StudentJobDetailPage({ params }: { params: Promise<{ id:
           </div>
         </CardContent>
       </Card>
+
+      {/* Team card — show only when job needs > 1 worker */}
+      {job.required_workers > 1 && (
+        <Card className="border-sky-200 bg-sky-50/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <User className="size-4 text-sky-600" />
+              ทีมของคุณ
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TeamStrip jobId={id} requiredWorkers={job.required_workers} showLabels />
+            <p className="text-xs text-muted-foreground mt-2">
+              💡 ค่าจ้างแบ่งเท่าๆ กันให้ทุกคน · คนใดในทีมส่งมอบงานได้ · 👑 = หัวหน้าทีม
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Schedule actions (ASSIGNED only) */}
       {canProposeSchedule && (

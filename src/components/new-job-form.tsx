@@ -46,6 +46,7 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
   const [payAmount, setPayAmount] = useState("");
   const [deadline, setDeadline] = useState("");
   const [isMentorship, setIsMentorship] = useState(false);
+  const [requiredWorkers, setRequiredWorkers] = useState(1);
 
   const supabase = createClient();
 
@@ -100,6 +101,7 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
       deadline: new Date(deadline).toISOString(),
       employer_id: userId,
       is_mentorship: isMentorship,
+      required_workers: Math.max(1, Math.min(20, requiredWorkers)),
       status: "PENDING_REVIEW",
     };
     console.log("[NewJobForm] inserting:", payload);
@@ -313,6 +315,33 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
                 <div className="text-xs text-muted-foreground">นักศึกษาระดับ 2 ต้องมีพี่เลี้ยงดูแล</div>
               </div>
             </label>
+
+            {/* Team size — multi-worker support (MVP equal split) */}
+            <div className="space-y-2 pt-2 border-t">
+              <Label className="text-foreground">จำนวนนักศึกษาที่ต้องการ (ทีม)</Label>
+              <div className="flex items-center gap-3">
+                <Input
+                  type="number"
+                  min={1}
+                  max={20}
+                  value={requiredWorkers}
+                  onChange={(e) => setRequiredWorkers(parseInt(e.target.value) || 1)}
+                  className="w-24"
+                />
+                <span className="text-sm text-muted-foreground">
+                  {requiredWorkers === 1 ? "งานเดี่ยว — 1 คน" : `งานทีม — ${requiredWorkers} คน`}
+                </span>
+              </div>
+              {requiredWorkers > 1 && payAmount && (
+                <p className="text-xs text-emerald-700 bg-emerald-50 rounded p-2">
+                  💰 ค่าจ้างแบ่งเท่าๆ กัน — แต่ละคนได้ {Math.floor((parseFloat(payAmount) * (isMentorship ? 0.85 : 0.9)) / requiredWorkers).toLocaleString()} TRPB
+                  <br />
+                  <span className="text-[10px] text-muted-foreground">
+                    (หลังหักค่าธรรมเนียม: 5% กองทุน + 5% คณะทำงาน{isMentorship ? " + 5% mentor" : ""})
+                  </span>
+                </p>
+              )}
+            </div>
           </CardContent>
         </Card>
 

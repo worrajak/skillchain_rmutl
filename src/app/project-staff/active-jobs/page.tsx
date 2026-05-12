@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { UserAvatar } from "@/components/user-avatar";
+import { TeamStrip } from "@/components/team-strip";
 import { ImageGallery } from "@/components/image-gallery";
 
 const STATUS_TH: Record<string, { label: string; color: string }> = {
@@ -245,7 +246,13 @@ export default function StaffActiveJobsPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground pt-2 border-t">
-                      {job.student_id && (
+                      {/* Team strip (multi-worker) OR single student avatar */}
+                      {job.required_workers > 1 ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="text-[10px] text-muted-foreground">ทีม</span>
+                          <TeamStrip jobId={job.id} requiredWorkers={job.required_workers} compact />
+                        </span>
+                      ) : job.student_id && (
                         <span className="inline-flex items-center gap-1.5">
                           <UserAvatar userId={job.student_id} size="xs" />
                           <span><span className="text-[10px] text-muted-foreground">นศ.</span> <strong>{job.student?.name ?? "-"}</strong></span>

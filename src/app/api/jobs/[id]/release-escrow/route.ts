@@ -93,38 +93,66 @@ export async function POST(
     }
   }
 
-  // Step 2: 3-way split release (90% นศ. / 5% กองทุน / 5% staff supervisor)
-  // Note: ถ้าไม่มี staff supervisor หรือ mentor → recyclable share กลับเข้า student
+  // Step 2: 3-way split (90% students / 5% fund / 5% staff supervisor)
+  // Plus equal-split among multiple workers (MVP team support).
+  //   - hasMentor → 85% students / 5% fund / 5% staff / 5% mentor
+  //   - no mentor → 90% students / 5% fund / 5% staff
+  // Team mode: the "students" share is divided equally among all skc_job_workers.
   const hasMentor = !!job.mentor_id;
   const STUDENT_BPS = hasMentor ? 8500 : 9000;
   const FUND_BPS = 500;
   const MENTOR_BPS = hasMentor ? 500 : 0;
-  // staff = remainder
 
-  const studentAmount = Math.floor((amount * STUDENT_BPS) / 10000);
+  const totalStudentAmount = Math.floor((amount * STUDENT_BPS) / 10000);
   const fundAmount = Math.floor((amount * FUND_BPS) / 10000);
   const mentorAmount = Math.floor((amount * MENTOR_BPS) / 10000);
-  const staffAmount = amount - studentAmount - fundAmount - mentorAmount; // residual
+  const staffAmount = amount - totalStudentAmount - fundAmount - mentorAmount; // residual
 
-  // 2a) → student
-  const releaseRes = await escrowRelease(
-    supabase, job.employer_id, job.student_id, studentAmount, jobId, user.id,
-  );
-  if (!releaseRes.ok) {
-    return NextResponse.json({ error: `ปล่อย escrow ไม่สำเร็จ: ${releaseRes.error}` }, { status: 500 });
+  // Resolve team
+  const { data: workers } = await supabase
+    .from("skc_job_workers")
+    .select("student_id, role")
+    .eq("job_id", jobId)
+    .order("role", { ascending: false }); // LEAD first
+  const teamIds = (workers ?? []).map((w) => w.student_id);
+  // Fallback: legacy jobs without skc_job_workers row → use job.student_id
+  if (teamIds.length === 0 && job.student_id) teamIds.push(job.student_id);
+
+  if (teamIds.length === 0) {
+    return NextResponse.json({ error: "ไม่มีนักศึกษาในทีม" }, { status: 400 });
   }
 
-  // 2b) → SYSTEM (fund pool) — silent log only
+  // Equal split — handle rounding by giving residual to LEAD (first)
+  const perStudent = Math.floor(totalStudentAmount / teamIds.length);
+  const studentShares = teamIds.map((id, i) => ({
+    studentId: id,
+    amount: i === 0 ? totalStudentAmount - perStudent * (teamIds.length - 1) : perStudent,
+  }));
+
+  // 2a) Release to each team member
+  let releaseRes: Awaited<ReturnType<typeof escrowRelease>> | null = null;
+  for (const { studentId, amount: share } of studentShares) {
+    if (share <= 0) continue;
+    const r = await escrowRelease(supabase, job.employer_id, studentId, share, jobId, user.id);
+    if (!r.ok) {
+      return NextResponse.json({ error: `ปล่อย escrow ให้ ${studentId} ไม่สำเร็จ: ${r.error}` }, { status: 500 });
+    }
+    if (!releaseRes) releaseRes = r; // remember first for tx_id reporting
+  }
+  if (!releaseRes) {
+    return NextResponse.json({ error: "ไม่มีรายการ release ที่สำเร็จ" }, { status: 500 });
+  }
+
+  // 2b) → SYSTEM (fund pool)
   if (fundAmount > 0) {
     await escrowRelease(supabase, job.employer_id, SYSTEM_POOL, fundAmount, jobId, user.id);
   }
 
-  // 2c) → staff supervisor
+  // 2c) → staff supervisor (or recycle to LEAD if no staff)
   if (staffAmount > 0 && job.approved_by_staff) {
     await escrowRelease(supabase, job.employer_id, job.approved_by_staff, staffAmount, jobId, user.id);
   } else if (staffAmount > 0) {
-    // No staff supervisor — recycle to student
-    await escrowRelease(supabase, job.employer_id, job.student_id, staffAmount, jobId, user.id);
+    await escrowRelease(supabase, job.employer_id, teamIds[0], staffAmount, jobId, user.id);
   }
 
   // 2d) → mentor (if any)
@@ -140,8 +168,8 @@ export async function POST(
   let escrowTxRef = `ledger:${releaseRes.txId}`;
   const onChainTxs: { recipient: string; amount: number; txId: string; role: string }[] = [];
 
-  // Resolve wallet addresses for recipients
-  const recipientIds = [job.student_id, job.approved_by_staff, job.mentor_id].filter(Boolean) as string[];
+  // Resolve wallet addresses for all recipients (team + staff + mentor)
+  const recipientIds = [...teamIds, job.approved_by_staff, job.mentor_id].filter(Boolean) as string[];
   const { data: walletRows } = await supabase
     .from("skc_users")
     .select("id, wallet_address")
@@ -163,7 +191,14 @@ export async function POST(
     }
   }
 
-  await mirror(job.student_id, studentAmount + (job.approved_by_staff ? 0 : staffAmount), "student");
+  // Mirror to each team member their equal share
+  for (let i = 0; i < studentShares.length; i++) {
+    const { studentId, amount: share } = studentShares[i];
+    const role = i === 0 ? "student-lead" : "student-team";
+    // If no staff supervisor, the recycle goes to LEAD only (already credited in 2c)
+    const totalForLead = !job.approved_by_staff && i === 0 ? share + staffAmount : share;
+    await mirror(studentId, totalForLead, role);
+  }
   await mirror(job.approved_by_staff, staffAmount, "staff");
   await mirror(job.mentor_id, mentorAmount, "mentor");
   // Note: SYSTEM/fund pool ไม่มี wallet_address บน-chain (off-chain only)
@@ -195,24 +230,31 @@ export async function POST(
       .eq("id", job.employer_id);
   }
 
-  await createNotification(supabase, {
-    user_id: job.student_id,
-    type: "payment_released",
-    title: "ได้รับค่าจ้าง",
-    body: `ค่าจ้าง ${amount.toLocaleString()} TRPB ถูกจ่ายเข้า wallet แล้ว`,
-    link: "/wallet",
-  });
+  // Notify every team member
+  for (const { studentId, amount: share } of studentShares) {
+    await createNotification(supabase, {
+      user_id: studentId,
+      type: "payment_released",
+      title: "ได้รับค่าจ้าง",
+      body: teamIds.length > 1
+        ? `ค่าจ้าง ${share.toLocaleString()} TRPB (ส่วนแบ่งทีม ${teamIds.length} คน) ถูกจ่ายเข้า wallet แล้ว`
+        : `ค่าจ้าง ${share.toLocaleString()} TRPB ถูกจ่ายเข้า wallet แล้ว`,
+      link: "/wallet",
+    });
+  }
 
   return NextResponse.json({
     message: onChainTxId
-      ? `จ่ายค่าจ้าง ${amount.toLocaleString()} TRPB สำเร็จ (on-chain mirror ผ่าน TRON Nile)`
-      : `จ่ายค่าจ้าง ${amount.toLocaleString()} TRPB ให้ นศ. สำเร็จ`,
+      ? `จ่ายค่าจ้าง ${amount.toLocaleString()} TRPB สำเร็จ (ทีม ${teamIds.length} คน · on-chain mirror ผ่าน TRON Nile)`
+      : `จ่ายค่าจ้าง ${amount.toLocaleString()} TRPB ให้ทีม ${teamIds.length} คน สำเร็จ`,
     tx_id: releaseRes.txId,
     on_chain_tx: onChainTxId,
     on_chain_error: onChainError,
     on_chain_breakdown: onChainTxs,
+    team_size: teamIds.length,
     split: {
-      student: studentAmount,
+      student_total: totalStudentAmount,
+      per_student: perStudent,
       fund: fundAmount,
       mentor: mentorAmount,
       staff: staffAmount,
