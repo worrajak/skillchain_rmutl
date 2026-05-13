@@ -11,13 +11,13 @@ import {
   Star,
   Shield,
   BarChart3,
-  LogOut,
   Menu,
   X,
   UserCheck,
   AlertTriangle,
   Coins,
   Wallet,
+  Home,
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -81,6 +81,17 @@ export default function AdminLayout({
             </button>
           </div>
 
+          {/* Back to home — top */}
+          <div className="px-3 pt-3">
+            <Link
+              href="/"
+              className="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <Home className="size-3.5" />
+              กลับหน้าหลัก
+            </Link>
+          </div>
+
           {/* Nav */}
           <nav className="flex-1 overflow-y-auto p-3 space-y-1">
             {navItems.map((item) => {
@@ -104,16 +115,6 @@ export default function AdminLayout({
             })}
           </nav>
 
-          {/* Footer */}
-          <div className="border-t p-3">
-            <Link
-              href="/"
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              <LogOut className="size-4" />
-              กลับหน้าหลัก
-            </Link>
-          </div>
         </div>
       </aside>
 

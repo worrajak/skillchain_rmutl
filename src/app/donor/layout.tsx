@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Heart, FileSearch, TrendingUp, LogOut, Menu, X } from "lucide-react";
+import { Heart, FileSearch, TrendingUp, Menu, X, Home } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/notifications/notification-bell";
@@ -32,6 +32,11 @@ export default function DonorLayout({ children }: { children: React.ReactNode })
             </Link>
             <button className="lg:hidden" onClick={() => setOpen(false)}><X className="size-5" /></button>
           </div>
+          <div className="px-3 pt-3">
+            <Link href="/" className="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
+              <Home className="size-3.5" />กลับหน้าหลัก
+            </Link>
+          </div>
           <nav className="flex-1 overflow-y-auto p-3 space-y-1">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
@@ -44,11 +49,6 @@ export default function DonorLayout({ children }: { children: React.ReactNode })
               );
             })}
           </nav>
-          <div className="border-t p-3">
-            <Link href="/" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground">
-              <LogOut className="size-4" />กลับหน้าหลัก
-            </Link>
-          </div>
         </div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
