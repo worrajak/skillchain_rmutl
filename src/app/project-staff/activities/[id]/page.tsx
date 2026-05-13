@@ -147,7 +147,7 @@ export default function ActivityAttendancePage({ params }: { params: Promise<{ i
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2 flex-wrap">
             <div>
-              <Badge className="bg-amber-100 text-amber-800 mb-1">🎉 กิจกรรมหมู่</Badge>
+              <Badge className="bg-amber-100 text-amber-800 mb-1">🎉 กิจกรรมกลุ่ม</Badge>
               <CardTitle className="text-lg">{job.title}</CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
                 {job.event_date && (

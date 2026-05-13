@@ -47,7 +47,7 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
   const [deadline, setDeadline] = useState("");
   const [isMentorship, setIsMentorship] = useState(false);
   const [requiredWorkers, setRequiredWorkers] = useState(1);
-  // ACTIVITY mode — กิจกรรมหมู่ 20-100 คน · จ่ายรายคน
+  // ACTIVITY mode — กิจกรรมกลุ่ม 20-100 คน · จ่ายรายคน
   const [engagementMode, setEngagementMode] = useState<"SOLO" | "ACTIVITY">("SOLO");
   const [payPerPerson, setPayPerPerson] = useState(""); // net to student
   const [eventDate, setEventDate] = useState("");
@@ -286,7 +286,7 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
               />
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-2xl">🎉</span>
-                <span className="font-semibold text-foreground">กิจกรรมหมู่</span>
+                <span className="font-semibold text-foreground">กิจกรรมกลุ่ม</span>
               </div>
               <p className="text-xs text-muted-foreground">20-100 คน · check-in รายคน · จ่ายต่อคน fixed rate</p>
             </label>
@@ -408,7 +408,7 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
               /* ACTIVITY mode — per-person pay + capacity + event date */
               <div className="space-y-3 pt-2 border-t">
                 <div className="rounded-lg bg-amber-50 border border-amber-200 p-2 text-xs text-amber-900">
-                  🎉 <strong>กิจกรรมหมู่</strong> — จ่ายรายคนแบบ fixed rate · check-in ด้วย QR · ไม่หารงบ
+                  🎉 <strong>กิจกรรมกลุ่ม</strong> — จ่ายรายคนแบบ fixed rate · check-in ด้วย QR · ไม่หารงบ
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
