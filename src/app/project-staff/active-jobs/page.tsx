@@ -246,8 +246,13 @@ export default function StaffActiveJobsPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-muted-foreground pt-2 border-t">
-                      {/* Team strip (multi-worker) OR single student avatar */}
-                      {job.required_workers > 1 ? (
+                      {/* Activity mode → link to attendance page */}
+                      {job.engagement_mode === "ACTIVITY" ? (
+                        <Link href={`/project-staff/activities/${job.id}`} className="inline-flex items-center gap-1.5 hover:bg-amber-50 rounded px-1.5 py-0.5">
+                          <span className="text-[10px] text-amber-700 font-medium">🎉 กิจกรรม</span>
+                          <span><strong>{job.required_workers} คน</strong> × {Number(job.pay_per_person ?? 0)} TRPB</span>
+                        </Link>
+                      ) : job.required_workers > 1 ? (
                         <span className="inline-flex items-center gap-1.5">
                           <span className="text-[10px] text-muted-foreground">ทีม</span>
                           <TeamStrip jobId={job.id} requiredWorkers={job.required_workers} compact />

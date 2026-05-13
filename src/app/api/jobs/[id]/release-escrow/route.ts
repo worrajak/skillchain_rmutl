@@ -31,7 +31,7 @@ export async function POST(
 
   const { data: job } = await supabase
     .from("skc_jobs")
-    .select("status, escrow_tx, pay_amount, student_id, employer_id, type, title, approved_by_staff, mentor_id")
+    .select("status, escrow_tx, pay_amount, student_id, employer_id, type, title, approved_by_staff, mentor_id, engagement_mode, pay_per_person")
     .eq("id", jobId)
     .single();
 
@@ -42,7 +42,8 @@ export async function POST(
     return NextResponse.json({ error: "จ่ายค่าจ้างไปแล้ว", tx_id: job.escrow_tx }, { status: 400 });
   if (job.type !== "PAID" || !job.pay_amount)
     return NextResponse.json({ error: "ไม่ใช่งานจ้าง" }, { status: 400 });
-  if (!job.student_id)
+  // For ACTIVITY mode: job.student_id is NULL (workers live in skc_job_workers)
+  if (!job.student_id && job.engagement_mode !== "ACTIVITY")
     return NextResponse.json({ error: "งานนี้ยังไม่มี นศ. รับ" }, { status: 400 });
   if (!job.employer_id)
     return NextResponse.json({ error: "งานนี้ไม่มีผู้ว่าจ้าง" }, { status: 400 });
@@ -59,13 +60,80 @@ export async function POST(
 
   const amount = Number(job.pay_amount);
 
+  // Step 2: 3-way split (90% students / 5% fund / 5% staff supervisor)
+  // Plus engagement-mode-specific worker handling:
+  //   - SOLO/TEAM: equal split among ALL workers in skc_job_workers
+  //   - ACTIVITY: per-person rate × number of ATTENDED participants only
+  //                NO_SHOW are skipped entirely (no payment).
+  const hasMentor = !!job.mentor_id;
+  const STUDENT_BPS = hasMentor ? 8500 : 9000;
+  const FUND_BPS = 500;
+  const MENTOR_BPS = hasMentor ? 500 : 0;
+  const isActivity = job.engagement_mode === "ACTIVITY";
+
+  // Resolve workers depending on engagement_mode
+  const workerQuery = supabase
+    .from("skc_job_workers")
+    .select("student_id, role, attendance_status")
+    .eq("job_id", jobId);
+  if (isActivity) {
+    // Activity: only ATTENDED count for payment
+    workerQuery.eq("attendance_status", "ATTENDED");
+  } else {
+    workerQuery.order("role", { ascending: false }); // LEAD first
+  }
+  const { data: workers } = await workerQuery;
+
+  const teamIds = (workers ?? []).map((w) => w.student_id);
+  if (!isActivity && teamIds.length === 0 && job.student_id) teamIds.push(job.student_id);
+
+  if (teamIds.length === 0) {
+    return NextResponse.json({
+      error: isActivity
+        ? "ยังไม่มีผู้เข้าร่วมที่ ATTENDED — ให้ staff confirm attendance ก่อน"
+        : "ไม่มีนักศึกษาในทีม",
+    }, { status: 400 });
+  }
+
+  // Compute amount per engagement mode
+  let amountToCharge: number;
+  let studentShares: { studentId: string; amount: number }[];
+  let totalStudentAmount: number;
+
+  if (isActivity) {
+    // ACTIVITY: pay_per_person is already GROSS (set at job creation: ceil(net/0.9))
+    // Total cost = gross_per_person × attended_count
+    const grossPerPerson = Number(job.pay_per_person ?? 0);
+    if (grossPerPerson <= 0) {
+      return NextResponse.json({ error: "งานนี้ไม่ได้กำหนดค่าตอบแทนต่อคน" }, { status: 400 });
+    }
+    amountToCharge = grossPerPerson * teamIds.length;
+    // Net per student = gross × 90% (rounded down)
+    const netPerStudent = Math.floor((grossPerPerson * STUDENT_BPS) / 10000);
+    totalStudentAmount = netPerStudent * teamIds.length;
+    studentShares = teamIds.map((id) => ({ studentId: id, amount: netPerStudent }));
+  } else {
+    // SOLO/TEAM: split the existing pay_amount
+    amountToCharge = amount;
+    totalStudentAmount = Math.floor((amount * STUDENT_BPS) / 10000);
+    const perStudent = Math.floor(totalStudentAmount / teamIds.length);
+    studentShares = teamIds.map((id, i) => ({
+      studentId: id,
+      amount: i === 0 ? totalStudentAmount - perStudent * (teamIds.length - 1) : perStudent,
+    }));
+  }
+
+  const fundAmount = Math.floor((amountToCharge * FUND_BPS) / 10000);
+  const mentorAmount = Math.floor((amountToCharge * MENTOR_BPS) / 10000);
+  const staffAmount = amountToCharge - totalStudentAmount - fundAmount - mentorAmount;
+
   // ===== Auto-fill held funds for employer (pilot test mode) =====
-  // Step 1: ensure employer has enough hold_balance for this payout
+  // Now we know amountToCharge — ensure employer hold_balance ≥ amountToCharge
   const employerBal = await getBalance(supabase, job.employer_id);
   const employerHeld = employerBal?.hold_balance ?? 0;
 
-  if (employerHeld < amount) {
-    const needed = amount - employerHeld;
+  if (employerHeld < amountToCharge) {
+    const needed = amountToCharge - employerHeld;
     const employerSpendable = employerBal?.balance ?? 0;
 
     // If employer's spendable also short, mint top-up from SYSTEM pool first
@@ -84,7 +152,6 @@ export async function POST(
       }
     }
 
-    // Now hold the needed amount
     const holdRes = await escrowHold(supabase, job.employer_id, needed, jobId, user.id);
     if (!holdRes.ok) {
       return NextResponse.json({
@@ -92,42 +159,6 @@ export async function POST(
       }, { status: 500 });
     }
   }
-
-  // Step 2: 3-way split (90% students / 5% fund / 5% staff supervisor)
-  // Plus equal-split among multiple workers (MVP team support).
-  //   - hasMentor → 85% students / 5% fund / 5% staff / 5% mentor
-  //   - no mentor → 90% students / 5% fund / 5% staff
-  // Team mode: the "students" share is divided equally among all skc_job_workers.
-  const hasMentor = !!job.mentor_id;
-  const STUDENT_BPS = hasMentor ? 8500 : 9000;
-  const FUND_BPS = 500;
-  const MENTOR_BPS = hasMentor ? 500 : 0;
-
-  const totalStudentAmount = Math.floor((amount * STUDENT_BPS) / 10000);
-  const fundAmount = Math.floor((amount * FUND_BPS) / 10000);
-  const mentorAmount = Math.floor((amount * MENTOR_BPS) / 10000);
-  const staffAmount = amount - totalStudentAmount - fundAmount - mentorAmount; // residual
-
-  // Resolve team
-  const { data: workers } = await supabase
-    .from("skc_job_workers")
-    .select("student_id, role")
-    .eq("job_id", jobId)
-    .order("role", { ascending: false }); // LEAD first
-  const teamIds = (workers ?? []).map((w) => w.student_id);
-  // Fallback: legacy jobs without skc_job_workers row → use job.student_id
-  if (teamIds.length === 0 && job.student_id) teamIds.push(job.student_id);
-
-  if (teamIds.length === 0) {
-    return NextResponse.json({ error: "ไม่มีนักศึกษาในทีม" }, { status: 400 });
-  }
-
-  // Equal split — handle rounding by giving residual to LEAD (first)
-  const perStudent = Math.floor(totalStudentAmount / teamIds.length);
-  const studentShares = teamIds.map((id, i) => ({
-    studentId: id,
-    amount: i === 0 ? totalStudentAmount - perStudent * (teamIds.length - 1) : perStudent,
-  }));
 
   // 2a) Release to each team member
   let releaseRes: Awaited<ReturnType<typeof escrowRelease>> | null = null;
@@ -217,6 +248,17 @@ export async function POST(
     .update({ escrow_tx: escrowTxRef })
     .eq("id", jobId);
 
+  // For ACTIVITY: mark all paid participants with the amount + status PAID
+  if (isActivity) {
+    for (const { studentId, amount: share } of studentShares) {
+      await supabase
+        .from("skc_job_workers")
+        .update({ attendance_status: "PAID", paid_amount: share })
+        .eq("job_id", jobId)
+        .eq("student_id", studentId);
+    }
+  }
+
   // Update employer quota counter
   const { data: emp } = await supabase
     .from("skc_users")
@@ -245,8 +287,8 @@ export async function POST(
 
   return NextResponse.json({
     message: onChainTxId
-      ? `จ่ายค่าจ้าง ${amount.toLocaleString()} TRPB สำเร็จ (ทีม ${teamIds.length} คน · on-chain mirror ผ่าน TRON Nile)`
-      : `จ่ายค่าจ้าง ${amount.toLocaleString()} TRPB ให้ทีม ${teamIds.length} คน สำเร็จ`,
+      ? `จ่ายค่าจ้าง ${amountToCharge.toLocaleString()} TRPB สำเร็จ (${teamIds.length} คน · on-chain mirror ผ่าน TRON Nile)`
+      : `จ่ายค่าจ้าง ${amountToCharge.toLocaleString()} TRPB ให้ ${teamIds.length} คน สำเร็จ`,
     tx_id: releaseRes.txId,
     on_chain_tx: onChainTxId,
     on_chain_error: onChainError,
@@ -254,11 +296,11 @@ export async function POST(
     team_size: teamIds.length,
     split: {
       student_total: totalStudentAmount,
-      per_student: perStudent,
+      per_student: studentShares[0]?.amount ?? 0,
       fund: fundAmount,
       mentor: mentorAmount,
       staff: staffAmount,
-      total: amount,
+      total: amountToCharge,
     },
     ledger: true,
     note: onChainTxId

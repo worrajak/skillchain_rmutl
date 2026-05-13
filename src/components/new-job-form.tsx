@@ -47,6 +47,10 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
   const [deadline, setDeadline] = useState("");
   const [isMentorship, setIsMentorship] = useState(false);
   const [requiredWorkers, setRequiredWorkers] = useState(1);
+  // ACTIVITY mode — กิจกรรมหมู่ 20-100 คน · จ่ายรายคน
+  const [engagementMode, setEngagementMode] = useState<"SOLO" | "ACTIVITY">("SOLO");
+  const [payPerPerson, setPayPerPerson] = useState(""); // net to student
+  const [eventDate, setEventDate] = useState("");
 
   const supabase = createClient();
 
@@ -90,6 +94,15 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
 
     setLoading(true);
 
+    const isActivity = engagementMode === "ACTIVITY";
+    const cap = isActivity ? 100 : 20;
+
+    // For ACTIVITY: pay_per_person is NET to student → gross up for 10% fees
+    // → store as pay_amount = perPerson / 0.9 (rounded up)
+    // The release-escrow API will know to multiply by attended count
+    const perPerson = parseFloat(payPerPerson) || 0;
+    const grossPerPerson = isActivity ? Math.ceil(perPerson / 0.9) : 0;
+
     const payload = {
       title,
       description,
@@ -97,12 +110,19 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
       job_category: jobCategory,
       location,
       campus,
-      pay_amount: parseFloat(payAmount) || 0,
-      deadline: new Date(deadline).toISOString(),
+      pay_amount: isActivity
+        ? grossPerPerson * Math.max(1, Math.min(cap, requiredWorkers))
+        : (parseFloat(payAmount) || 0),
+      deadline: new Date(deadline || eventDate).toISOString(),
       employer_id: userId,
       is_mentorship: isMentorship,
-      required_workers: Math.max(1, Math.min(20, requiredWorkers)),
+      required_workers: Math.max(1, Math.min(cap, requiredWorkers)),
       status: "PENDING_REVIEW",
+      // Activity-specific fields
+      engagement_mode: engagementMode,
+      pay_per_person: isActivity ? grossPerPerson : null,
+      event_date: isActivity && eventDate ? eventDate : null,
+      registration_mode: isActivity ? "FCFS" : "STAFF_APPROVE",
     };
     console.log("[NewJobForm] inserting:", payload);
 
@@ -233,6 +253,47 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
         }}
       />
 
+      {/* Engagement mode toggle — SOLO/TEAM vs ACTIVITY */}
+      <Card className="border-amber-200 bg-amber-50/40">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-foreground text-base">ประเภทการมีส่วนร่วม</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <label className={`rounded-lg border-2 p-3 cursor-pointer transition-all ${engagementMode === "SOLO" ? "border-amber-500 bg-white" : "border-slate-200 bg-white/50 hover:border-amber-300"}`}>
+              <input
+                type="radio"
+                name="engagement_mode"
+                value="SOLO"
+                checked={engagementMode === "SOLO"}
+                onChange={() => setEngagementMode("SOLO")}
+                className="sr-only"
+              />
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-2xl">👤</span>
+                <span className="font-semibold text-foreground">งานเดี่ยว / ทีมเล็ก</span>
+              </div>
+              <p className="text-xs text-muted-foreground">1-20 คน · ส่งงานร่วมกัน · หารค่าจ้างเท่าๆ กัน</p>
+            </label>
+            <label className={`rounded-lg border-2 p-3 cursor-pointer transition-all ${engagementMode === "ACTIVITY" ? "border-amber-500 bg-white" : "border-slate-200 bg-white/50 hover:border-amber-300"}`}>
+              <input
+                type="radio"
+                name="engagement_mode"
+                value="ACTIVITY"
+                checked={engagementMode === "ACTIVITY"}
+                onChange={() => setEngagementMode("ACTIVITY")}
+                className="sr-only"
+              />
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-2xl">🎉</span>
+                <span className="font-semibold text-foreground">กิจกรรมหมู่</span>
+              </div>
+              <p className="text-xs text-muted-foreground">20-100 คน · check-in รายคน · จ่ายต่อคน fixed rate</p>
+            </label>
+          </div>
+        </CardContent>
+      </Card>
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader><CardTitle className="text-foreground">รายละเอียดงาน</CardTitle></CardHeader>
@@ -302,7 +363,7 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
                 <Input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} required />
               </div>
             </div>
-            {jobType === "PAID" && (
+            {jobType === "PAID" && engagementMode === "SOLO" && (
               <div className="space-y-2">
                 <Label className="text-foreground">ค่าจ้าง (TRPB)</Label>
                 <Input type="number" placeholder="0" value={payAmount} onChange={(e) => setPayAmount(e.target.value)} min="0" />
@@ -316,32 +377,93 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
               </div>
             </label>
 
-            {/* Team size — multi-worker support (MVP equal split) */}
-            <div className="space-y-2 pt-2 border-t">
-              <Label className="text-foreground">จำนวนนักศึกษาที่ต้องการ (ทีม)</Label>
-              <div className="flex items-center gap-3">
-                <Input
-                  type="number"
-                  min={1}
-                  max={20}
-                  value={requiredWorkers}
-                  onChange={(e) => setRequiredWorkers(parseInt(e.target.value) || 1)}
-                  className="w-24"
-                />
-                <span className="text-sm text-muted-foreground">
-                  {requiredWorkers === 1 ? "งานเดี่ยว — 1 คน" : `งานทีม — ${requiredWorkers} คน`}
-                </span>
-              </div>
-              {requiredWorkers > 1 && payAmount && (
-                <p className="text-xs text-emerald-700 bg-emerald-50 rounded p-2">
-                  💰 ค่าจ้างแบ่งเท่าๆ กัน — แต่ละคนได้ {Math.floor((parseFloat(payAmount) * (isMentorship ? 0.85 : 0.9)) / requiredWorkers).toLocaleString()} TRPB
-                  <br />
-                  <span className="text-[10px] text-muted-foreground">
-                    (หลังหักค่าธรรมเนียม: 5% กองทุน + 5% คณะทำงาน{isMentorship ? " + 5% mentor" : ""})
+            {engagementMode === "SOLO" ? (
+              /* Team size — multi-worker support (MVP equal split) */
+              <div className="space-y-2 pt-2 border-t">
+                <Label className="text-foreground">จำนวนนักศึกษาที่ต้องการ (ทีม)</Label>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={requiredWorkers}
+                    onChange={(e) => setRequiredWorkers(parseInt(e.target.value) || 1)}
+                    className="w-24"
+                  />
+                  <span className="text-sm text-muted-foreground">
+                    {requiredWorkers === 1 ? "งานเดี่ยว — 1 คน" : `งานทีม — ${requiredWorkers} คน`}
                   </span>
+                </div>
+                {requiredWorkers > 1 && payAmount && (
+                  <p className="text-xs text-emerald-700 bg-emerald-50 rounded p-2">
+                    💰 ค่าจ้างแบ่งเท่าๆ กัน — แต่ละคนได้ {Math.floor((parseFloat(payAmount) * (isMentorship ? 0.85 : 0.9)) / requiredWorkers).toLocaleString()} TRPB
+                    <br />
+                    <span className="text-[10px] text-muted-foreground">
+                      (หลังหักค่าธรรมเนียม: 5% กองทุน + 5% คณะทำงาน{isMentorship ? " + 5% mentor" : ""})
+                    </span>
+                  </p>
+                )}
+              </div>
+            ) : (
+              /* ACTIVITY mode — per-person pay + capacity + event date */
+              <div className="space-y-3 pt-2 border-t">
+                <div className="rounded-lg bg-amber-50 border border-amber-200 p-2 text-xs text-amber-900">
+                  🎉 <strong>กิจกรรมหมู่</strong> — จ่ายรายคนแบบ fixed rate · check-in ด้วย QR · ไม่หารงบ
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-foreground">จำนวนผู้เข้าร่วม</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={requiredWorkers}
+                      onChange={(e) => setRequiredWorkers(parseInt(e.target.value) || 1)}
+                    />
+                    <p className="text-[10px] text-muted-foreground">1-100 คน</p>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-foreground">ค่าตอบแทน/คน (TRPB)</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      placeholder="50"
+                      value={payPerPerson}
+                      onChange={(e) => setPayPerPerson(e.target.value)}
+                    />
+                    <p className="text-[10px] text-muted-foreground">net ที่ นศ. ได้</p>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-foreground">วันที่จัดกิจกรรม</Label>
+                  <Input
+                    type="date"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                  />
+                </div>
+                {requiredWorkers > 0 && payPerPerson && parseFloat(payPerPerson) > 0 && (
+                  <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-xs space-y-1">
+                    <p className="font-semibold text-emerald-900">📊 สรุปงบประมาณ</p>
+                    <p className="text-emerald-800">
+                      Net per person: <strong>{Number(payPerPerson).toLocaleString()} TRPB</strong> × {requiredWorkers} คน
+                    </p>
+                    <p className="text-emerald-700">
+                      Gross per person (รวมค่าธรรมเนียม 10%): {Math.ceil(parseFloat(payPerPerson) / 0.9).toLocaleString()} TRPB
+                    </p>
+                    <p className="text-emerald-700">
+                      <strong>รวมงบประมาณ (สูงสุด): {(Math.ceil(parseFloat(payPerPerson) / 0.9) * requiredWorkers).toLocaleString()} TRPB</strong>
+                    </p>
+                    <p className="text-[10px] text-muted-foreground pt-1 border-t border-emerald-200">
+                      💡 จ่ายจริงเฉพาะคนที่เข้าร่วม (CHECKED_IN → ATTENDED) · NO_SHOW ไม่ได้เงิน
+                    </p>
+                  </div>
+                )}
+                <p className="text-[10px] text-muted-foreground">
+                  📌 รับสมัครแบบ FCFS (first-come-first-served auto-approve)
                 </p>
-              )}
-            </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

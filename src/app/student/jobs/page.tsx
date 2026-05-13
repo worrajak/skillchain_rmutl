@@ -118,25 +118,21 @@ export default function StudentJobsPage() {
   async function handleApply(jobId: string) {
     if (!userId) { toast.error("กรุณาเข้าสู่ระบบ"); return; }
 
-    const { error } = await supabase
-      .from("skc_job_assignment_requests")
-      .insert({ job_id: jobId, student_id: userId });
+    const res = await fetch(`/api/jobs/${jobId}/apply`, { method: "POST" });
+    const data = await res.json();
 
-    if (error) {
-      if (error.code === "23505") toast.error("คุณส่งคำขอรับงานนี้ไปแล้ว");
-      else toast.error("ส่งคำขอไม่สำเร็จ: " + error.message);
+    if (!res.ok) {
+      toast.error(data.error || "สมัครไม่สำเร็จ");
+      return;
+    }
+
+    if (data.mode === "ACTIVITY_FCFS") {
+      toast.success(`✅ ลงทะเบียนกิจกรรมสำเร็จ — ${data.registered}/${data.capacity} คน${data.full ? " (เต็มแล้ว)" : ""}`);
     } else {
       toast.success("ส่งคำขอรับงานแล้ว — รอคณะทำงานอนุมัติ");
-      // Optimistic UI: append the new request so the button flips immediately
-      setPendingRequests((prev) => [...prev, { id: `tmp-${jobId}`, job_id: jobId, status: "PENDING" }]);
-      const { data: staffUsers } = await supabase.from("skc_users").select("id")
-        .in("role", ["project_staff", "admin", "superadmin"]).eq("approval_status", "APPROVED");
-      if (staffUsers) {
-        await supabase.from("skc_notifications").insert(
-          staffUsers.map((s: any) => ({ user_id: s.id, type: "assignment_request", title: "คำขอรับงานใหม่", body: "นักศึกษาส่งคำขอรับงาน รอการอนุมัติ", link: "/project-staff/approvals" }))
-        );
-      }
     }
+    // Optimistic UI: flip the button locally
+    setPendingRequests((prev) => [...prev, { id: `tmp-${jobId}`, job_id: jobId, status: "PENDING" }]);
   }
 
   // Set of job IDs the student already requested (and is still pending)
