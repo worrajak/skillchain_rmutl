@@ -123,6 +123,16 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
       return handleInsertError(error, existing);
     }
+    // Isnad trust event for the reviewed student
+    const { recordTrustEvent } = await import("@/lib/trust");
+    await recordTrustEvent(supabase, {
+      userId: student_id,
+      type: overall_rating >= 4 ? "REVIEW_HIGH" : overall_rating <= 2 ? "REVIEW_LOW" : "MANUAL_ADJUST",
+      delta: overall_rating >= 4 ? 2 : overall_rating <= 2 ? -2 : 0,
+      reason: `รีวิวงาน (${overall_rating.toFixed(1)} ดาว)`,
+      jobId: job_id,
+      triggeredBy: user.id,
+    }).catch(() => {});
     return NextResponse.json(data, { status: 201 });
   }
 
@@ -149,6 +159,16 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
       return handleInsertError(error, existing);
     }
+    // Isnad trust event for the reviewed employer
+    const { recordTrustEvent } = await import("@/lib/trust");
+    await recordTrustEvent(supabase, {
+      userId: employer_id,
+      type: overall_rating >= 4 ? "REVIEW_HIGH" : overall_rating <= 2 ? "REVIEW_LOW" : "MANUAL_ADJUST",
+      delta: overall_rating >= 4 ? 2 : overall_rating <= 2 ? -2 : 0,
+      reason: `รีวิวจาก นศ. (${overall_rating.toFixed(1)} ดาว)`,
+      jobId: job_id,
+      triggeredBy: user.id,
+    }).catch(() => {});
     return NextResponse.json(data, { status: 201 });
   }
 

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { UserAvatar } from "@/components/user-avatar";
+import { TrustBadge } from "@/components/trust-badge";
 import { UserCircle, Sparkles, Shield, LogOut, ChevronDown } from "lucide-react";
 
 /**
@@ -103,9 +104,12 @@ export function UserMenu() {
                 {user.name ?? user.email}
               </p>
               <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
-              <span className="inline-block mt-0.5 text-[10px] rounded-full bg-sky-100 text-sky-700 px-2 py-0.5">
-                {roleLabel[user.role ?? ""] ?? user.role}
-              </span>
+              <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                <span className="inline-block text-[10px] rounded-full bg-sky-100 text-sky-700 px-2 py-0.5">
+                  {roleLabel[user.role ?? ""] ?? user.role}
+                </span>
+                <TrustBadge userId={user.id} size="xs" />
+              </div>
             </div>
           </div>
 

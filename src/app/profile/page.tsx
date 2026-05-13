@@ -16,6 +16,7 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
+import { TrustBadge } from "@/components/trust-badge";
 
 /**
  * Universal /profile page — destination for the "ฉัน" tab on mobile bottom bar.
@@ -88,9 +89,12 @@ export default function ProfileHubPage() {
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground truncate">{user.name ?? user.email}</p>
               <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-              <span className="inline-block mt-1 text-[10px] rounded-full bg-sky-100 text-sky-700 px-2 py-0.5">
-                {roleLabel[user.role ?? ""] ?? user.role}
-              </span>
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                <span className="inline-block text-[10px] rounded-full bg-sky-100 text-sky-700 px-2 py-0.5">
+                  {roleLabel[user.role ?? ""] ?? user.role}
+                </span>
+                {user.id && <TrustBadge userId={user.id} size="xs" />}
+              </div>
             </div>
           </div>
         </CardContent>

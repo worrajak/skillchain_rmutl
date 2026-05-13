@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createNotification, createNotifications } from "@/lib/telegram";
 import { onWorkCompleted } from "@/lib/gov-sync";
+import { recordTrustEvent } from "@/lib/trust";
 
 // POST /api/jobs/[id]/confirm-completion — staff หรือ employer ยืนยันงานเสร็จ
 export async function POST(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -48,6 +49,25 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
     // ===== GOV SYNC HOOK =====
     // เมื่อ both ยืนยัน → trigger สร้าง work_certification draft + แจ้งฝ่ายลงนาม
     await onWorkCompleted(supabase, id);
+
+    // ===== ISNAD TRUST HOOK =====
+    // นศ. + employer ได้ trust +5 ต่อคน เมื่องานเสร็จสมบูรณ์
+    if (job.student_id) {
+      await recordTrustEvent(supabase, {
+        userId: job.student_id,
+        type: "COMPLETED_JOB",
+        jobId: id,
+        triggeredBy: user?.id,
+      }).catch(() => {});
+    }
+    if (job.employer_id) {
+      await recordTrustEvent(supabase, {
+        userId: job.employer_id,
+        type: "COMPLETED_JOB",
+        jobId: id,
+        triggeredBy: user?.id,
+      }).catch(() => {});
+    }
 
     return NextResponse.json({ message: "ยืนยันครบแล้ว — งานเสร็จสมบูรณ์! กรุณาลงนามใบรับรองใน /staff/gov", completed: true });
   }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { recordTrustEvent } from "@/lib/trust";
 
 /**
  * GET   /api/jobs/[id]/attendance       — list participants + statuses
@@ -90,7 +91,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         .update(patch)
         .eq("job_id", id)
         .eq("student_id", u.student_id);
-      if (!error) updated++;
+      if (!error) {
+        updated++;
+        // Trust events
+        if (u.status === "NO_SHOW") {
+          await recordTrustEvent(supabase, {
+            userId: u.student_id,
+            type: "NO_SHOW",
+            jobId: id,
+            triggeredBy: user.id,
+          }).catch(() => {});
+        }
+      }
     }
     return NextResponse.json({ ok: true, updated });
   }

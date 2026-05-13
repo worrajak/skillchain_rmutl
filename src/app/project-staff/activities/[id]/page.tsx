@@ -11,6 +11,7 @@ import {
   Calendar, QrCode, Users, Sparkles,
 } from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
+import { TrustBadge } from "@/components/trust-badge";
 import { cn } from "@/lib/utils";
 
 interface Participant {
@@ -246,7 +247,10 @@ export default function ActivityAttendancePage({ params }: { params: Promise<{ i
               >
                 <UserAvatar userId={p.student_id} size="sm" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{student?.name ?? p.student_id.slice(0, 8)}</p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="text-sm font-medium truncate">{student?.name ?? p.student_id.slice(0, 8)}</p>
+                    <TrustBadge userId={p.student_id} size="xs" />
+                  </div>
                   <p className="text-[10px] text-muted-foreground truncate">
                     {p.checked_in_at && `เช็คอิน ${new Date(p.checked_in_at).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" })}`}
                     {p.paid_amount && ` · ได้ ${p.paid_amount} TRPB`}
