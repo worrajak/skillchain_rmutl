@@ -322,7 +322,7 @@ export default function StudentJobsPage() {
       ) : (
         // === งานเปิดรับ ===
         openJobs.length > 0 ? (
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {openJobs.map((job: any) => (
               <Card key={job.id} className="overflow-hidden hover:ring-2 hover:ring-sky-200 transition-all p-0">
                 <JobCardCover jobId={job.id} category={job.job_category} />

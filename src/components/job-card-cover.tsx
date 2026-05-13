@@ -52,7 +52,7 @@ export function JobCardCover({ jobId, category = "general", className }: JobCard
 
   if (loading) {
     return (
-      <div className={cn("relative aspect-video w-full bg-muted animate-pulse rounded-t-lg", className)} />
+      <div className={cn("relative w-full aspect-video sm:aspect-[5/2] lg:aspect-[3/1] max-h-44 sm:max-h-36 lg:max-h-32 bg-muted animate-pulse rounded-t-lg", className)} />
     );
   }
 
@@ -62,7 +62,7 @@ export function JobCardCover({ jobId, category = "general", className }: JobCard
       <img
         src={imageUrl}
         alt=""
-        className={cn("aspect-video w-full object-cover rounded-t-lg", className)}
+        className={cn("w-full aspect-video sm:aspect-[5/2] lg:aspect-[3/1] max-h-44 sm:max-h-36 lg:max-h-32 object-cover rounded-t-lg", className)}
         loading="lazy"
       />
     );
@@ -72,7 +72,7 @@ export function JobCardCover({ jobId, category = "general", className }: JobCard
   return (
     <div
       className={cn(
-        "relative aspect-video w-full rounded-t-lg flex items-center justify-center",
+        "relative w-full aspect-video sm:aspect-[5/2] lg:aspect-[3/1] max-h-44 sm:max-h-36 lg:max-h-32 rounded-t-lg flex items-center justify-center",
         "bg-gradient-to-br",
         fallback.gradient,
         className,
