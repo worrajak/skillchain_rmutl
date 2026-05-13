@@ -15,13 +15,29 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
   if (!job) return NextResponse.json({ error: "ไม่พบงาน" }, { status: 404 });
   if (job.status !== "SUBMITTED") return NextResponse.json({ error: "งานต้องอยู่ในสถานะ SUBMITTED" }, { status: 400 });
 
-  const isStaff = user.id === job.approved_by_staff;
+  // ===== AUTO-SUPERVISE =====
+  // Staff คนใดก็ "กำกับโดยอัตโนมัติ" ได้ — ถ้ายังไม่มี supervisor → assign คนที่ act เป็น supervisor
+  // ถ้ามี supervisor แล้ว → ยังให้ staff คนอื่นยืนยันแทนได้ (ไม่ override approved_by_staff)
+  const { data: profile } = await supabase.from("skc_users").select("role").eq("id", user.id).single();
+  const staffRoles = ["project_staff", "rmutl_staff", "admin", "superadmin", "teacher"];
+  const isAnyStaff = !!profile && staffRoles.includes(profile.role);
+  const isAssignedStaff = user.id === job.approved_by_staff;
   const isEmployer = user.id === job.employer_id;
-  if (!isStaff && !isEmployer) return NextResponse.json({ error: "เฉพาะ Staff ผู้กำกับ หรือ ผู้ว่าจ้าง" }, { status: 403 });
+  const isStaff = isAssignedStaff || isAnyStaff;
+
+  if (!isStaff && !isEmployer) {
+    return NextResponse.json({ error: "เฉพาะ Staff/อาจารย์ หรือ ผู้ว่าจ้าง" }, { status: 403 });
+  }
 
   // อัปเดต confirmation
   const updates: Record<string, unknown> = {};
-  if (isStaff) updates.staff_confirmed_completion = true;
+  if (isStaff) {
+    updates.staff_confirmed_completion = true;
+    // Auto-assign supervisor ถ้ายังไม่มี (เพื่อให้มี audit trail ว่าใครกำกับ)
+    if (!job.approved_by_staff && isAnyStaff) {
+      updates.approved_by_staff = user.id;
+    }
+  }
   if (isEmployer) updates.employer_confirmed_completion = true;
   await supabase.from("skc_jobs").update(updates).eq("id", id);
 

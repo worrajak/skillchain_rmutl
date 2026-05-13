@@ -38,7 +38,42 @@ const FILTERS = [
   { key: "done", label: "✅ เสร็จ", statuses: ["COMPLETED"] },
   { key: "warranty", label: "🟣 ในประกัน", statuses: ["IN_WARRANTY"] },
   { key: "mine", label: "👤 ที่ฉันกำกับ", statuses: [] },
+  { key: "unsupervised", label: "🆘 ไม่มีผู้กำกับ", statuses: [] },
 ];
+
+/**
+ * คืน "ค้างที่ใคร" — ใครเป็นคนถัดไปที่ต้อง act เพื่อให้งานเดินต่อ
+ * ใช้สำหรับ auto-supervise — staff ทุกคนเห็นได้ในแวบเดียวว่าควรเข้าไปทำตรงไหน
+ */
+function stuckAt(job: { status: string; staff_confirmed_completion?: boolean | null; employer_confirmed_completion?: boolean | null; escrow_tx?: string | null; type?: string; pay_amount?: number | null; approved_by_staff?: string | null }): { role: string; emoji: string; action: string; tone: "do" | "wait" | "ok" } {
+  switch (job.status) {
+    case "PENDING_REVIEW":
+      return { role: "Staff", emoji: "🛡️", action: "ต้องอนุมัติงาน", tone: "do" };
+    case "OPEN":
+      return { role: "นศ.", emoji: "🎓", action: "รอ นศ. สมัคร", tone: "wait" };
+    case "ASSIGNED":
+    case "CONFIRMED":
+      return { role: "นศ. + ผู้จ้าง", emoji: "📅", action: "นัดวัน + เริ่มงาน", tone: "wait" };
+    case "IN_PROGRESS":
+      return { role: "นศ.", emoji: "🎓", action: "ส่งงาน + อัปโหลดรูป", tone: "wait" };
+    case "SUBMITTED":
+      if (!job.staff_confirmed_completion && !job.employer_confirmed_completion)
+        return { role: "Staff + ผู้จ้าง", emoji: "🛡️", action: "ต้องตรวจ + ยืนยัน", tone: "do" };
+      if (!job.staff_confirmed_completion) return { role: "Staff", emoji: "🛡️", action: "ต้องยืนยันงานเสร็จ", tone: "do" };
+      if (!job.employer_confirmed_completion) return { role: "ผู้จ้าง", emoji: "👔", action: "รอยืนยัน", tone: "wait" };
+      return { role: "Staff", emoji: "🛡️", action: "ส่งต่อ COMPLETED", tone: "do" };
+    case "COMPLETED":
+      if (job.type === "PAID" && Number(job.pay_amount ?? 0) > 0 && !job.escrow_tx)
+        return { role: "Staff", emoji: "💰", action: "ต้องปล่อย TRPB", tone: "do" };
+      return { role: "—", emoji: "✅", action: "เสร็จเรียบร้อย", tone: "ok" };
+    case "IN_WARRANTY":
+      return { role: "—", emoji: "🛡️", action: "อยู่ในระยะประกัน", tone: "ok" };
+    case "CLOSED":
+      return { role: "—", emoji: "🔒", action: "ปิดงานแล้ว", tone: "ok" };
+    default:
+      return { role: "—", emoji: "ℹ️", action: job.status, tone: "wait" };
+  }
+}
 
 export default function StaffActiveJobsPage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -105,6 +140,8 @@ export default function StaffActiveJobsPage() {
     let list = jobs;
     if (filter === "mine") {
       list = list.filter((j) => j.approved_by_staff === currentUserId);
+    } else if (filter === "unsupervised") {
+      list = list.filter((j) => !j.approved_by_staff && j.status !== "CLOSED" && j.status !== "COMPLETED");
     } else if (filter !== "all") {
       const target = FILTERS.find((f) => f.key === filter);
       if (target) list = list.filter((j) => target.statuses.includes(j.status));
@@ -126,6 +163,7 @@ export default function StaffActiveJobsPage() {
     for (const f of FILTERS) {
       if (f.key === "all") continue;
       if (f.key === "mine") map[f.key] = jobs.filter((j) => j.approved_by_staff === currentUserId).length;
+      else if (f.key === "unsupervised") map[f.key] = jobs.filter((j) => !j.approved_by_staff && j.status !== "CLOSED" && j.status !== "COMPLETED").length;
       else map[f.key] = jobs.filter((j) => f.statuses.includes(j.status)).length;
     }
     return map;
@@ -140,8 +178,34 @@ export default function StaffActiveJobsPage() {
     else toast.error(data.error);
   }
 
+  const unsupervisedCount = counts.unsupervised ?? 0;
+
   return (
     <div className="space-y-4">
+      {/* Auto-supervise banner */}
+      <div className="rounded-lg border-2 border-amber-300 bg-amber-50/50 p-3">
+        <div className="flex items-start gap-2 text-xs">
+          <span className="text-base">✨</span>
+          <div className="flex-1">
+            <p className="font-medium text-amber-900">โหมดกำกับอัตโนมัติ (auto-supervise)</p>
+            <p className="text-amber-800 mt-0.5">
+              คุณสามารถ <strong>ยืนยันงาน · จ่าย TRPB · approve นศ.</strong> ของงาน <em>ใดก็ได้</em> —
+              ถ้างานยังไม่มีผู้กำกับ ระบบจะ assign คุณเป็นผู้กำกับโดยอัตโนมัติ
+              {unsupervisedCount > 0 && (
+                <>
+                  {" "}<button
+                    onClick={() => setFilter("unsupervised")}
+                    className="underline font-medium text-red-700 hover:text-red-800"
+                  >
+                    มี {unsupervisedCount} งานยังไม่มีผู้กำกับ →
+                  </button>
+                </>
+              )}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Filter chips */}
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((f) => {
@@ -219,6 +283,31 @@ export default function StaffActiveJobsPage() {
                           <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", status.color)}>
                             {status.label}
                           </span>
+                          {/* ค้างที่ใคร — auto-supervise indicator */}
+                          {(() => {
+                            const s = stuckAt(job);
+                            return (
+                              <span
+                                className={cn(
+                                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium border",
+                                  s.tone === "do" && "bg-amber-50 text-amber-800 border-amber-300",
+                                  s.tone === "wait" && "bg-slate-50 text-slate-600 border-slate-200",
+                                  s.tone === "ok" && "bg-emerald-50 text-emerald-700 border-emerald-200",
+                                )}
+                                title="ค้างที่บทบาทใด"
+                              >
+                                <span>{s.emoji}</span>
+                                <span>
+                                  {s.tone === "do" ? "▶" : s.tone === "wait" ? "⏳" : "✓"} {s.role}: {s.action}
+                                </span>
+                              </span>
+                            );
+                          })()}
+                          {!job.approved_by_staff && job.status !== "COMPLETED" && job.status !== "CLOSED" && (
+                            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium border border-red-300 bg-red-50 text-red-700">
+                              🆘 ไม่มีผู้กำกับ
+                            </span>
+                          )}
                           {job.pay_amount > 0 && (
                             <span className="text-xs text-green-700 font-medium inline-flex items-center gap-1">
                               <Wallet className="size-3" />
@@ -332,7 +421,7 @@ export default function StaffActiveJobsPage() {
                       </div>
                     )}
 
-                    {/* SUBMITTED — ปุ่มยืนยัน */}
+                    {/* SUBMITTED — ปุ่มยืนยัน (auto-supervise: staff ทุกคนทำได้) */}
                     {job.status === "SUBMITTED" && (
                       <div className="space-y-2 pt-1">
                         <div className="flex gap-4 text-xs">
@@ -349,16 +438,23 @@ export default function StaffActiveJobsPage() {
                             ผู้ว่าจ้าง
                           </span>
                         </div>
-                        {!job.staff_confirmed_completion && isMine && (
-                          <Button size="sm" onClick={() => handleConfirm(job.id)} disabled={confirming === job.id} className="w-full">
-                            <CheckCircle className="size-4 mr-1" />
-                            {confirming === job.id ? "กำลังยืนยัน..." : "ยืนยันงานเสร็จ"}
-                          </Button>
-                        )}
-                        {!job.staff_confirmed_completion && !isMine && (
-                          <p className="text-xs text-muted-foreground text-center">
-                            ⚠️ คุณไม่ใช่ผู้กำกับ — ให้ {job.supervisor?.name ?? "supervisor"} ยืนยันแทน
-                          </p>
+                        {!job.staff_confirmed_completion && (
+                          <>
+                            <Button size="sm" onClick={() => handleConfirm(job.id)} disabled={confirming === job.id} className="w-full">
+                              <CheckCircle className="size-4 mr-1" />
+                              {confirming === job.id ? "กำลังยืนยัน..." : isMine ? "ยืนยันงานเสร็จ" : "ยืนยันแทน (auto-supervise)"}
+                            </Button>
+                            {!isMine && job.approved_by_staff && (
+                              <p className="text-[10px] text-muted-foreground text-center">
+                                ผู้กำกับเดิม: {job.supervisor?.name ?? "—"} · คุณยืนยันแทนได้
+                              </p>
+                            )}
+                            {!isMine && !job.approved_by_staff && (
+                              <p className="text-[10px] text-amber-700 text-center">
+                                ✨ ยังไม่มีผู้กำกับ — กดยืนยันเพื่อรับเป็นผู้กำกับงานนี้
+                              </p>
+                            )}
+                          </>
                         )}
                         {job.staff_confirmed_completion && !job.employer_confirmed_completion && (
                           <p className="text-xs text-yellow-700 text-center">Staff ยืนยันแล้ว — รอผู้ว่าจ้างยืนยัน</p>
@@ -371,28 +467,35 @@ export default function StaffActiveJobsPage() {
                         <div className="flex items-center gap-2 text-xs text-green-700 bg-green-50 rounded-lg p-2">
                           <CheckCircle className="size-3" />เสร็จสมบูรณ์
                         </div>
-                        {job.type === "PAID" && job.pay_amount > 0 && !job.escrow_tx && isMine && (
-                          <Button
-                            size="sm"
-                            onClick={async () => {
-                              setReleasing(job.id);
-                              const res = await fetch(`/api/jobs/${job.id}/release-escrow`, { method: "POST" });
-                              const data = await res.json();
-                              setReleasing(null);
-                              if (res.ok) {
-                                toast.success(`${data.message} — TX: ${data.tx_hash?.slice(0, 12)}...`);
-                                loadJobs();
-                              } else {
-                                toast.error(data.error);
-                              }
-                            }}
-                            disabled={releasing === job.id}
-                            className="w-full bg-amber-600 hover:bg-amber-700"
-                          >
-                            {releasing === job.id
-                              ? <><Loader2 className="size-4 mr-1 animate-spin" />กำลังจ่ายค่าจ้าง on-chain...</>
-                              : <><Wallet className="size-4 mr-1" />จ่ายค่าจ้าง {job.pay_amount.toLocaleString()} TRPB</>}
-                          </Button>
+                        {job.type === "PAID" && job.pay_amount > 0 && !job.escrow_tx && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={async () => {
+                                setReleasing(job.id);
+                                const res = await fetch(`/api/jobs/${job.id}/release-escrow`, { method: "POST" });
+                                const data = await res.json();
+                                setReleasing(null);
+                                if (res.ok) {
+                                  toast.success(`${data.message} — TX: ${data.tx_hash?.slice(0, 12)}...`);
+                                  loadJobs();
+                                } else {
+                                  toast.error(data.error);
+                                }
+                              }}
+                              disabled={releasing === job.id}
+                              className="w-full bg-amber-600 hover:bg-amber-700"
+                            >
+                              {releasing === job.id
+                                ? <><Loader2 className="size-4 mr-1 animate-spin" />กำลังจ่ายค่าจ้าง on-chain...</>
+                                : <><Wallet className="size-4 mr-1" />{isMine ? "จ่ายค่าจ้าง" : "จ่ายแทน"} {job.pay_amount.toLocaleString()} TRPB</>}
+                            </Button>
+                            {!isMine && (
+                              <p className="text-[10px] text-muted-foreground text-center">
+                                ผู้กำกับ: {job.supervisor?.name ?? "(ไม่มี)"} · คุณจ่ายแทนได้
+                              </p>
+                            )}
+                          </>
                         )}
                         {job.escrow_tx && (
                           <a
