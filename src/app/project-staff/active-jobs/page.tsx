@@ -93,11 +93,12 @@ export default function StaffActiveJobsPage() {
     setCurrentUserId(user.id);
 
     // Always load ALL jobs (exclude CANCELLED) — filter client-side via chips
+    // เรียงงานที่เพิ่งโพสต์อยู่บนสุด (created_at DESC) — เห็นงานใหม่ก่อนเสมอ
     const { data } = await supabase
       .from("skc_jobs")
       .select("*, student:skc_users!skc_jobs_student_id_fkey(name), employer:skc_users!skc_jobs_employer_id_fkey(name)")
       .neq("status", "CANCELLED")
-      .order("updated_at", { ascending: false });
+      .order("created_at", { ascending: false });
 
     // Resolve supervisor names (separate query — approved_by_staff is not a FK)
     const supIds = [...new Set((data ?? []).map((j) => j.approved_by_staff).filter(Boolean))];

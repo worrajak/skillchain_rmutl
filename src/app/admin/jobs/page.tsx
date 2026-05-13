@@ -155,7 +155,8 @@ export default function AdminJobsPage() {
         .select(
           "*, employer:skc_users!skc_jobs_employer_id_fkey(name), student:skc_users!skc_jobs_student_id_fkey(name)",
         )
-        .order("updated_at", { ascending: false, nullsFirst: false }),
+        // เรียงงานที่เพิ่งโพสต์อยู่บนสุด (created_at DESC)
+        .order("created_at", { ascending: false }),
       supabase
         .from("skc_job_assignment_requests")
         .select("id, job_id, student_id, status, created_at, student:skc_users!skc_job_assignment_requests_student_id_fkey(name, avatar_url, faculty)")
