@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { notifyAdmin } from "@/lib/telegram";
 
 /**
  * POST /api/jobs/[id]/check-in — student checks in to an ACTIVITY
@@ -73,6 +74,16 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   if (job.status === "ASSIGNED") {
     await supabase.from("skc_jobs").update({ status: "IN_PROGRESS" }).eq("id", id);
   }
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: "Check-in กิจกรรม",
+    targetType: "activity",
+    targetId: id,
+    targetTitle: job.title,
+    link: `/admin/jobs?id=${id}`,
+    severity: "info",
+  }).catch(() => {});
 
   return NextResponse.json({
     ok: true,

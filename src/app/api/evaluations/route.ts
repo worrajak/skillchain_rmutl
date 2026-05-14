@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { notifyAdmin } from "@/lib/telegram";
 
 // POST /api/evaluations — Teacher/staff evaluates student
 export async function POST(request: NextRequest) {
@@ -71,6 +72,15 @@ export async function POST(request: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: `อาจารย์ประเมิน นศ. (${weighted_score.toFixed(1)}/5)`,
+    targetType: "review",
+    targetId: data?.id ?? job_id,
+    link: `/admin/reviews`,
+    severity: weighted_score <= 2 ? "warn" : "info",
+  }).catch(() => {});
 
   return NextResponse.json(data, { status: 201 });
 }

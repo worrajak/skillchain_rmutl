@@ -46,7 +46,9 @@ export async function updateSession(request: NextRequest) {
     || request.nextUrl.pathname.startsWith("/invite/")
     || request.nextUrl.pathname.startsWith("/j/")
     || request.nextUrl.pathname.startsWith("/guides")
-    || request.nextUrl.pathname.startsWith("/api/qr");
+    || request.nextUrl.pathname.startsWith("/api/qr")
+    // Cron endpoints — auth via CRON_SECRET inside the route handler
+    || request.nextUrl.pathname.startsWith("/api/cron/");
 
   if (!isAuthenticated && !isPublic) {
     const url = request.nextUrl.clone();

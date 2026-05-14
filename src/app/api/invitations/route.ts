@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { generateInviteToken } from "@/lib/quick-auth";
+import { notifyAdmin } from "@/lib/telegram";
 
 // POST /api/invitations
 // Staff creates invitation QR for employer/student
@@ -53,6 +54,18 @@ export async function POST(request: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://skillchain-rmutl.vercel.app";
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: `สร้างคำเชิญ ${intended_role}`,
+    targetType: "user",
+    targetId: data?.id,
+    targetTitle: prefilled_name ?? prefilled_email ?? token.slice(0, 8),
+    link: `/admin/users`,
+    severity: "info",
+    extra: max_uses && max_uses > 1 ? `ใช้ได้ ${max_uses} ครั้ง` : undefined,
+  }).catch(() => {});
+
   return NextResponse.json({
     ok: true,
     invite_token: token,

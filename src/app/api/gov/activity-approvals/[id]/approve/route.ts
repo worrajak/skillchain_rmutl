@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { logWorkflowTransition, notifyNextAction, canTransition } from "@/lib/gov-workflow";
+import { notifyAdmin } from "@/lib/telegram";
 
 // POST /api/gov/activity-approvals/[id]/approve — อนุมัติหรือปฏิเสธกิจกรรม
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -82,6 +83,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     activityId: id,
     jobTitle: activity.job?.title,
   });
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: decision === "APPROVE" ? "คณบดี/admin อนุมัติกิจกรรม (gov)" : "ปฏิเสธคำขอกิจกรรม (gov)",
+    targetType: "batch",
+    targetId: id,
+    targetTitle: activity.job?.title,
+    link: `/admin/dashboard`,
+    severity: decision === "APPROVE" ? "info" : "warn",
+    extra: decision === "APPROVE" ? `Ref: ${approval_ref}` : rejection_reason?.slice(0, 80),
+  }).catch(() => {});
 
   return NextResponse.json({ success: true, decision });
 }

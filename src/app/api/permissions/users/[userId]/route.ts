@@ -10,6 +10,7 @@ import {
   PERMISSIONS,
   type PermissionCode,
 } from "@/lib/permissions";
+import { notifyAdmin } from "@/lib/telegram";
 
 // GET /api/permissions/users/[userId]
 // Admin views target user's effective permissions + overrides
@@ -107,6 +108,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 500 });
   }
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: `Permission ${action}: ${permission}`,
+    targetType: "user",
+    targetId: userId,
+    link: `/admin/users`,
+    severity: "warn",
+  }).catch(() => {});
 
   return NextResponse.json({ success: true, action, permission });
 }

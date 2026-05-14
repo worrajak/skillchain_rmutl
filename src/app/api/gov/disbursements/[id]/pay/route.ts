@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { logWorkflowTransition, notifyNextAction } from "@/lib/gov-workflow";
 import { onDisbursementPaid } from "@/lib/gov-sync";
+import { notifyAdmin } from "@/lib/telegram";
 
 // POST /api/gov/disbursements/[id]/pay — บันทึกการจ่ายเงินจริง
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -52,6 +53,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // ===== GOV SYNC HOOK =====
   // แจ้ง นศ. ว่าได้รับเงินแล้ว + update gov_status
   await onDisbursementPaid(supabase, id);
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: "บันทึกจ่ายเงินใบเบิก (gov disbursement)",
+    targetType: "batch",
+    targetId: id,
+    targetTitle: disb.disbursement_ref,
+    link: `/admin/dashboard`,
+    severity: "alert",
+    extra: `${jobIds.length} งาน · ${payment_method ?? "transfer"} (ref: ${payment_ref})`,
+  }).catch(() => {});
 
   return NextResponse.json({ success: true });
 }

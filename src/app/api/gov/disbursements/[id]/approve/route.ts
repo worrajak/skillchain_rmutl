@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { logWorkflowTransition, notifyNextAction } from "@/lib/gov-workflow";
 import { onDisbursementApproved } from "@/lib/gov-sync";
+import { notifyAdmin } from "@/lib/telegram";
 
 // POST /api/gov/disbursements/[id]/approve
 // อนุมัติใบเบิกแต่ละขั้น: HEAD, FINANCE, FINAL
@@ -87,6 +88,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       docRef: disb.disbursement_ref,
     });
   }
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: `อนุมัติใบเบิก: ${stage} → ${decision}`,
+    targetType: "batch",
+    targetId: id,
+    targetTitle: disb.disbursement_ref,
+    link: `/admin/dashboard`,
+    severity: decision === "REJECT" ? "warn" : (stage === "FINAL" ? "alert" : "info"),
+    extra: decision === "REJECT" ? rejection_reason?.slice(0, 80) : undefined,
+  }).catch(() => {});
 
   return NextResponse.json({ success: true, stage, decision });
 }

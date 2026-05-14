@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createNotification } from "@/lib/telegram";
+import { createNotification, notifyAdmin } from "@/lib/telegram";
 
 // POST /api/warranty-claims
 // Body: { job_id, claim_reason, claim_severity?, claim_photos? }
@@ -81,6 +81,17 @@ export async function POST(request: NextRequest) {
       link: `/project-staff/jobs/${job_id}`,
     });
   }
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: `เปิด Warranty Claim (${claim_severity})`,
+    targetType: "job",
+    targetId: job_id,
+    targetTitle: job.title,
+    link: `/admin/jobs?id=${job_id}`,
+    severity: "alert",
+    extra: claim_reason.slice(0, 100),
+  }).catch(() => {});
 
   return NextResponse.json({ success: true, claim });
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { mint } from "@/lib/trpb-ledger";
-import { createNotification } from "@/lib/telegram";
+import { createNotification, notifyAdmin } from "@/lib/telegram";
 
 // POST /api/admin/trpb/mint
 // Body: { to_user_id: string, amount: number, reason?: string }
@@ -62,6 +62,17 @@ export async function POST(request: NextRequest) {
     body: `คุณได้รับ ${amount.toLocaleString()} TRPB${reason ? ` — ${reason}` : ""}`,
     link: "/wallet",
   });
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: "Mint TRPB จาก system pool",
+    targetType: "user",
+    targetId: to_user_id,
+    targetTitle: recipient.name ?? undefined,
+    link: `/admin/trpb`,
+    severity: "alert",
+    extra: `${amount.toLocaleString()} TRPB${reason ? ` · ${reason}` : ""}`,
+  }).catch(() => {});
 
   return NextResponse.json({
     message: `จ่าย ${amount.toLocaleString()} TRPB ให้ ${recipient.name} สำเร็จ`,

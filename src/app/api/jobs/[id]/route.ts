@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createNotification } from "@/lib/telegram";
+import { createNotification, notifyAdmin } from "@/lib/telegram";
 
 // GET /api/jobs/[id]
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -102,6 +102,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const { data, error } = await supabase.from("skc_jobs").update(safeBody).eq("id", id).select().single();
   if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+
+  // Only mirror if status changed or staff (admin manual patch) — skip noisy field edits by employer
+  const statusChanged = body.status && body.status !== job.status;
+  if (statusChanged || isStaff) {
+    notifyAdmin(supabase, {
+      actorId: user.id,
+      action: statusChanged
+        ? `เปลี่ยนสถานะงาน: ${job.status} → ${body.status}`
+        : "แก้ไขงาน (admin manual)",
+      targetType: "job",
+      targetId: id,
+      targetTitle: data?.title ?? id,
+      link: `/admin/jobs?id=${id}`,
+      severity: statusChanged ? "info" : "warn",
+    }).catch(() => {});
+  }
+
   return NextResponse.json(data);
 }
 

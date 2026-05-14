@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createNotification, createNotifications } from "@/lib/telegram";
+import { createNotification, createNotifications, notifyAdmin } from "@/lib/telegram";
 
 // POST /api/jobs/[id]/schedule — เสนอวันทำงาน
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -38,6 +38,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     body: `เสนอวันทำงาน ${start_date} ถึง ${end_date} — กรุณายืนยัน`,
     link: isStudent ? `/employer/jobs/${id}` : `/student/dashboard`,
   });
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: `${isStudent ? "นศ." : "ผู้จ้าง"} เสนอวันทำงาน`,
+    targetType: "job",
+    targetId: id,
+    targetTitle: job.title,
+    link: `/admin/jobs?id=${id}`,
+    severity: "info",
+    extra: `${start_date} → ${end_date}`,
+  }).catch(() => {});
 
   return NextResponse.json({ message: "เสนอวันทำงานแล้ว" });
 }
@@ -78,6 +89,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     notifications.push({ user_id: job.approved_by_staff, type: "job_started", title: "งานเริ่มแล้ว", body: `งาน "${job.title}" เข้าสู่สถานะ IN_PROGRESS`, link: "/project-staff/active-jobs" });
   }
   await createNotifications(supabase, notifications);
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: "ยืนยันวันทำงาน → เริ่มงาน (IN_PROGRESS)",
+    targetType: "job",
+    targetId: id,
+    targetTitle: job.title,
+    link: `/admin/jobs?id=${id}`,
+    severity: "info",
+    extra: `${job.work_start_date} → ${job.work_end_date}`,
+  }).catch(() => {});
 
   return NextResponse.json({ message: "ยืนยันวันทำงานแล้ว — เริ่มงาน!" });
 }

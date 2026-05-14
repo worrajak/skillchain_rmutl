@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createNotification } from "@/lib/telegram";
+import { createNotification, notifyAdmin } from "@/lib/telegram";
 
 // POST /api/jobs/[id]/record-payment
 // Employer บันทึก tx hash หลัง release escrow on-chain สำเร็จ
@@ -27,7 +27,7 @@ export async function POST(
   // ตรวจสอบ: ต้องเป็น employer ของงานนี้ + status COMPLETED
   const { data: job } = await supabase
     .from("skc_jobs")
-    .select("employer_id, student_id, status, escrow_tx")
+    .select("employer_id, student_id, status, escrow_tx, title")
     .eq("id", id)
     .single();
 
@@ -66,6 +66,17 @@ export async function POST(
     body: `ค่าจ้างถูกปล่อยแล้ว — ตรวจสอบ tx: ${tx_hash.slice(0, 12)}...`,
     link: `/student/wallet`,
   });
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: "บันทึก on-chain payment manually",
+    targetType: "job",
+    targetId: id,
+    targetTitle: job.title,
+    link: `/admin/jobs?id=${id}`,
+    severity: "alert",
+    extra: `TX: ${tx_hash.slice(0, 16)}…`,
+  }).catch(() => {});
 
   return NextResponse.json({
     message: "บันทึก payment สำเร็จ",

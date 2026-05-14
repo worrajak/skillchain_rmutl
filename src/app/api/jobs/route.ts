@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { onJobCreated } from "@/lib/gov-sync";
+import { notifyAdmin } from "@/lib/telegram";
 
 // POST /api/jobs — สร้างงานใหม่ + trigger gov workflow
 // เรียกจาก frontend (/employer/jobs/new) แทน direct insert
@@ -52,6 +53,16 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error("Gov sync hook failed (non-fatal):", err);
   }
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: "สร้างงานใหม่ (รอ staff อนุมัติ)",
+    targetType: "job",
+    targetId: newJob.id,
+    targetTitle: newJob.title,
+    link: `/admin/jobs?id=${newJob.id}`,
+    severity: "info",
+  }).catch(() => {});
 
   return NextResponse.json({ success: true, job: newJob });
 }

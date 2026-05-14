@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { recordTrustEvent } from "@/lib/trust";
+import { notifyAdmin } from "@/lib/telegram";
 
 /**
  * GET   /api/jobs/[id]/attendance       — list participants + statuses
@@ -77,6 +78,17 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .eq("attendance_status", "CHECKED_IN")
       .select("student_id");
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    notifyAdmin(supabase, {
+      actorId: user.id,
+      action: `Auto-mark ATTENDED ทั้งกลุ่ม`,
+      targetType: "activity",
+      targetId: id,
+      link: `/admin/jobs?id=${id}`,
+      severity: "info",
+      extra: `${updated?.length ?? 0} คน`,
+    }).catch(() => {});
+
     return NextResponse.json({ ok: true, updated: updated?.length ?? 0 });
   }
 
@@ -104,6 +116,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         }
       }
     }
+    // Surface NO_SHOW count as alert (potential trust hit)
+    const noShowCount = body.updates.filter((u) => u.status === "NO_SHOW").length;
+    notifyAdmin(supabase, {
+      actorId: user.id,
+      action: `อัปเดต attendance (${updated} คน)`,
+      targetType: "activity",
+      targetId: id,
+      link: `/admin/jobs?id=${id}`,
+      severity: noShowCount > 0 ? "warn" : "info",
+      extra: noShowCount > 0 ? `NO_SHOW: ${noShowCount} คน` : undefined,
+    }).catch(() => {});
+
     return NextResponse.json({ ok: true, updated });
   }
 

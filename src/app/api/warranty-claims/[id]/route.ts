@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createNotification } from "@/lib/telegram";
+import { createNotification, notifyAdmin } from "@/lib/telegram";
 
 // PATCH /api/warranty-claims/[id]
 // Body: { status: 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED', resolution_note? }
@@ -71,6 +71,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       link: `/student/dashboard`,
     });
   }
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: `Warranty Claim → ${status}`,
+    targetType: "job",
+    targetId: claim.job_id,
+    targetTitle: claim.job?.title,
+    link: `/admin/jobs?id=${claim.job_id}`,
+    severity: status === "REJECTED" ? "warn" : "info",
+    extra: resolution_note?.slice(0, 100),
+  }).catch(() => {});
 
   return NextResponse.json({ success: true, status });
 }

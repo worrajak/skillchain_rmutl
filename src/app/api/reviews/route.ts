@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { checkRateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
+import { notifyAdmin } from "@/lib/telegram";
 
 type EvalPhase = "PRE_WORK" | "IN_PROGRESS" | "POST_WORK";
 
@@ -133,6 +134,17 @@ export async function POST(request: NextRequest) {
       jobId: job_id,
       triggeredBy: user.id,
     }).catch(() => {});
+
+    notifyAdmin(supabase, {
+      actorId: user.id,
+      action: `ผู้จ้างให้คะแนน นศ. (${overall_rating.toFixed(1)}★)`,
+      targetType: "review",
+      targetId: data?.id ?? job_id,
+      link: `/admin/reviews`,
+      severity: overall_rating <= 2 ? "warn" : "info",
+      extra: comment?.slice(0, 80),
+    }).catch(() => {});
+
     return NextResponse.json(data, { status: 201 });
   }
 
@@ -169,6 +181,17 @@ export async function POST(request: NextRequest) {
       jobId: job_id,
       triggeredBy: user.id,
     }).catch(() => {});
+
+    notifyAdmin(supabase, {
+      actorId: user.id,
+      action: `นศ. ให้คะแนนผู้จ้าง (${overall_rating.toFixed(1)}★)`,
+      targetType: "review",
+      targetId: data?.id ?? job_id,
+      link: `/admin/reviews`,
+      severity: overall_rating <= 2 ? "warn" : "info",
+      extra: comment?.slice(0, 80),
+    }).catch(() => {});
+
     return NextResponse.json(data, { status: 201 });
   }
 
