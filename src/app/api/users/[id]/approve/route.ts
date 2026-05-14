@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { TronWeb } from "tronweb";
 import { encryptPrivateKey } from "@/lib/crypto";
-import { createNotification } from "@/lib/telegram";
+import { createNotification, notifyAdmin } from "@/lib/telegram";
 
 // POST /api/users/[id]/approve
 // Admin/staff กดอนุมัติผู้ใช้ → สร้าง TRON wallet อัตโนมัติ (ถ้ายังไม่มี)
@@ -134,6 +134,16 @@ export async function POST(
       : "บัญชีของคุณได้รับอนุมัติแล้ว",
     link: "/student/profile",
   });
+
+  notifyAdmin(supabase, {
+    actorId: me.id,
+    action: `อนุมัติบัญชี ${targetUser.role}`,
+    targetType: "user",
+    targetId: userId,
+    link: `/admin/users`,
+    severity: "info",
+    extra: walletGenerated ? `สร้าง wallet: ${walletAddress}` : undefined,
+  }).catch(() => {});
 
   return NextResponse.json({
     message: walletError

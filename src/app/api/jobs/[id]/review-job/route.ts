@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createNotification } from "@/lib/telegram";
+import { createNotification, notifyAdmin } from "@/lib/telegram";
 
 // POST /api/jobs/[id]/review-job
 // คณะทำงานพิจารณางานใหม่: อนุมัติ / ปรับค่าจ้าง / ปฏิเสธ
@@ -96,6 +96,19 @@ export async function POST(
       link: `/employer/jobs/${jobId}`,
     });
 
+    // Admin observability — fire-and-forget
+    notifyAdmin(supabase, {
+      actorId: user.id,
+      actorName: profile?.name,
+      action: `อนุมัติงาน${payMsg ? " (ปรับค่าจ้าง)" : ""}`,
+      targetType: "job",
+      targetId: jobId,
+      targetTitle: job.title,
+      link: `/admin/jobs?id=${jobId}`,
+      severity: "info",
+      extra: payMsg || undefined,
+    }).catch(() => {});
+
     return NextResponse.json({
       message: "อนุมัติงานสำเร็จ",
       final_pay: finalPay,
@@ -129,6 +142,18 @@ export async function POST(
       body: `"${job.title}" — ${note || "กรุณาติดต่อคณะทำงาน"}`,
       link: `/employer/jobs`,
     });
+
+    notifyAdmin(supabase, {
+      actorId: user.id,
+      actorName: profile?.name,
+      action: "ปฏิเสธงาน",
+      targetType: "job",
+      targetId: jobId,
+      targetTitle: job.title,
+      link: `/admin/jobs?id=${jobId}`,
+      severity: "warn",
+      extra: note ? `เหตุผล: ${note}` : undefined,
+    }).catch(() => {});
 
     return NextResponse.json({ message: "ปฏิเสธงานแล้ว" });
   }

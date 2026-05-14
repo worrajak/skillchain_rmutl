@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createNotifications } from "@/lib/telegram";
+import { createNotifications, notifyAdmin } from "@/lib/telegram";
 import { checkRateLimit, getClientIP, RATE_LIMITS } from "@/lib/rate-limit";
 
 // GET /api/disputes — list disputes (ต้อง login)
@@ -68,6 +68,17 @@ export async function POST(request: NextRequest) {
     })),
   ];
   await createNotifications(supabase, notifs);
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: "เปิดข้อพิพาท",
+    targetType: "dispute",
+    targetId: data?.id ?? job_id,
+    targetTitle: `งาน #${String(job_id).slice(0, 8)} · หมวด ${category}`,
+    link: `/admin/disputes`,
+    severity: "alert",
+    extra: description.slice(0, 80),
+  }).catch(() => {});
 
   return NextResponse.json(data, { status: 201 });
 }

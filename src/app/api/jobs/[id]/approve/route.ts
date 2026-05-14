@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createNotification } from "@/lib/telegram";
+import { createNotification, notifyAdmin } from "@/lib/telegram";
 import { checkCanAssign } from "@/lib/gov-sync";
 import { checkTierAccess } from "@/lib/skill-credits";
 import { type JobTier } from "@/lib/terminology";
@@ -147,6 +147,18 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       link: `/student/dashboard`,
     });
 
+    // Admin observability
+    notifyAdmin(supabase, {
+      actorId: user.id,
+      action: `อนุมัติ นศ. รับงาน${isTeamFull ? " (ทีมครบ)" : ""}`,
+      targetType: "job",
+      targetId: id,
+      targetTitle: job?.title ?? id,
+      link: `/admin/jobs?id=${id}`,
+      severity: "info",
+      extra: `นศ.: ${req.student?.name ?? req.student_id.slice(0, 8)} · ${newTeamSize}/${requiredWorkers} คน`,
+    }).catch(() => {});
+
     // แจ้ง employer ว่ามี นศ. แล้ว (ครั้งแรกหรือทีมเต็ม)
     if (job?.employer_id && (isFirstWorker || isTeamFull)) {
       await createNotification(supabase, {
@@ -169,6 +181,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       body: review_note ?? "ไม่ผ่านการอนุมัติ",
       link: `/student/jobs`,
     });
+
+    notifyAdmin(supabase, {
+      actorId: user.id,
+      action: "ปฏิเสธคำขอรับงาน",
+      targetType: "job",
+      targetId: id,
+      link: `/admin/jobs?id=${id}`,
+      severity: "warn",
+      extra: `นศ.: ${req.student?.name ?? req.student_id.slice(0, 8)}${review_note ? ` · ${review_note}` : ""}`,
+    }).catch(() => {});
   }
 
   return NextResponse.json(req);

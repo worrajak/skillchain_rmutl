@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/pending-actions-summary",
+      "schedule": "0 2 * * *"
+    }
+  ]
+}

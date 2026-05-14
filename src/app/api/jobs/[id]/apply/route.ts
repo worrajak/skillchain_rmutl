@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createNotification } from "@/lib/telegram";
+import { createNotification, notifyAdmin } from "@/lib/telegram";
 
 /**
  * POST /api/jobs/[id]/apply — student applies to a job.
@@ -89,6 +89,18 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       });
     }
 
+    notifyAdmin(supabase, {
+      actorId: user.id,
+      actorName: profile.name,
+      action: "ลงทะเบียนกิจกรรม (FCFS)",
+      targetType: "activity",
+      targetId: id,
+      targetTitle: job.title,
+      link: `/admin/jobs?id=${id}`,
+      severity: "info",
+      extra: `${newCount}/${job.required_workers} คน`,
+    }).catch(() => {});
+
     return NextResponse.json({
       ok: true,
       mode: "ACTIVITY_FCFS",
@@ -126,6 +138,17 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       });
     }
   }
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    actorName: profile.name,
+    action: "ส่งคำขอรับงาน (รอ staff อนุมัติ)",
+    targetType: "job",
+    targetId: id,
+    targetTitle: job.title,
+    link: `/admin/jobs?id=${id}`,
+    severity: "info",
+  }).catch(() => {});
 
   return NextResponse.json({ ok: true, mode: "REQUEST_PENDING" });
 }

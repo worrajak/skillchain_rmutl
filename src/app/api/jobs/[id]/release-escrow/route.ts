@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createNotification } from "@/lib/telegram";
+import { createNotification, notifyAdmin } from "@/lib/telegram";
 import { checkCanReleaseEscrow } from "@/lib/gov-sync";
 import { escrowRelease, escrowHold, mint, getBalance, SYSTEM_POOL } from "@/lib/trpb-ledger";
 import { transferTRPBOnChain } from "@/lib/tron/server";
@@ -284,6 +284,17 @@ export async function POST(
       link: "/wallet",
     });
   }
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: `ปล่อย TRPB ให้ทีม (${teamIds.length} คน)`,
+    targetType: "job",
+    targetId: jobId,
+    targetTitle: job.title,
+    link: `/admin/jobs?id=${jobId}`,
+    severity: "alert",
+    extra: `${amountToCharge.toLocaleString()} TRPB · ${onChainTxId ? `on-chain TX: ${String(onChainTxId).slice(0, 12)}…` : "off-chain ledger only"}`,
+  }).catch(() => {});
 
   return NextResponse.json({
     message: onChainTxId

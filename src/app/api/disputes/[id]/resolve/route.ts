@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { hashReviewContent } from "@/lib/credential";
-import { createNotifications } from "@/lib/telegram";
+import { createNotifications, notifyAdmin } from "@/lib/telegram";
 
 // POST /api/disputes/[id]/resolve — arbitrator resolves dispute
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -48,6 +48,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       { user_id: data.raised_against, type: "dispute_resolved", title: "ข้อพิพาทได้รับการตัดสิน", body: resolution?.slice(0, 100) ?? "", link: `/admin/disputes` },
     ]);
   }
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: `ตัดสินข้อพิพาท: ${status}`,
+    targetType: "dispute",
+    targetId: id,
+    link: `/admin/disputes`,
+    severity: "alert",
+    extra: resolution?.slice(0, 100),
+  }).catch(() => {});
 
   return NextResponse.json(data);
 }

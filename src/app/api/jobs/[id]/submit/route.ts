@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createNotifications } from "@/lib/telegram";
+import { createNotifications, notifyAdmin } from "@/lib/telegram";
 
 // POST /api/jobs/[id]/submit — นศ. ส่งงาน
 export async function POST(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -49,6 +49,16 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
     notifications.push({ user_id: job.approved_by_staff, type: "job_submitted", title: "นักศึกษาส่งงานแล้ว", body: `งาน "${job.title}" — กรุณายืนยันงานเสร็จ`, link: "/project-staff/active-jobs" });
   }
   await createNotifications(supabase, notifications);
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: "ส่งงาน (รอ Staff + ผู้จ้างยืนยัน)",
+    targetType: "job",
+    targetId: id,
+    targetTitle: job.title,
+    link: `/admin/jobs?id=${id}`,
+    severity: "info",
+  }).catch(() => {});
 
   return NextResponse.json({ message: "ส่งงานแล้ว — รอ Staff และผู้ว่าจ้างยืนยัน" });
 }

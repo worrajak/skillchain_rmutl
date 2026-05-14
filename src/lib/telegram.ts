@@ -15,6 +15,103 @@ export async function notifyOwner(text: string, link?: string | null): Promise<b
 }
 
 /**
+ * Structured admin notification — mirrors every high-signal action to the
+ * admin's Telegram chat so the operator can observe "who did what" during testing.
+ *
+ * Usage (fire-and-forget — DO NOT await, DO NOT throw):
+ *
+ *   notifyAdmin(supabase, {
+ *     actorId: staffId,
+ *     action: "อนุมัติงาน",
+ *     targetType: "job",
+ *     targetId: jobId,
+ *     targetTitle: "เปลี่ยนน้ำมันเครื่อง โซ่ และสเตอร์",
+ *     link: `/admin/jobs?id=${jobId}`,
+ *     severity: "info",
+ *   }).catch(() => {});
+ *
+ * Goes only to TELEGRAM_OWNER_CHAT_ID (DM, not group). Resolves chat_id once
+ * per call; if env var missing, returns silently.
+ */
+export interface AdminNotifyOpts {
+  actorId?: string | null;          // skc_users.id of who triggered the action
+  actorName?: string | null;        // optional pre-resolved name to skip lookup
+  action: string;                   // verb phrase: "อนุมัติงาน", "ปล่อย TRPB", "เปิดข้อพิพาท"
+  targetType?: string;              // "job", "user", "dispute", "batch", "activity"
+  targetId?: string | null;
+  targetTitle?: string | null;      // human-readable label of the target
+  link?: string | null;             // relative URL to deep-link into the system
+  severity?: "info" | "warn" | "alert";  // controls emoji prefix
+  extra?: string;                   // optional second-line context (counts, amounts, etc.)
+}
+
+export async function notifyAdmin(
+  supabase: { from: (table: string) => unknown },
+  opts: AdminNotifyOpts,
+): Promise<boolean> {
+  if (!OWNER_CHAT_ID || !BOT_TOKEN) return false;
+
+  // Resolve actor name if not provided (best-effort)
+  let actorName = opts.actorName ?? null;
+  let actorRole: string | null = null;
+  if (!actorName && opts.actorId) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data } = await (supabase as any)
+        .from("skc_users")
+        .select("name, role")
+        .eq("id", opts.actorId)
+        .single();
+      actorName = data?.name ?? null;
+      actorRole = data?.role ?? null;
+    } catch {
+      // ignore — best-effort
+    }
+  }
+
+  const severityEmoji = opts.severity === "alert" ? "🚨" : opts.severity === "warn" ? "⚠️" : "✅";
+  const roleEmoji = actorRole === "student" ? "🎓"
+    : actorRole === "employer" ? "👔"
+    : actorRole === "teacher" ? "👨‍🏫"
+    : actorRole === "project_staff" || actorRole === "rmutl_staff" ? "🛡️"
+    : actorRole === "admin" || actorRole === "superadmin" ? "👑"
+    : actorRole === "donor" ? "💝"
+    : "👤";
+
+  const actorLabel = actorName ?? (opts.actorId ? opts.actorId.slice(0, 8) : "ระบบ");
+  const target = opts.targetTitle
+    ? `<b>${escapeHtml(opts.targetTitle)}</b>`
+    : opts.targetId
+      ? `<code>${escapeHtml(opts.targetId.slice(0, 8))}</code>`
+      : "";
+
+  const lines = [
+    `${severityEmoji} ${roleEmoji} <b>${escapeHtml(actorLabel)}</b> ${escapeHtml(opts.action)}`,
+    target ? `${typeEmoji(opts.targetType)} ${target}` : null,
+    opts.extra ? `   ${escapeHtml(opts.extra)}` : null,
+  ].filter(Boolean) as string[];
+
+  return sendTelegramMessage(OWNER_CHAT_ID, lines.join("\n"), opts.link ?? null);
+}
+
+function typeEmoji(targetType?: string): string {
+  switch (targetType) {
+    case "job": return "💼";
+    case "user": return "👤";
+    case "dispute": return "⚖️";
+    case "batch": return "📄";
+    case "activity": return "🎉";
+    case "training": return "📚";
+    case "review": return "⭐";
+    default: return "🔗";
+  }
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] ?? c));
+}
+
+/**
  * Notify multiple users by ID — looks up telegram_chat_id for each and sends.
  * Used for batch approvals where we notify all employers + students at once.
  */

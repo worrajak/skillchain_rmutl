@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createNotification, createNotifications } from "@/lib/telegram";
+import { createNotification, createNotifications, notifyAdmin } from "@/lib/telegram";
 import { onWorkCompleted } from "@/lib/gov-sync";
 import { recordTrustEvent } from "@/lib/trust";
 
@@ -85,6 +85,17 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
       }).catch(() => {});
     }
 
+    notifyAdmin(supabase, {
+      actorId: user.id,
+      action: "ยืนยันงานเสร็จสมบูรณ์ (ทั้ง 2 ฝ่ายแล้ว)",
+      targetType: "job",
+      targetId: id,
+      targetTitle: job.title,
+      link: `/admin/jobs?id=${id}`,
+      severity: "info",
+      extra: "→ ปล่อย TRPB ได้",
+    }).catch(() => {});
+
     return NextResponse.json({ message: "ยืนยันครบแล้ว — งานเสร็จสมบูรณ์! กรุณาลงนามใบรับรองใน /staff/gov", completed: true });
   }
 
@@ -99,6 +110,16 @@ export async function POST(_: NextRequest, { params }: { params: Promise<{ id: s
       link: isStaff ? `/employer/jobs/${id}` : "/project-staff/active-jobs",
     });
   }
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: isStaff ? "Staff ยืนยันงานเสร็จ (รออีกฝ่าย)" : "ผู้ว่าจ้างยืนยันงานเสร็จ (รออีกฝ่าย)",
+    targetType: "job",
+    targetId: id,
+    targetTitle: job.title,
+    link: `/admin/jobs?id=${id}`,
+    severity: "info",
+  }).catch(() => {});
 
   return NextResponse.json({
     message: "ยืนยันแล้ว — รออีกฝ่ายยืนยัน",

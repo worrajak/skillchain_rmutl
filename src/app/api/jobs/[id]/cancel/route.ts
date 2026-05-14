@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createNotification, createNotifications } from "@/lib/telegram";
+import { createNotification, createNotifications, notifyAdmin } from "@/lib/telegram";
 
 // POST /api/jobs/[id]/cancel — submit cancellation request
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -58,6 +58,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }))
     );
   }
+
+  notifyAdmin(supabase, {
+    actorId: user.id,
+    action: "ขอยกเลิกงาน",
+    targetType: "job",
+    targetId: id,
+    targetTitle: job.title,
+    link: `/admin/jobs?id=${id}`,
+    severity: "warn",
+    extra: `เหตุผล: ${reason_detail || reason}`,
+  }).catch(() => {});
 
   return NextResponse.json(data, { status: 201 });
 }
