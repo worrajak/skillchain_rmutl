@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import {
-  Search, MapPin, Clock, Wallet, Briefcase, CheckCircle, User, Shield, Eye,
+  Search, MapPin, Clock, Wallet, Briefcase, CheckCircle, User, Shield, Eye, Flame, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ImageGallery } from "@/components/image-gallery";
@@ -20,6 +20,7 @@ import { JobCardCover, DeadlineUrgency } from "@/components/job-card-cover";
 import { UserAvatar } from "@/components/user-avatar";
 import { TeamStrip } from "@/components/team-strip";
 import { getCampusLabel } from "@/types/database";
+import { partitionByRank } from "@/lib/job-rank";
 
 const TYPE_LABELS: Record<string, string> = { PAID: "งานจ้าง", VOLUNTEER: "จิตอาสา", TRAINING: "ฝึกทักษะ", EXEMPTED: "ยกเว้นค่าบริการ" };
 const CATEGORY_LABELS: Record<string, string> = { electrical: "ไฟฟ้า", hvac: "แอร์/เครื่องเย็น", automotive: "ยานยนต์", general: "ทั่วไป" };
@@ -320,55 +321,13 @@ export default function StudentJobsPage() {
           )}
         </div>
       ) : (
-        // === งานเปิดรับ ===
+        // === งานเปิดรับ — Hero (Top 10) + List below ===
         openJobs.length > 0 ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {openJobs.map((job: any) => (
-              <Card key={job.id} className="overflow-hidden hover:ring-2 hover:ring-sky-200 transition-all p-0">
-                <JobCardCover jobId={job.id} category={job.job_category} />
-                <CardHeader className="pb-3 pt-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base text-foreground line-clamp-2 flex-1">{job.title}</CardTitle>
-                    <DeadlineUrgency deadline={job.deadline} />
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", BADGE_COLORS[job.type] ?? "")}>
-                      {TYPE_LABELS[job.type] ?? job.type}
-                    </span>
-                    <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", CATEGORY_COLORS[job.job_category] ?? "")}>
-                      {CATEGORY_LABELS[job.job_category] ?? job.job_category}
-                    </span>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground line-clamp-2">{job.description}</p>
-                  <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1"><MapPin className="size-3" />{job.location} ({getCampusLabel(job.campus)})</span>
-                    <span className="flex items-center gap-1"><Clock className="size-3" />กำหนดส่ง: {new Date(job.deadline).toLocaleDateString("th-TH")}</span>
-                    {job.pay_amount > 0 && (
-                      <span className="flex items-center gap-1 text-green-700 font-semibold text-sm"><Wallet className="size-3.5" />{job.pay_amount.toLocaleString()} TRPB</span>
-                    )}
-                  </div>
-                  {/* Team strip — show filled spots vs required */}
-                  {job.required_workers > 1 && (
-                    <div className="pt-2 border-t">
-                      <TeamStrip jobId={job.id} requiredWorkers={job.required_workers} compact />
-                    </div>
-                  )}
-                  <div className="flex items-center justify-between pt-2 border-t">
-                    <span className="text-xs text-muted-foreground">โดย: {job.employer?.name ?? "-"}</span>
-                    {pendingJobIds.has(job.id) ? (
-                      <Button size="sm" variant="secondary" disabled className="opacity-70">
-                        ⏳ ส่งคำขอแล้ว
-                      </Button>
-                    ) : (
-                      <Button size="sm" onClick={() => handleApply(job.id)}>ส่งคำขอรับงาน</Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <OpenJobsLayout
+            jobs={openJobs}
+            pendingJobIds={pendingJobIds}
+            onApply={handleApply}
+          />
         ) : (
           <Card className="text-center py-12">
             <CardContent>
@@ -380,5 +339,237 @@ export default function StudentJobsPage() {
         )
       )}
     </div>
+  );
+}
+
+/* ============================================================
+ *  OpenJobsLayout — Hero (Top 10) + List below
+ * ============================================================
+ *  - Mobile (<sm):   Hero = horizontal snap-scroll carousel (each card 80% viewport)
+ *                    List = 1 col compact rows
+ *  - Tablet (sm-lg): Hero = 2-3 col grid · List = 2 col
+ *  - Desktop (lg+):  Hero = 5 col × 2 rows = 10 featured · List = 3 col compact
+ */
+function OpenJobsLayout({
+  jobs,
+  pendingJobIds,
+  onApply,
+}: {
+  jobs: any[];
+  pendingJobIds: Set<string>;
+  onApply: (jobId: string) => void;
+}) {
+  const { featured, more } = partitionByRank(jobs, 10);
+
+  return (
+    <div className="space-y-6">
+      {/* === Hero: Featured Top 10 === */}
+      <section>
+        <div className="flex items-center gap-2 mb-3">
+          <Flame className="size-5 text-amber-500" />
+          <h2 className="text-base sm:text-lg font-bold text-foreground">งานเด่น (Top {featured.length})</h2>
+          <span className="text-[10px] sm:text-xs text-muted-foreground">ค่าจ้างสูง + ใกล้กำหนด</span>
+        </div>
+
+        {/* Mobile: horizontal snap-scroll · Desktop: grid 5×2 */}
+        <div
+          className="
+            flex sm:grid gap-3
+            overflow-x-auto sm:overflow-visible
+            snap-x snap-mandatory sm:snap-none
+            sm:grid-cols-3 lg:grid-cols-5
+            -mx-4 px-4 sm:mx-0 sm:px-0
+            pb-2 sm:pb-0
+          "
+        >
+          {featured.map((job: any) => (
+            <HeroJobCard
+              key={job.id}
+              job={job}
+              pending={pendingJobIds.has(job.id)}
+              onApply={onApply}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* === More: compact list === */}
+      {more.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-3 mt-6">
+            <Briefcase className="size-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+              งานเพิ่มเติม ({more.length})
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {more.map((job: any) => (
+              <ListJobCard
+                key={job.id}
+                job={job}
+                pending={pendingJobIds.has(job.id)}
+                onApply={onApply}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+/* ============================================================
+ *  HeroJobCard — large featured card for Top 10
+ * ============================================================ */
+function HeroJobCard({
+  job,
+  pending,
+  onApply,
+}: {
+  job: any;
+  pending: boolean;
+  onApply: (id: string) => void;
+}) {
+  const pay = Number(job.pay_amount ?? 0);
+  return (
+    <Card
+      className="
+        overflow-hidden hover:ring-2 hover:ring-sky-300 transition-all p-0 group
+        snap-start shrink-0
+        w-[80%] sm:w-auto
+      "
+    >
+      {/* Cover image / gradient — tall enough to be striking */}
+      <div className="relative">
+        <JobCardCover
+          jobId={job.id}
+          category={job.job_category}
+          className="!max-h-32 sm:!max-h-28 lg:!max-h-32 !aspect-[4/3] sm:!aspect-[5/3] object-cover"
+        />
+        {/* Floating pay badge — bottom-right of cover */}
+        {pay > 0 && (
+          <div className="absolute top-2 right-2 rounded-full bg-emerald-500 text-white px-2.5 py-1 text-[11px] font-bold shadow-lg backdrop-blur">
+            💰 {pay.toLocaleString()} TRPB
+          </div>
+        )}
+        {/* Urgency pill — top-left */}
+        <div className="absolute top-2 left-2">
+          <DeadlineUrgency deadline={job.deadline} />
+        </div>
+      </div>
+
+      <CardContent className="p-3 space-y-2">
+        <h3 className="font-semibold text-foreground line-clamp-2 leading-snug min-h-[2.5rem]">
+          {job.title}
+        </h3>
+
+        <div className="flex flex-wrap gap-1">
+          <span className={cn("inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium", BADGE_COLORS[job.type] ?? "")}>
+            {TYPE_LABELS[job.type] ?? job.type}
+          </span>
+          <span className={cn("inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium", CATEGORY_COLORS[job.job_category] ?? "")}>
+            {CATEGORY_LABELS[job.job_category] ?? job.job_category}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1 text-[11px] text-muted-foreground truncate">
+          <MapPin className="size-3 shrink-0" />
+          <span className="truncate">{job.location}</span>
+        </div>
+
+        {/* Team progress strip — only if multi-worker */}
+        {job.required_workers > 1 && (
+          <TeamStrip jobId={job.id} requiredWorkers={job.required_workers} compact />
+        )}
+
+        {pending ? (
+          <Button size="sm" variant="secondary" disabled className="w-full opacity-70 text-[11px] h-7">
+            ⏳ ส่งคำขอแล้ว
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            onClick={() => onApply(job.id)}
+            className="w-full h-7 text-[11px] bg-sky-600 hover:bg-sky-700"
+          >
+            ส่งคำขอรับงาน →
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ============================================================
+ *  ListJobCard — compact row for "more jobs" below the hero
+ * ============================================================ */
+function ListJobCard({
+  job,
+  pending,
+  onApply,
+}: {
+  job: any;
+  pending: boolean;
+  onApply: (id: string) => void;
+}) {
+  const pay = Number(job.pay_amount ?? 0);
+  return (
+    <Card className="overflow-hidden hover:ring-1 hover:ring-sky-200 transition-all">
+      <CardContent className="p-3">
+        <div className="flex items-start gap-3">
+          {/* Tiny category color dot/icon */}
+          <div
+            className={cn(
+              "shrink-0 size-9 rounded-lg flex items-center justify-center",
+              CATEGORY_COLORS[job.job_category] ?? "bg-slate-100 text-slate-600",
+            )}
+          >
+            <Briefcase className="size-4" />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <h4 className="font-medium text-sm text-foreground line-clamp-1 flex-1">
+                {job.title}
+              </h4>
+              {pay > 0 && (
+                <span className="text-xs font-bold text-emerald-700 shrink-0">
+                  {pay.toLocaleString()} TRPB
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
+              <span className="truncate">{CATEGORY_LABELS[job.job_category] ?? job.job_category}</span>
+              <span>·</span>
+              <span className="truncate flex items-center gap-0.5">
+                <MapPin className="size-2.5" />
+                {job.location}
+              </span>
+              <DeadlineUrgency deadline={job.deadline} />
+            </div>
+
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-[10px] text-muted-foreground truncate">
+                {job.employer?.name ?? "-"}
+              </span>
+              {pending ? (
+                <Button size="sm" variant="secondary" disabled className="h-6 px-2 text-[10px] opacity-70">
+                  ส่งแล้ว
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => onApply(job.id)}
+                  className="h-6 px-2 text-[10px]"
+                >
+                  สมัคร
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
