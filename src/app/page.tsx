@@ -23,6 +23,8 @@ import {
   Sparkles,
 } from "lucide-react";
 import { getCampusLabel } from "@/types/database";
+import { rankJobs } from "@/lib/job-rank";
+import { HeroJobCard } from "@/components/hero-job-card";
 
 const JOB_TYPE_LABELS: Record<string, string> = {
   PAID: "งานจ้าง",
@@ -58,12 +60,13 @@ export default async function HomePage() {
     supabase.from("skc_jobs").select("*", { count: "exact", head: true }).eq("status", "COMPLETED"),
     supabase.from("skc_evaluations").select("*", { count: "exact", head: true }),
     supabase.from("skc_student_credentials").select("*", { count: "exact", head: true }),
+    // Fetch up to 20 OPEN jobs · let job-rank pick the Top 10 hero
     supabase
       .from("skc_jobs")
-      .select("*, employer:skc_users!skc_jobs_employer_id_fkey(name)")
+      .select("id, title, type, job_category, location, pay_amount, deadline, required_workers, employer:skc_users!skc_jobs_employer_id_fkey(name)")
       .eq("status", "OPEN")
       .order("created_at", { ascending: false })
-      .limit(6),
+      .limit(20),
     supabase
       .from("skc_student_rating_summary")
       .select("*")
@@ -71,6 +74,10 @@ export default async function HomePage() {
       .order("combined_score", { ascending: false })
       .limit(6),
   ]);
+
+  // Rank jobs — pay 60% · urgency 30% · small-team 10%
+  type JobRow = NonNullable<typeof recentJobs>[number];
+  const featuredJobs = rankJobs<JobRow>((recentJobs ?? []) as JobRow[]).slice(0, 10);
 
   const stats = [
     { label: "นักศึกษาช่าง", value: totalStudents ?? 0, icon: Users, color: "text-blue-600", bg: "bg-blue-100" },
@@ -170,7 +177,7 @@ export default async function HomePage() {
 
             </div>
 
-            {/* Right: Live Stats + Recent Jobs */}
+            {/* Right: Live Stats grid (jobs moved out to big section below) */}
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-3">
                 {stats.map((s) => (
@@ -181,42 +188,48 @@ export default async function HomePage() {
                   </div>
                 ))}
               </div>
-
-              {/* Recent Jobs in Hero */}
-              {recentJobs && recentJobs.length > 0 ? (
-                <div className="rounded-xl bg-white/10 backdrop-blur p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-blue-100">งานล่าสุด</p>
-                    <Link href="/jobs" className="text-[11px] text-blue-200 hover:text-white">ดูทั้งหมด →</Link>
-                  </div>
-                  {recentJobs.slice(0, 4).map((job) => (
-                    <Link key={job.id} href={`/jobs/${job.id}`} className="block rounded-lg bg-white/10 hover:bg-white/20 transition-colors p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm truncate">{job.title}</div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="inline-flex rounded-full bg-white/20 px-2 py-0.5 text-[10px]">{JOB_TYPE_LABELS[job.type] ?? job.type}</span>
-                            <span className="text-[10px] text-blue-200 flex items-center gap-0.5"><MapPin className="size-3" />{getCampusLabel(String(job.campus))}</span>
-                          </div>
-                        </div>
-                        {job.pay_amount > 0 && (
-                          <span className="text-sm font-bold text-green-300 shrink-0">{job.pay_amount.toLocaleString()} TRPB</span>
-                        )}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-xl bg-white/10 backdrop-blur p-4 text-center">
-                  <Briefcase className="size-8 mx-auto text-blue-300/50 mb-2" />
-                  <p className="text-sm text-blue-200">ยังไม่มีงานเปิดรับ</p>
-                  <p className="text-xs text-blue-300 mt-1">ผู้ว่าจ้างสามารถลงงานได้เลย</p>
-                </div>
-              )}
             </div>
           </div>
         </div>
       </header>
+
+      {/* === Featured Jobs (Top 10 ranked by pay + urgency) === */}
+      {featuredJobs.length > 0 && (
+        <section className="bg-gradient-to-b from-slate-50 via-white to-slate-50 border-b">
+          <div className="max-w-6xl mx-auto px-4 py-10 md:py-14">
+            <div className="flex items-end justify-between mb-6 flex-wrap gap-2">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
+                  🔥 งานล่าสุด
+                  <span className="text-xs font-normal text-muted-foreground">(Top {featuredJobs.length})</span>
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  เรียงตามค่าจ้างสูง + ใกล้กำหนด — คลิกดูรายละเอียดได้ทันที
+                </p>
+              </div>
+              <Link href="/jobs" className="text-sm text-sky-600 hover:text-sky-800 font-medium inline-flex items-center gap-1">
+                ดูงานทั้งหมด <ArrowRight className="size-4" />
+              </Link>
+            </div>
+
+            {/* Mobile snap-scroll · sm 3-col · lg 5-col × 2-row */}
+            <div
+              className="
+                flex sm:grid gap-3 md:gap-4
+                overflow-x-auto sm:overflow-visible
+                snap-x snap-mandatory sm:snap-none
+                sm:grid-cols-3 lg:grid-cols-5
+                -mx-4 px-4 sm:mx-0 sm:px-0
+                pb-2 sm:pb-0
+              "
+            >
+              {featuredJobs.map((job) => (
+                <HeroJobCard key={job.id} job={job as Parameters<typeof HeroJobCard>[0]["job"]} />
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <main className="flex-1 max-w-6xl mx-auto px-4 py-10 space-y-14">
 

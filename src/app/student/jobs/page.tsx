@@ -21,6 +21,7 @@ import { UserAvatar } from "@/components/user-avatar";
 import { TeamStrip } from "@/components/team-strip";
 import { getCampusLabel } from "@/types/database";
 import { partitionByRank } from "@/lib/job-rank";
+import { HeroJobCard } from "@/components/hero-job-card";
 
 const TYPE_LABELS: Record<string, string> = { PAID: "งานจ้าง", VOLUNTEER: "จิตอาสา", TRAINING: "ฝึกทักษะ", EXEMPTED: "ยกเว้นค่าบริการ" };
 const CATEGORY_LABELS: Record<string, string> = { electrical: "ไฟฟ้า", hvac: "แอร์/เครื่องเย็น", automotive: "ยานยนต์", general: "ทั่วไป" };
@@ -415,88 +416,6 @@ function OpenJobsLayout({
         </section>
       )}
     </div>
-  );
-}
-
-/* ============================================================
- *  HeroJobCard — large featured card for Top 10
- * ============================================================ */
-function HeroJobCard({
-  job,
-  pending,
-  onApply,
-}: {
-  job: any;
-  pending: boolean;
-  onApply: (id: string) => void;
-}) {
-  const pay = Number(job.pay_amount ?? 0);
-  return (
-    <Card
-      className="
-        overflow-hidden hover:ring-2 hover:ring-sky-300 transition-all p-0 group
-        snap-start shrink-0
-        w-[80%] sm:w-auto
-      "
-    >
-      {/* Cover image / gradient — tall enough to be striking */}
-      <div className="relative">
-        <JobCardCover
-          jobId={job.id}
-          category={job.job_category}
-          className="!max-h-32 sm:!max-h-28 lg:!max-h-32 !aspect-[4/3] sm:!aspect-[5/3] object-cover"
-        />
-        {/* Floating pay badge — bottom-right of cover */}
-        {pay > 0 && (
-          <div className="absolute top-2 right-2 rounded-full bg-emerald-500 text-white px-2.5 py-1 text-[11px] font-bold shadow-lg backdrop-blur">
-            💰 {pay.toLocaleString()} TRPB
-          </div>
-        )}
-        {/* Urgency pill — top-left */}
-        <div className="absolute top-2 left-2">
-          <DeadlineUrgency deadline={job.deadline} />
-        </div>
-      </div>
-
-      <CardContent className="p-3 space-y-2">
-        <h3 className="font-semibold text-foreground line-clamp-2 leading-snug min-h-[2.5rem]">
-          {job.title}
-        </h3>
-
-        <div className="flex flex-wrap gap-1">
-          <span className={cn("inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium", BADGE_COLORS[job.type] ?? "")}>
-            {TYPE_LABELS[job.type] ?? job.type}
-          </span>
-          <span className={cn("inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-medium", CATEGORY_COLORS[job.job_category] ?? "")}>
-            {CATEGORY_LABELS[job.job_category] ?? job.job_category}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1 text-[11px] text-muted-foreground truncate">
-          <MapPin className="size-3 shrink-0" />
-          <span className="truncate">{job.location}</span>
-        </div>
-
-        {/* Team progress strip — only if multi-worker */}
-        {job.required_workers > 1 && (
-          <TeamStrip jobId={job.id} requiredWorkers={job.required_workers} compact />
-        )}
-
-        {pending ? (
-          <Button size="sm" variant="secondary" disabled className="w-full opacity-70 text-[11px] h-7">
-            ⏳ ส่งคำขอแล้ว
-          </Button>
-        ) : (
-          <Button
-            size="sm"
-            onClick={() => onApply(job.id)}
-            className="w-full h-7 text-[11px] bg-sky-600 hover:bg-sky-700"
-          >
-            ส่งคำขอรับงาน →
-          </Button>
-        )}
-      </CardContent>
-    </Card>
   );
 }
 
