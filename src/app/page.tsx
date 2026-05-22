@@ -95,72 +95,68 @@ export default async function HomePage() {
           <div className="absolute bottom-10 right-20 size-60 rounded-full border-2 border-white" />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 py-6 md:py-8">
-          {/* Main content — 2 columns · compact (half-height vs original) */}
-          <div className="grid md:grid-cols-2 gap-6 md:gap-8 items-center">
-            {/* Left: Message */}
-            <div className="space-y-3">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1]">
-                จ้างช่างนักศึกษา
-                <br />
+        <div className="relative max-w-6xl mx-auto px-4 py-3 md:py-4">
+          {/* Single-row billboard: title + CTAs · stats inline on lg+ */}
+          <div className="flex items-center justify-between gap-3 md:gap-6 flex-wrap">
+            {/* Title block */}
+            <div className="flex-1 min-w-[200px]">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight leading-tight">
+                จ้างช่างนักศึกษา{" "}
                 <span className="text-blue-200">โปร่งใส ตรวจสอบได้</span>
               </h1>
-
-              {/* TRPB + TRON badges inline */}
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur border border-white/20 px-3 py-1">
-                  <span className="text-sm font-bold text-yellow-300">1 TRPB = 1 อาสา</span>
-                </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/20 border border-green-400/30 px-2.5 py-1">
-                  <span className="size-1.5 rounded-full bg-green-400 animate-pulse" />
-                  <span className="text-[11px] font-medium text-green-300">TRON Nile Testnet</span>
-                </span>
-              </div>
-
-              <p className="text-base md:text-lg text-blue-100 leading-snug">
-                เชื่อมต่อ<strong>ผู้ว่าจ้าง</strong>กับ<strong>นักศึกษาช่าง มทร.ล้านนา</strong>
-                ผ่าน Blockchain — ทุกงาน ทุกการประเมิน บันทึกบน TRON
+              <p className="text-[11px] md:text-xs text-blue-200 mt-0.5">
+                SkillChain RMUTL · 1 TRPB = 1 อาสา · TRON Nile Testnet
               </p>
-
-              {/* Primary CTAs */}
-              <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                <Link href="/register" className="flex-1">
-                  <Button
-                    size="lg"
-                    className="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-semibold shadow-lg shadow-amber-500/30 ring-1 ring-amber-300/50 h-11"
-                  >
-                    <Sparkles className="size-5 mr-2" />
-                    เริ่มต้น — สมัคร
-                  </Button>
-                </Link>
-                <Link href="/login" className="flex-1">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full bg-white/10 hover:bg-white/20 text-white border-white/30 h-11"
-                  >
-                    เข้าสู่ระบบ
-                    <ArrowRight className="size-5 ml-2" />
-                  </Button>
-                </Link>
-              </div>
             </div>
 
-            {/* Right: Live Stats grid — compact 3×2 */}
-            <div>
-              <div className="grid grid-cols-3 gap-2">
-                {stats.map((s) => (
-                  <div key={s.label} className="rounded-lg bg-white/10 backdrop-blur p-2.5 text-center">
-                    <s.icon className="size-4 mx-auto mb-0.5 text-blue-200" />
-                    <div className="text-xl md:text-2xl font-bold leading-tight">{s.value}</div>
-                    <div className="text-[10px] text-blue-200 leading-tight">{s.label}</div>
-                  </div>
-                ))}
-              </div>
+            {/* Inline stats (hidden mobile, visible lg+) */}
+            <div className="hidden lg:flex items-center gap-4 text-white/90">
+              {stats.slice(0, 3).map((s) => (
+                <div key={s.label} className="flex items-center gap-1.5">
+                  <s.icon className="size-4 text-blue-200" />
+                  <span className="text-lg font-bold">{s.value}</span>
+                  <span className="text-[11px] text-blue-200">{s.label}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* CTAs */}
+            <div className="flex gap-2">
+              <Link href="/register">
+                <Button
+                  className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-semibold shadow ring-1 ring-amber-300/50 h-9 md:h-10 px-3 md:px-4 text-sm"
+                >
+                  <Sparkles className="size-4 mr-1" />
+                  สมัคร
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button
+                  variant="outline"
+                  className="bg-white/10 hover:bg-white/20 text-white border-white/30 h-9 md:h-10 px-3 md:px-4 text-sm"
+                >
+                  เข้าสู่ระบบ
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
       </header>
+
+      {/* Thin stats strip below hero (mobile + tablet only — lg shows inline above) */}
+      <section className="lg:hidden bg-white border-b">
+        <div className="max-w-6xl mx-auto px-4 py-3">
+          <div className="grid grid-cols-6 gap-2 text-center">
+            {stats.map((s) => (
+              <div key={s.label} className="flex flex-col items-center gap-0.5">
+                <s.icon className={cn("size-4", s.color)} />
+                <span className="text-sm font-bold text-foreground leading-tight">{s.value}</span>
+                <span className="text-[9px] text-muted-foreground leading-tight">{s.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* === Featured Jobs (Top 10 ranked by pay + urgency) === */}
       {featuredJobs.length > 0 && (
