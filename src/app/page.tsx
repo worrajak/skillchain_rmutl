@@ -18,7 +18,6 @@ import {
   Trophy,
   Wrench,
   ArrowRight,
-  Sparkles,
 } from "lucide-react";
 import { getCampusLabel } from "@/types/database";
 import { rankJobs } from "@/lib/job-rank";
@@ -101,50 +100,30 @@ export default async function HomePage() {
             {/* Title block */}
             <div className="flex-1 min-w-[200px]">
               <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight leading-tight">
-                จ้างช่างนักศึกษา{" "}
-                <span className="text-blue-200">โปร่งใส ตรวจสอบได้</span>
+                <span className="block whitespace-nowrap">จ้างช่างนักศึกษา</span>
+                <span className="block whitespace-nowrap text-blue-200">โปร่งใส ตรวจสอบได้</span>
               </h1>
               <p className="text-[11px] md:text-xs text-blue-200 mt-0.5">
                 SkillChain RMUTL · 1 TRPB = 1 อาสา · TRON Nile Testnet
               </p>
             </div>
 
-            {/* Inline stats (hidden mobile, visible lg+) */}
-            <div className="hidden lg:flex items-center gap-4 text-white/90">
-              {stats.slice(0, 3).map((s) => (
+            {/* Inline stats (hidden mobile, visible md+) — ขยายเป็น 6 stats ครบหลังตัด CTAs ออก */}
+            <div className="hidden md:flex items-center gap-3 lg:gap-5 text-white/90">
+              {stats.map((s) => (
                 <div key={s.label} className="flex items-center gap-1.5">
                   <s.icon className="size-4 text-blue-200" />
-                  <span className="text-lg font-bold">{s.value}</span>
-                  <span className="text-[11px] text-blue-200">{s.label}</span>
+                  <span className="text-lg font-bold leading-none">{s.value}</span>
+                  <span className="text-[11px] text-blue-200 leading-none">{s.label}</span>
                 </div>
               ))}
-            </div>
-
-            {/* CTAs */}
-            <div className="flex gap-2">
-              <Link href="/register">
-                <Button
-                  className="bg-amber-400 hover:bg-amber-500 text-slate-900 font-semibold shadow ring-1 ring-amber-300/50 h-9 md:h-10 px-3 md:px-4 text-sm"
-                >
-                  <Sparkles className="size-4 mr-1" />
-                  สมัคร
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button
-                  variant="outline"
-                  className="bg-white/10 hover:bg-white/20 text-white border-white/30 h-9 md:h-10 px-3 md:px-4 text-sm"
-                >
-                  เข้าสู่ระบบ
-                </Button>
-              </Link>
             </div>
           </div>
         </div>
       </header>
 
-      {/* Thin stats strip below hero (mobile + tablet only — lg shows inline above) */}
-      <section className="lg:hidden bg-white border-b">
+      {/* Thin stats strip below hero (mobile only — md+ shows all 6 inline in hero) */}
+      <section className="md:hidden bg-white border-b">
         <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="grid grid-cols-6 gap-2 text-center">
             {stats.map((s) => (
