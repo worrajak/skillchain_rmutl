@@ -16,10 +16,8 @@ import {
   MapPin,
   Star,
   Trophy,
-  Shield,
   Wrench,
   ArrowRight,
-  ScanLine,
   Sparkles,
 } from "lucide-react";
 import { getCampusLabel } from "@/types/database";
@@ -97,39 +95,39 @@ export default async function HomePage() {
           <div className="absolute bottom-10 right-20 size-60 rounded-full border-2 border-white" />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 py-10 md:py-14">
-          {/* Main content — 2 columns */}
-          <div className="grid md:grid-cols-2 gap-10 items-center">
+        <div className="relative max-w-6xl mx-auto px-4 py-6 md:py-8">
+          {/* Main content — 2 columns · compact (half-height vs original) */}
+          <div className="grid md:grid-cols-2 gap-6 md:gap-8 items-center">
             {/* Left: Message */}
-            <div className="space-y-5">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold tracking-tight leading-tight">
+            <div className="space-y-3">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1]">
                 จ้างช่างนักศึกษา
                 <br />
                 <span className="text-blue-200">โปร่งใส ตรวจสอบได้</span>
               </h1>
 
-              {/* TRPB Token Badge */}
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/15 backdrop-blur border border-white/20 px-4 py-2">
-                  <span className="text-lg font-bold text-yellow-300">1 TRPB = 1 อาสา</span>
-                </div>
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-green-500/20 border border-green-400/30 px-3 py-1.5">
-                  <span className="size-2 rounded-full bg-green-400 animate-pulse" />
-                  <span className="text-xs font-medium text-green-300">TRON Nile Testnet</span>
-                </div>
+              {/* TRPB + TRON badges inline */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur border border-white/20 px-3 py-1">
+                  <span className="text-sm font-bold text-yellow-300">1 TRPB = 1 อาสา</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/20 border border-green-400/30 px-2.5 py-1">
+                  <span className="size-1.5 rounded-full bg-green-400 animate-pulse" />
+                  <span className="text-[11px] font-medium text-green-300">TRON Nile Testnet</span>
+                </span>
               </div>
 
-              <p className="text-base text-blue-100 leading-relaxed">
-                SkillChain เชื่อมต่อ<strong>ผู้ว่าจ้าง</strong>กับ<strong>นักศึกษาช่าง มทร.ล้านนา</strong>
-                ผ่านระบบ Blockchain — ทุกงาน ทุกการจ่ายเงิน ทุกการประเมิน บันทึกบน TRON
+              <p className="text-base md:text-lg text-blue-100 leading-snug">
+                เชื่อมต่อ<strong>ผู้ว่าจ้าง</strong>กับ<strong>นักศึกษาช่าง มทร.ล้านนา</strong>
+                ผ่าน Blockchain — ทุกงาน ทุกการประเมิน บันทึกบน TRON
               </p>
 
               {/* Primary CTAs */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-1">
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
                 <Link href="/register" className="flex-1">
                   <Button
                     size="lg"
-                    className="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-semibold shadow-lg shadow-amber-500/30 ring-1 ring-amber-300/50 h-12"
+                    className="w-full bg-amber-400 hover:bg-amber-500 text-slate-900 font-semibold shadow-lg shadow-amber-500/30 ring-1 ring-amber-300/50 h-11"
                   >
                     <Sparkles className="size-5 mr-2" />
                     เริ่มต้น — สมัคร
@@ -139,52 +137,23 @@ export default async function HomePage() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="w-full bg-white/10 hover:bg-white/20 text-white border-white/30 h-12"
+                    className="w-full bg-white/10 hover:bg-white/20 text-white border-white/30 h-11"
                   >
                     เข้าสู่ระบบ
                     <ArrowRight className="size-5 ml-2" />
                   </Button>
                 </Link>
               </div>
-
-              {/* Secondary actions */}
-              <div className="flex items-center gap-4 text-sm text-blue-200 pt-1">
-                <Link href="/verify" className="hover:text-white inline-flex items-center gap-1.5">
-                  <ScanLine className="size-4" />
-                  ตรวจสอบใบรับรอง
-                </Link>
-                <span className="text-blue-300/50">·</span>
-                <Link href="/training" className="hover:text-white inline-flex items-center gap-1.5">
-                  <Award className="size-4" />
-                  หลักสูตรอบรม
-                </Link>
-              </div>
-
-              {/* Key Value Props */}
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                {[
-                  { icon: Shield, text: "Escrow จ่ายเมื่องานเสร็จ" },
-                  { icon: Award, text: "NFT ใบรับรองทักษะ 5 ระดับ" },
-                  { icon: Star, text: "ประเมิน 3 ฝ่าย เฉพาะงาน" },
-                  { icon: Users, text: "ระบบพี่เลี้ยงดูแลน้อง" },
-                ].map((v) => (
-                  <div key={v.text} className="flex items-center gap-2 text-sm text-blue-100">
-                    <v.icon className="size-4 text-blue-300 shrink-0" />
-                    <span>{v.text}</span>
-                  </div>
-                ))}
-              </div>
-
             </div>
 
-            {/* Right: Live Stats grid (jobs moved out to big section below) */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
+            {/* Right: Live Stats grid — compact 3×2 */}
+            <div>
+              <div className="grid grid-cols-3 gap-2">
                 {stats.map((s) => (
-                  <div key={s.label} className="rounded-xl bg-white/10 backdrop-blur p-3 text-center">
-                    <s.icon className="size-5 mx-auto mb-1 text-blue-200" />
-                    <div className="text-2xl font-bold">{s.value}</div>
-                    <div className="text-[11px] text-blue-200">{s.label}</div>
+                  <div key={s.label} className="rounded-lg bg-white/10 backdrop-blur p-2.5 text-center">
+                    <s.icon className="size-4 mx-auto mb-0.5 text-blue-200" />
+                    <div className="text-xl md:text-2xl font-bold leading-tight">{s.value}</div>
+                    <div className="text-[10px] text-blue-200 leading-tight">{s.label}</div>
                   </div>
                 ))}
               </div>
