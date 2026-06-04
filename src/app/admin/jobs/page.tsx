@@ -16,6 +16,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -85,6 +86,7 @@ const FILTERS = [
   { key: "in_progress", label: "⚙️ กำลังทำ", statuses: ["ASSIGNED", "CONFIRMED", "IN_PROGRESS"] },
   { key: "submitted", label: "🟡 รอตรวจ", statuses: ["SUBMITTED"] },
   { key: "pay", label: "💰 รอจ่ายเงิน", statuses: [] }, // computed
+  { key: "unsupervised", label: "🆘 ไม่มีผู้กำกับ", statuses: [] }, // computed
   { key: "done", label: "✅ เสร็จ", statuses: ["COMPLETED", "CLOSED"] },
 ];
 
@@ -136,10 +138,17 @@ function unwrap<T>(v: T | T[] | null | undefined): T | null {
 export default function AdminJobsPage() {
   const supabase = createClient();
 
+  // Allow drill-down from dashboard via ?filter=xxx
+  const params = useSearchParams();
+  const initialFilter = (() => {
+    const k = params?.get("filter") ?? "all";
+    return FILTERS.some((f) => f.key === k) ? k : "all";
+  })();
+
   const [jobs, setJobs] = useState<Job[]>([]);
   const [pendingApps, setPendingApps] = useState<Record<string, PendingApplication[]>>({});
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState(initialFilter);
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState<string | null>(null); // jobId-action
   const [editJob, setEditJob] = useState<Job | null>(null);
@@ -189,6 +198,12 @@ export default function AdminJobsPage() {
           Number(j.pay_amount ?? 0) > 0 &&
           !j.escrow_tx,
       );
+    } else if (filter === "unsupervised") {
+      list = list.filter(
+        (j) =>
+          !j.approved_by_staff &&
+          ["OPEN", "ASSIGNED", "CONFIRMED", "IN_PROGRESS"].includes(j.status),
+      );
     } else if (filter !== "all") {
       const target = FILTERS.find((f) => f.key === filter);
       if (target) list = list.filter((j) => target.statuses.includes(j.status));
@@ -215,8 +230,13 @@ export default function AdminJobsPage() {
         Number(j.pay_amount ?? 0) > 0 &&
         !j.escrow_tx,
     ).length;
+    map.unsupervised = jobs.filter(
+      (j) =>
+        !j.approved_by_staff &&
+        ["OPEN", "ASSIGNED", "CONFIRMED", "IN_PROGRESS"].includes(j.status),
+    ).length;
     for (const f of FILTERS) {
-      if (["all", "applications", "pay"].includes(f.key)) continue;
+      if (["all", "applications", "pay", "unsupervised"].includes(f.key)) continue;
       map[f.key] = jobs.filter((j) => f.statuses.includes(j.status)).length;
     }
     return map;

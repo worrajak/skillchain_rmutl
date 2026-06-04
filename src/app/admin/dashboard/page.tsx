@@ -301,7 +301,7 @@ export default function AdminDashboardPage() {
               <StuckRow icon="👥" label="คำขอ นศ. รอ approve" value={c.pendingApps} href="/admin/jobs?filter=applications" />
               <StuckRow icon="🟡" label="ส่งงานแล้ว รอตรวจ" value={c.awaitingConfirm} href="/admin/jobs?filter=submitted" />
               <StuckRow icon="💰" label="เสร็จแล้ว รอจ่าย TRPB" value={c.unpaidEscrow} href="/admin/jobs?filter=pay" />
-              <StuckRow icon="🆘" label="ไม่มีผู้กำกับ" value={c.unsupervised} href="/admin/jobs" />
+              <StuckRow icon="🆘" label="ไม่มีผู้กำกับ" value={c.unsupervised} href="/admin/jobs?filter=unsupervised" />
               <StuckRow icon="👤" label="บัญชีรออนุมัติ" value={c.pendingUsers} href="/admin/approvals" />
               <StuckRow icon="⚠️" label="ข้อพิพาทเปิดอยู่" value={c.openDisputes} href="/admin/disputes" />
             </div>
