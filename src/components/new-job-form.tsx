@@ -103,6 +103,13 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
     const perPerson = parseFloat(payPerPerson) || 0;
     const grossPerPerson = isActivity ? Math.ceil(perPerson / 0.9) : 0;
 
+    // ───────────── Staff-as-creator shortcut ─────────────
+    // ถ้าผู้สร้างเป็น staff/admin/teacher → เซ็ตเป็นผู้กำกับงานนั้นเลย
+    // และข้าม PENDING_REVIEW เพราะไม่ต้องให้ตัวเอง approve งานตัวเอง
+    const isStaffCreator = userRole && [
+      "project_staff", "rmutl_staff", "admin", "superadmin", "teacher",
+    ].includes(userRole);
+
     const payload = {
       title,
       description,
@@ -117,7 +124,10 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
       employer_id: userId,
       is_mentorship: isMentorship,
       required_workers: Math.max(1, Math.min(cap, requiredWorkers)),
-      status: "PENDING_REVIEW",
+      // Staff-created → OPEN ทันที + approved_by_staff = ตัวเอง
+      // Employer-created → PENDING_REVIEW (รอ staff อนุมัติ) + approved_by_staff null
+      status: isStaffCreator ? "OPEN" : "PENDING_REVIEW",
+      approved_by_staff: isStaffCreator ? userId : null,
       // Activity-specific fields
       engagement_mode: engagementMode,
       pay_per_person: isActivity ? grossPerPerson : null,
@@ -142,7 +152,11 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
         return;
       }
 
-      toast.success("ลงงานสำเร็จ! — รอคณะทำงานพิจารณาค่าตอบแทน");
+      toast.success(
+        isStaffCreator
+          ? "ลงงานสำเร็จ! — เปิดรับ นศ. ทันที (คุณเป็นผู้กำกับงาน)"
+          : "ลงงานสำเร็จ! — รอคณะทำงานพิจารณาค่าตอบแทน"
+      );
       setCreatedJobId(newJob?.id ?? null);
       setSuccess(true);
     } catch (e) {
