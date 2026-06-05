@@ -36,6 +36,7 @@ const navItems = [
   { href: "/admin/reviews", label: "การประเมิน", icon: Star },
   { href: "/admin/tier", label: "Student Tier", icon: Shield },
   { href: "/admin/fees", label: "ค่าธรรมเนียม TRPB", icon: Star },
+  { href: "/admin/payments", label: "💝 บริจาค / Top-up", icon: Coins },
   { href: "/admin/trpb", label: "TRPB Pool", icon: Coins },
   { href: "/admin/wallets", label: "Wallets (TRON)", icon: Wallet },
   { href: "/admin/reports", label: "รายงาน", icon: BarChart3 },

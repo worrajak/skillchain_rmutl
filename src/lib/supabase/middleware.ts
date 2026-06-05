@@ -48,7 +48,10 @@ export async function updateSession(request: NextRequest) {
     || request.nextUrl.pathname.startsWith("/guides")
     || request.nextUrl.pathname.startsWith("/api/qr")
     // Cron endpoints — auth via CRON_SECRET inside the route handler
-    || request.nextUrl.pathname.startsWith("/api/cron/");
+    || request.nextUrl.pathname.startsWith("/api/cron/")
+    // Payments: anonymous donation supported · GET admin queue is gated inside the route
+    || request.nextUrl.pathname.startsWith("/api/payments")
+    || request.nextUrl.pathname.startsWith("/donate");
 
   if (!isAuthenticated && !isPublic) {
     const url = request.nextUrl.clone();
