@@ -9,7 +9,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-display);
+  --font-display: var(--font-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,73 +49,94 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ── SkillChain palette ─────────────────────────────────────────────
+   pine   = งานช่าง · ป่าเหนือ  → primary
+   brass  = ทองเหลือง เครื่องมือ → accent (ใช้เท่าที่จำเป็น)
+   paper  = พื้นอุ่นเจือเขียว     → background
+   ตั้งชื่อ token ตาม shadcn เดิม เพื่อให้ component ทุกตัวรับสีใหม่เอง
+   ──────────────────────────────────────────────────────────────── */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: oklch(0.968 0.005 120);
+  --foreground: oklch(0.19 0.008 165);
+  --card: oklch(0.995 0.002 120);
+  --card-foreground: oklch(0.19 0.008 165);
+  --popover: oklch(0.995 0.002 120);
+  --popover-foreground: oklch(0.19 0.008 165);
+  --primary: oklch(0.33 0.075 162);
+  --primary-foreground: oklch(0.98 0.004 120);
+  --secondary: oklch(0.935 0.008 120);
+  --secondary-foreground: oklch(0.33 0.075 162);
+  --muted: oklch(0.935 0.008 120);
+  --muted-foreground: oklch(0.5 0.012 160);
+  --accent: oklch(0.93 0.045 85);
+  --accent-foreground: oklch(0.34 0.07 70);
+  --destructive: oklch(0.51 0.15 28);
+  --border: oklch(0.875 0.008 120);
+  --input: oklch(0.875 0.008 120);
+  --ring: oklch(0.33 0.075 162);
+  --chart-1: oklch(0.33 0.075 162);
+  --chart-2: oklch(0.66 0.115 75);
+  --chart-3: oklch(0.52 0.08 245);
+  --chart-4: oklch(0.58 0.09 162);
+  --chart-5: oklch(0.44 0.05 200);
+  --radius: 0.5rem;
+  --sidebar: oklch(0.948 0.008 120);
+  --sidebar-foreground: oklch(0.19 0.008 165);
+  --sidebar-primary: oklch(0.33 0.075 162);
+  --sidebar-primary-foreground: oklch(0.98 0.004 120);
+  --sidebar-accent: oklch(0.93 0.045 85);
+  --sidebar-accent-foreground: oklch(0.34 0.07 70);
+  --sidebar-border: oklch(0.875 0.008 120);
+  --sidebar-ring: oklch(0.33 0.075 162);
+
+  /* brand tokens นอกชุด shadcn — ใช้ตรงเมื่อจำเป็น */
+  --brand-pine: oklch(0.33 0.075 162);
+  --brand-pine-soft: oklch(0.44 0.08 162);
+  --brand-brass: oklch(0.66 0.115 75);
+  --brand-brass-soft: oklch(0.93 0.045 85);
+  --brand-success: oklch(0.55 0.09 150);
+  --brand-info: oklch(0.52 0.08 245);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0.165 0.008 165);
+  --foreground: oklch(0.94 0.006 120);
+  --card: oklch(0.215 0.01 165);
+  --card-foreground: oklch(0.94 0.006 120);
+  --popover: oklch(0.215 0.01 165);
+  --popover-foreground: oklch(0.94 0.006 120);
+  --primary: oklch(0.72 0.105 162);
+  --primary-foreground: oklch(0.17 0.012 165);
+  --secondary: oklch(0.27 0.012 165);
+  --secondary-foreground: oklch(0.94 0.006 120);
+  --muted: oklch(0.27 0.012 165);
+  --muted-foreground: oklch(0.68 0.014 150);
+  --accent: oklch(0.3 0.035 78);
+  --accent-foreground: oklch(0.84 0.09 82);
+  --destructive: oklch(0.68 0.14 28);
+  --border: oklch(1 0 0 / 12%);
+  --input: oklch(1 0 0 / 16%);
+  --ring: oklch(0.72 0.105 162);
+  --chart-1: oklch(0.72 0.105 162);
+  --chart-2: oklch(0.8 0.1 82);
+  --chart-3: oklch(0.7 0.09 245);
+  --chart-4: oklch(0.6 0.09 162);
+  --chart-5: oklch(0.62 0.05 200);
+  --sidebar: oklch(0.215 0.01 165);
+  --sidebar-foreground: oklch(0.94 0.006 120);
+  --sidebar-primary: oklch(0.72 0.105 162);
+  --sidebar-primary-foreground: oklch(0.17 0.012 165);
+  --sidebar-accent: oklch(0.3 0.035 78);
+  --sidebar-accent-foreground: oklch(0.84 0.09 82);
+  --sidebar-border: oklch(1 0 0 / 12%);
+  --sidebar-ring: oklch(0.72 0.105 162);
+
+  --brand-pine: oklch(0.72 0.105 162);
+  --brand-pine-soft: oklch(0.8 0.09 162);
+  --brand-brass: oklch(0.8 0.1 82);
+  --brand-brass-soft: oklch(0.3 0.035 78);
+  --brand-success: oklch(0.75 0.1 150);
+  --brand-info: oklch(0.7 0.09 245);
 }
 
 @layer base {
@@ -126,5 +148,14 @@
   }
   html {
     @apply font-sans;
+  }
+  /* หัวเรื่องใช้ Noto Serif Thai · ตัวไทยไม่มี italic จริง จึงไม่ใช้ */
+  h1, h2, h3 {
+    font-family: var(--font-display), Georgia, serif;
+    text-wrap: balance;
+  }
+  /* ตัวเลขในตาราง/สถิติเรียงตรงคอลัมน์ */
+  .tabular {
+    font-variant-numeric: tabular-nums;
   }
 }
