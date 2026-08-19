@@ -9,9 +9,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger,
 } from "@/components/ui/select";
 import { AlertTriangle, CheckCircle, Home, Camera } from "lucide-react";
+import {
+  JOB_TYPE_LABELS, getJobTypeLabel,
+  JOB_CATEGORY_LABELS, getJobCategoryLabel,
+  CAMPUS_LABELS, getCampusLabel,
+} from "@/types/database";
 import { AIJobEstimator } from "@/components/ai-job-estimator";
 import { toast } from "sonner";
 import { JOB_POSTER_ROLES } from "@/types/database";
@@ -324,24 +329,22 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
               <div className="space-y-2">
                 <Label className="text-foreground">ประเภทงาน</Label>
                 <Select value={jobType} onValueChange={(v) => v && setJobType(v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>{getJobTypeLabel(jobType)}</SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PAID">งานจ้าง (PAID)</SelectItem>
-                    <SelectItem value="VOLUNTEER">จิตอาสา (VOLUNTEER)</SelectItem>
-                    <SelectItem value="TRAINING">ฝึกทักษะ (TRAINING)</SelectItem>
-                    <SelectItem value="EXEMPTED">ยกเว้นค่าบริการ (EXEMPTED)</SelectItem>
+                    {Object.entries(JOB_TYPE_LABELS).map(([v, label]) => (
+                      <SelectItem key={v} value={v}>{label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground">หมวดงาน</Label>
                 <Select value={jobCategory} onValueChange={(v) => v && setJobCategory(v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>{getJobCategoryLabel(jobCategory)}</SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="electrical">ไฟฟ้า</SelectItem>
-                    <SelectItem value="hvac">แอร์/เครื่องเย็น</SelectItem>
-                    <SelectItem value="automotive">ยานยนต์</SelectItem>
-                    <SelectItem value="general">ทั่วไป</SelectItem>
+                    {Object.entries(JOB_CATEGORY_LABELS).map(([v, label]) => (
+                      <SelectItem key={v} value={v}>{label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -360,15 +363,13 @@ export default function NewJobForm({ homeUrl = "/" }: Props) {
               <div className="space-y-2">
                 <Label className="text-foreground">วิทยาเขต</Label>
                 <Select value={campus} onValueChange={(v) => v && setCampus(v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>{getCampusLabel(campus)}</SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="huaykaew">เชียงใหม่ (ห้วยแก้ว)</SelectItem>
-                    <SelectItem value="doisaket">เชียงใหม่ (ดอยสะเก็ด)</SelectItem>
-                    <SelectItem value="chiangrai">เชียงราย</SelectItem>
-                    <SelectItem value="lampang">ลำปาง</SelectItem>
-                    <SelectItem value="tak">ตาก</SelectItem>
-                    <SelectItem value="nan">น่าน</SelectItem>
-                    <SelectItem value="phitsanulok">พิษณุโลก</SelectItem>
+                    {Object.entries(CAMPUS_LABELS)
+                      .filter(([v]) => v !== "external")
+                      .map(([v, label]) => (
+                        <SelectItem key={v} value={v}>{label}</SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>

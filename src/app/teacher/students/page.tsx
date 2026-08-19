@@ -216,7 +216,9 @@ export default function TeacherStudentsPage() {
               <div className="space-y-2">
                 <Label className="text-foreground">เลื่อนเป็นระดับ</Label>
                 <Select value={newLevel} onValueChange={(v) => v && setNewLevel(v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    {LEVEL_CONFIG[newLevel as keyof typeof LEVEL_CONFIG]?.label ?? "เลือกระดับ"}
+                  </SelectTrigger>
                   <SelectContent>
                     {Object.entries(LEVEL_CONFIG).filter(([k]) => k > selected.current_level).map(([k, v]) => (
                       <SelectItem key={k} value={k}>{v.label}</SelectItem>
@@ -228,7 +230,9 @@ export default function TeacherStudentsPage() {
               <div className="space-y-2">
                 <Label className="text-foreground">รับรองโดย</Label>
                 <Select value={certBy} onValueChange={(v) => v && setCertBy(v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    {CERTIFYING.find((c) => c.value === certBy)?.label ?? "เลือกผู้รับรอง"}
+                  </SelectTrigger>
                   <SelectContent>
                     {CERTIFYING.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                   </SelectContent>

@@ -12,7 +12,6 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
 import {
   GraduationCap,
@@ -255,7 +254,9 @@ export default function AssessPage() {
                     onValueChange={(v) => v && setSelectedEnrollment(v)}
                   >
                     <SelectTrigger className="max-w-md">
-                      <SelectValue />
+                      {currentEnrollment
+                        ? `${currentEnrollment.trainee?.name ?? "—"} (${currentEnrollment.trainee?.email ?? ""})`
+                        : "เลือกผู้เรียน"}
                     </SelectTrigger>
                     <SelectContent>
                       {course.enrollments.map((e) => (

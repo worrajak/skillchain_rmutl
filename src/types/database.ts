@@ -243,6 +243,54 @@ export function getCampusLabel(campus: string): string {
   return CAMPUS_LABELS[campus] ?? campus;
 }
 
+export const JOB_TYPE_LABELS: Record<string, string> = {
+  PAID: "งานจ้าง",
+  VOLUNTEER: "จิตอาสา",
+  TRAINING: "ฝึกทักษะ",
+  EXEMPTED: "ยกเว้นค่าบริการ",
+};
+
+export function getJobTypeLabel(type: string): string {
+  return JOB_TYPE_LABELS[type] ?? type;
+}
+
+export const JOB_CATEGORY_LABELS: Record<string, string> = {
+  electrical: "ไฟฟ้า",
+  hvac: "แอร์/เครื่องเย็น",
+  automotive: "ยานยนต์",
+  general: "ทั่วไป",
+};
+
+export function getJobCategoryLabel(category: string): string {
+  return JOB_CATEGORY_LABELS[category] ?? category;
+}
+
+export const USER_ROLE_LABELS: Record<string, string> = {
+  student: "นักศึกษา",
+  employer: "ผู้ว่าจ้าง",
+  teacher: "อาจารย์",
+  project_staff: "คณะทำงานใต้ร่มฯ",
+  rmutl_staff: "คณะทำงาน มทร.",
+  donor: "ผู้บริจาค",
+  admin: "แอดมิน",
+  superadmin: "Super Admin",
+};
+
+export function getUserRoleLabel(role: string): string {
+  return USER_ROLE_LABELS[role] ?? role;
+}
+
+export const DISPUTE_RESOLUTION_LABELS: Record<string, string> = {
+  RESOLVED_STUDENT_FAVOR: "ฝ่าย นศ. ชนะ",
+  RESOLVED_EMPLOYER_FAVOR: "ฝ่ายผู้จ้าง ชนะ",
+  RESOLVED_COMPROMISE: "ประนีประนอม",
+  ESCALATED: "ส่งต่อผู้บริหาร",
+};
+
+export function getDisputeResolutionLabel(status: string): string {
+  return DISPUTE_RESOLUTION_LABELS[status] ?? status;
+}
+
 export type DonorTier = "friend" | "supporter" | "patron" | "benefactor";
 
 // --- Main Entities ---

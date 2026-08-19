@@ -15,6 +15,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Trash2, GraduationCap, Loader2 } from "lucide-react";
+import { PROVIDER_LABELS } from "@/types/database";
+
+// หมวดหมู่หลักสูตร — ใช้คำว่า "เครื่องปรับอากาศ" ต่างจากหมวดงานซ่อม
+// (JOB_CATEGORY_LABELS ใช้ "แอร์/เครื่องเย็น") จึงแยก map กัน
+const COURSE_CATEGORY_LABELS: Record<string, string> = {
+  electrical: "ไฟฟ้า",
+  hvac: "เครื่องปรับอากาศ",
+  automotive: "ยานยนต์",
+  general: "ทั่วไป",
+};
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -165,13 +175,12 @@ export default function NewCoursePage() {
                   <Label className="text-foreground">หมวดหมู่</Label>
                   <Select value={category} onValueChange={(v) => v && setCategory(v)}>
                     <SelectTrigger>
-                      <SelectValue />
+                      {COURSE_CATEGORY_LABELS[category] ?? "เลือกหมวดหมู่"}
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="electrical">ไฟฟ้า</SelectItem>
-                      <SelectItem value="hvac">เครื่องปรับอากาศ</SelectItem>
-                      <SelectItem value="automotive">ยานยนต์</SelectItem>
-                      <SelectItem value="general">ทั่วไป</SelectItem>
+                      {Object.entries(COURSE_CATEGORY_LABELS).map(([v, label]) => (
+                        <SelectItem key={v} value={v}>{label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -179,14 +188,12 @@ export default function NewCoursePage() {
                   <Label className="text-foreground">ผู้จัดหลักสูตร</Label>
                   <Select value={provider} onValueChange={(v) => v && setProvider(v)}>
                     <SelectTrigger>
-                      <SelectValue />
+                      {PROVIDER_LABELS[provider as keyof typeof PROVIDER_LABELS] ?? "เลือกผู้จัดหลักสูตร"}
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="RMUTL_TEACHER">อาจารย์ มทร.ล้านนา</SelectItem>
-                      <SelectItem value="PROJECT_BARAMEE">ทีมใต้ร่มพระบารมี</SelectItem>
-                      <SelectItem value="DSD_PARTNER">สพร.</SelectItem>
-                      <SelectItem value="TPQI_PARTNER">สคช.</SelectItem>
-                      <SelectItem value="EXTERNAL">วิทยากรภายนอก</SelectItem>
+                      {Object.entries(PROVIDER_LABELS).map(([v, label]) => (
+                        <SelectItem key={v} value={v}>{label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

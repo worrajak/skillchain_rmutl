@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { AlertTriangle, CheckCircle, Clock, Gavel, Shield } from "lucide-react";
+import { DISPUTE_RESOLUTION_LABELS, getDisputeResolutionLabel } from "@/types/database";
 import { toast } from "sonner";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -155,12 +156,11 @@ export default function AdminDisputesPage() {
               <div className="space-y-2">
                 <Label className="text-foreground">ผลการตัดสิน</Label>
                 <Select value={resolveStatus} onValueChange={(v) => v && setResolveStatus(v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>{getDisputeResolutionLabel(resolveStatus)}</SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="RESOLVED_STUDENT_FAVOR">ฝ่าย นศ. ชนะ</SelectItem>
-                    <SelectItem value="RESOLVED_EMPLOYER_FAVOR">ฝ่ายผู้จ้าง ชนะ</SelectItem>
-                    <SelectItem value="RESOLVED_COMPROMISE">ประนีประนอม</SelectItem>
-                    <SelectItem value="ESCALATED">ส่งต่อผู้บริหาร</SelectItem>
+                    {Object.entries(DISPUTE_RESOLUTION_LABELS).map(([v, label]) => (
+                      <SelectItem key={v} value={v}>{label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

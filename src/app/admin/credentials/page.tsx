@@ -239,7 +239,9 @@ export default function AdminCredentialsPage() {
             <div className="space-y-2">
               <Label className="text-foreground">ระดับ Credential</Label>
               <Select value={form.credential_level} onValueChange={(v) => v && setForm({ ...form, credential_level: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  {LEVEL_LABELS[form.credential_level as keyof typeof LEVEL_LABELS]?.label ?? "เลือกระดับ"}
+                </SelectTrigger>
                 <SelectContent>
                   {Object.entries(LEVEL_LABELS).map(([k, v]) => (
                     <SelectItem key={k} value={k}>{v.label}</SelectItem>
@@ -250,7 +252,9 @@ export default function AdminCredentialsPage() {
             <div className="space-y-2">
               <Label className="text-foreground">รับรองโดย</Label>
               <Select value={form.certified_by} onValueChange={(v) => v && setForm({ ...form, certified_by: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  {CERTIFYING_LABELS[form.certified_by as keyof typeof CERTIFYING_LABELS] ?? "เลือกผู้รับรอง"}
+                </SelectTrigger>
                 <SelectContent>
                   {Object.entries(CERTIFYING_LABELS).map(([k, v]) => (
                     <SelectItem key={k} value={k}>{v}</SelectItem>
