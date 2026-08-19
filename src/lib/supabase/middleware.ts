@@ -49,6 +49,9 @@ export async function updateSession(request: NextRequest) {
     || request.nextUrl.pathname.startsWith("/api/qr")
     // Cron endpoints — auth via CRON_SECRET inside the route handler
     || request.nextUrl.pathname.startsWith("/api/cron/")
+    // Telegram health check — same CRON_SECRET gate inside the route.
+    // ต้องเรียกได้โดยไม่ต้อง login เพราะใช้ตรวจตอนระบบมีปัญหา
+    || request.nextUrl.pathname === "/api/telegram/test"
     // Payments: anonymous donation supported · GET admin queue is gated inside the route
     || request.nextUrl.pathname.startsWith("/api/payments")
     || request.nextUrl.pathname.startsWith("/donate");
