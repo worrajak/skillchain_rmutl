@@ -60,20 +60,6 @@ const ROLES = [
   { value: "superadmin", label: "Super Admin" },
 ];
 
-/**
- * สิทธิ์ default ตาม role — ต้องตรงกับ trigger on_auth_user_created
- * ใน supabase-auth-trigger.sql เพราะ trigger ตั้งค่าให้เฉพาะตอนสมัคร
- * เมื่อแอดมินเปลี่ยน role ภายหลัง ต้องตั้ง flag ใหม่ที่นี่ด้วย
- */
-function defaultPermissions(role: string) {
-  return {
-    can_post_jobs: ["employer", "teacher", "project_staff", "rmutl_staff", "admin", "superadmin"].includes(role),
-    can_evaluate: ["teacher", "project_staff", "rmutl_staff", "admin", "superadmin"].includes(role),
-    can_approve_users: ["admin", "superadmin"].includes(role),
-    can_manage_credentials: ["teacher", "project_staff", "admin", "superadmin"].includes(role),
-  };
-}
-
 const CAMPUSES = [
   { value: "huaykaew", label: "เชียงใหม่ (ห้วยแก้ว)" },
   { value: "doisaket", label: "เชียงใหม่ (ดอยสะเก็ด)" },
@@ -132,9 +118,6 @@ export default function AdminUsersPage() {
         campus: editUser.campus,
         is_active: editUser.is_active,
         job_quota: u.job_quota ?? 0,
-        // ตั้งสิทธิ์ใหม่เฉพาะเมื่อ role เปลี่ยน — ถ้าไม่เปลี่ยน ต้องไม่ทับ
-        // สิทธิ์ที่แอดมินปรับเองไว้ในหน้า /admin/permissions
-        ...(roleChanged ? defaultPermissions(editUser.role) : {}),
       })
       .eq("id", editUser.id);
 
@@ -143,7 +126,7 @@ export default function AdminUsersPage() {
     } else {
       toast.success(
         roleChanged
-          ? `อัปเดตสำเร็จ — ตั้งสิทธิ์ตามบทบาท ${ROLES.find((r) => r.value === editUser.role)?.label ?? editUser.role} ให้แล้ว`
+          ? `อัปเดตสำเร็จ — สิทธิ์เปลี่ยนตามบทบาท ${ROLES.find((r) => r.value === editUser.role)?.label ?? editUser.role} แล้ว`
           : "อัปเดตสำเร็จ"
       );
       setEditOpen(false);
@@ -361,9 +344,9 @@ export default function AdminUsersPage() {
                 </Select>
                 {editUser.role !== editUserOriginalRole && (
                   <p className="text-[0.8rem] text-muted-foreground">
-                    เมื่อบันทึก สิทธิ์จะถูกตั้งใหม่ตามบทบาท
-                    {" "}{ROLES.find((r) => r.value === editUser.role)?.label} —
-                    สิทธิ์ที่เคยปรับเองไว้จะถูกแทนที่
+                    เมื่อบันทึก ผู้ใช้จะได้สิทธิ์ตามบทบาท
+                    {" "}{ROLES.find((r) => r.value === editUser.role)?.label} ทันที ·
+                    สิทธิ์ที่ปรับเองไว้รายคนในหน้าจัดการสิทธิ์ยังคงอยู่
                   </p>
                 )}
               </div>
