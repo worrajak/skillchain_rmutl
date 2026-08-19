@@ -15,7 +15,7 @@
  *   👀 ผู้ว่าจ้าง / 👀 คณะทำงาน / 👀 นักศึกษา — so admin knows whose mailbox is blocked.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -136,6 +136,14 @@ function unwrap<T>(v: T | T[] | null | undefined): T | null {
 }
 
 export default function AdminJobsPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-20"><div className="animate-spin size-8 border-4 border-blue-500 border-t-transparent rounded-full" /></div>}>
+      <AdminJobsContent />
+    </Suspense>
+  );
+}
+
+function AdminJobsContent() {
   const supabase = createClient();
 
   // Allow drill-down from dashboard via ?filter=xxx
