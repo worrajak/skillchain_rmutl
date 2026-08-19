@@ -62,6 +62,7 @@ export default async function HomePage() {
       .from("skc_jobs")
       .select("id, title, type, job_category, location, pay_amount, deadline, required_workers, employer:skc_users!skc_jobs_employer_id_fkey(name)")
       .eq("status", "OPEN")
+      .or(`deadline.is.null,deadline.gte.${new Date().toISOString()}`)
       .order("created_at", { ascending: false })
       .limit(20),
     supabase

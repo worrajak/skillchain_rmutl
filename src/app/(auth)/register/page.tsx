@@ -32,6 +32,16 @@ const ROLES = [
   { value: "donor", label: "ผู้บริจาค" },
 ];
 
+const CAMPUSES = [
+  { value: "huaykaew", label: "เชียงใหม่ (ห้วยแก้ว)" },
+  { value: "doisaket", label: "เชียงใหม่ (ดอยสะเก็ด)" },
+  { value: "chiangrai", label: "เชียงราย" },
+  { value: "lampang", label: "ลำปาง" },
+  { value: "tak", label: "ตาก" },
+  { value: "nan", label: "น่าน" },
+  { value: "phitsanulok", label: "พิษณุโลก" },
+];
+
 export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -163,7 +173,9 @@ export default function RegisterPage() {
               <div className="space-y-2">
                 <Label className="text-foreground">บทบาท</Label>
                 <Select value={role} onValueChange={(v) => v && setRole(v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    {ROLES.find((r) => r.value === role)?.label ?? "เลือกบทบาท"}
+                  </SelectTrigger>
                   <SelectContent>
                     {ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
                   </SelectContent>
@@ -172,15 +184,11 @@ export default function RegisterPage() {
               <div className="space-y-2">
                 <Label className="text-foreground">วิทยาเขต</Label>
                 <Select value={campus} onValueChange={(v) => v && setCampus(v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    {CAMPUSES.find((c) => c.value === campus)?.label ?? "เลือกวิทยาเขต"}
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="huaykaew">เชียงใหม่ (ห้วยแก้ว)</SelectItem>
-                    <SelectItem value="doisaket">เชียงใหม่ (ดอยสะเก็ด)</SelectItem>
-                    <SelectItem value="chiangrai">เชียงราย</SelectItem>
-                    <SelectItem value="lampang">ลำปาง</SelectItem>
-                    <SelectItem value="tak">ตาก</SelectItem>
-                    <SelectItem value="nan">น่าน</SelectItem>
-                    <SelectItem value="phitsanulok">พิษณุโลก</SelectItem>
+                    {CAMPUSES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -252,12 +260,18 @@ export default function RegisterPage() {
 
             {error && <p className="text-sm text-red-600">{error}</p>}
 
-            <Button type="submit" className="w-full" disabled={loading || !pdpaAccepted}>
+            <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "กำลังลงทะเบียน..." : "ลงทะเบียน"}
             </Button>
 
-            <p className="text-[11px] text-center text-muted-foreground">
-              บัญชีจะต้องได้รับการยืนยันจากผู้ดูแลก่อนจึงจะใช้งานได้
+            {!pdpaAccepted && (
+              <p className="text-[0.72rem] text-center text-muted-foreground">
+                ติ๊กยอมรับนโยบายความเป็นส่วนตัวด้านบนก่อนจึงจะลงทะเบียนได้
+              </p>
+            )}
+
+            <p className="text-[0.68rem] text-center text-muted-foreground">
+              ผู้ดูแลจะตรวจสอบและยืนยันบัญชีภายใน 24 ชั่วโมง — คุณจะได้รับอีเมลแจ้งเมื่อพร้อมใช้งาน
             </p>
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
