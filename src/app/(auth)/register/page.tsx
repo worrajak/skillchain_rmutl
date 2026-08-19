@@ -121,6 +121,14 @@ function RegisterWizard() {
   const pwChecks = passwordChecks(password);
   const pwOk = pwChecks.every((c) => c.ok);
 
+  /** ล้าง error ทันทีที่ผู้ใช้เริ่มแก้ ไม่ให้ข้อความค้างหลังแก้เสร็จแล้ว */
+  function edit<T>(set: (v: T) => void) {
+    return (v: T) => {
+      setError("");
+      set(v);
+    };
+  }
+
   /** ตรวจเฉพาะขั้นปัจจุบัน — คืน error string ถ้าไปต่อไม่ได้ */
   function validateStep(s: number): string {
     if (s === 0) {
@@ -316,7 +324,7 @@ function RegisterWizard() {
                   <button
                     key={r.value}
                     type="button"
-                    onClick={() => setRole(r.value)}
+                    onClick={() => edit(setRole)(r.value)}
                     aria-pressed={role === r.value}
                     className={cn(
                       "rounded-lg border-2 p-4 text-left transition-colors",
@@ -336,7 +344,7 @@ function RegisterWizard() {
 
               <div className="space-y-2">
                 <Label>วิทยาเขต</Label>
-                <Select value={campus} onValueChange={(v) => v && setCampus(v)}>
+                <Select value={campus} onValueChange={(v) => v && edit(setCampus)(v)}>
                   <SelectTrigger className="w-full">
                     {CAMPUSES.find((c) => c.value === campus)?.label ?? "เลือกวิทยาเขต"}
                   </SelectTrigger>
@@ -361,7 +369,7 @@ function RegisterWizard() {
                   id="reg-name"
                   placeholder="เช่น สมชาย ใจดี"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => edit(setName)(e.target.value)}
                 />
               </div>
 
@@ -372,7 +380,7 @@ function RegisterWizard() {
                   type="email"
                   placeholder="เช่น somchai@rmutl.ac.th"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => edit(setEmail)(e.target.value)}
                 />
                 {email.trim() !== "" && (
                   <p
@@ -394,7 +402,7 @@ function RegisterWizard() {
                   id="reg-password"
                   type="password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => edit(setPassword)(e.target.value)}
                 />
                 <ul className="space-y-1 pt-1">
                   {pwChecks.map((c) => (
