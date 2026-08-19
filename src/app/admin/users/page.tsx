@@ -60,6 +60,20 @@ const ROLES = [
   { value: "superadmin", label: "Super Admin" },
 ];
 
+/**
+ * สิทธิ์ default ตาม role — ต้องตรงกับ trigger on_auth_user_created
+ * ใน supabase-auth-trigger.sql เพราะ trigger ตั้งค่าให้เฉพาะตอนสมัคร
+ * เมื่อแอดมินเปลี่ยน role ภายหลัง ต้องตั้ง flag ใหม่ที่นี่ด้วย
+ */
+function defaultPermissions(role: string) {
+  return {
+    can_post_jobs: ["employer", "teacher", "project_staff", "rmutl_staff", "admin", "superadmin"].includes(role),
+    can_evaluate: ["teacher", "project_staff", "rmutl_staff", "admin", "superadmin"].includes(role),
+    can_approve_users: ["admin", "superadmin"].includes(role),
+    can_manage_credentials: ["teacher", "project_staff", "admin", "superadmin"].includes(role),
+  };
+}
+
 const CAMPUSES = [
   { value: "huaykaew", label: "เชียงใหม่ (ห้วยแก้ว)" },
   { value: "doisaket", label: "เชียงใหม่ (ดอยสะเก็ด)" },
@@ -77,6 +91,8 @@ export default function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [editUser, setEditUser] = useState<User | null>(null);
+  // role ตอนเปิด dialog — ใช้เทียบว่าแอดมินเปลี่ยน role จริงไหม
+  const [editUserOriginalRole, setEditUserOriginalRole] = useState<string>("");
   const [editOpen, setEditOpen] = useState(false);
 
   const supabase = createClient();
@@ -106,6 +122,8 @@ export default function AdminUsersPage() {
     if (!editUser) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const u = editUser as any;
+    const roleChanged = editUser.role !== editUserOriginalRole;
+
     const { error } = await supabase
       .from("skc_users")
       .update({
@@ -114,13 +132,20 @@ export default function AdminUsersPage() {
         campus: editUser.campus,
         is_active: editUser.is_active,
         job_quota: u.job_quota ?? 0,
+        // ตั้งสิทธิ์ใหม่เฉพาะเมื่อ role เปลี่ยน — ถ้าไม่เปลี่ยน ต้องไม่ทับ
+        // สิทธิ์ที่แอดมินปรับเองไว้ในหน้า /admin/permissions
+        ...(roleChanged ? defaultPermissions(editUser.role) : {}),
       })
       .eq("id", editUser.id);
 
     if (error) {
       toast.error("อัปเดตไม่สำเร็จ: " + error.message);
     } else {
-      toast.success("อัปเดตสำเร็จ");
+      toast.success(
+        roleChanged
+          ? `อัปเดตสำเร็จ — ตั้งสิทธิ์ตามบทบาท ${ROLES.find((r) => r.value === editUser.role)?.label ?? editUser.role} ให้แล้ว`
+          : "อัปเดตสำเร็จ"
+      );
       setEditOpen(false);
       loadUsers();
     }
@@ -264,7 +289,11 @@ export default function AdminUsersPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => { setEditUser({ ...user }); setEditOpen(true); }}
+                            onClick={() => {
+                              setEditUser({ ...user });
+                              setEditUserOriginalRole(user.role);
+                              setEditOpen(true);
+                            }}
                           >
                             <Edit2 className="size-4" />
                           </Button>
@@ -322,7 +351,7 @@ export default function AdminUsersPage() {
                   onValueChange={(v) => v && setEditUser({ ...editUser, role: v })}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    {ROLES.find((r) => r.value === editUser.role)?.label ?? editUser.role}
                   </SelectTrigger>
                   <SelectContent>
                     {ROLES.map((r) => (
@@ -330,6 +359,13 @@ export default function AdminUsersPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {editUser.role !== editUserOriginalRole && (
+                  <p className="text-[0.8rem] text-muted-foreground">
+                    เมื่อบันทึก สิทธิ์จะถูกตั้งใหม่ตามบทบาท
+                    {" "}{ROLES.find((r) => r.value === editUser.role)?.label} —
+                    สิทธิ์ที่เคยปรับเองไว้จะถูกแทนที่
+                  </p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-foreground">วิทยาเขต</Label>
@@ -338,7 +374,7 @@ export default function AdminUsersPage() {
                   onValueChange={(v) => v && setEditUser({ ...editUser, campus: v })}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    {CAMPUSES.find((c) => c.value === editUser.campus)?.label ?? editUser.campus}
                   </SelectTrigger>
                   <SelectContent>
                     {CAMPUSES.map((c) => (
