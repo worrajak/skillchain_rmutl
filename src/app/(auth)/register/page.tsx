@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,25 +12,43 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@/components/ui/select";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Clock, CheckCircle } from "lucide-react";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { Clock, CheckCircle, ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { PDPAConsent } from "@/components/pdpa-consent";
 
 const ROLES = [
-  { value: "student", label: "นักศึกษา" },
-  { value: "employer", label: "ผู้ว่าจ้างภายนอก" },
-  { value: "teacher", label: "อาจารย์" },
-  { value: "project_staff", label: "คณะทำงานใต้ร่มพระบารมี" },
-  { value: "rmutl_staff", label: "คณะทำงาน มทร.ล้านนา" },
-  { value: "donor", label: "ผู้บริจาค" },
+  {
+    value: "student",
+    label: "นักศึกษา",
+    blurb: "รับงานซ่อมบำรุง สะสมชั่วโมงฝึก และรับใบรับรองทักษะ",
+  },
+  {
+    value: "employer",
+    label: "ผู้ว่าจ้างภายนอก",
+    blurb: "ประกาศงาน เลือกนักศึกษา และจ่ายค่าตอบแทนผ่านระบบ",
+  },
+  {
+    value: "teacher",
+    label: "อาจารย์",
+    blurb: "ประเมินคุณภาพงาน 4 มิติ และรับรองทักษะนักศึกษา",
+  },
+  {
+    value: "project_staff",
+    label: "คณะทำงานใต้ร่มพระบารมี",
+    blurb: "จัดสรรงาน อนุมัติคำขอ และดูแลกองทุน",
+  },
+  {
+    value: "rmutl_staff",
+    label: "คณะทำงาน มทร.ล้านนา",
+    blurb: "แจ้งงานซ่อมบำรุงของหน่วยงานภายในมหาวิทยาลัย",
+  },
+  {
+    value: "donor",
+    label: "ผู้บริจาค",
+    blurb: "สนับสนุนกองทุนงานจิตอาสาและติดตามการใช้เงิน",
+  },
 ];
 
 const CAMPUSES = [
@@ -42,12 +61,45 @@ const CAMPUSES = [
   { value: "phitsanulok", label: "พิษณุโลก" },
 ];
 
+const STEPS = ["คุณเป็นใคร", "ข้อมูลบัญชี", "ข้อมูลเพิ่มเติม", "ยอมรับเงื่อนไข"];
+
+/** เกณฑ์รหัสผ่าน — แสดงให้ผู้ใช้เห็นว่าขาดอะไร ไม่ใช่แค่บอกว่าไม่ผ่าน */
+function passwordChecks(pw: string) {
+  return [
+    { label: "อย่างน้อย 8 ตัวอักษร", ok: pw.length >= 8 },
+    { label: "มีตัวเลขอย่างน้อย 1 ตัว", ok: /\d/.test(pw) },
+    { label: "มีตัวอักษรภาษาอังกฤษ", ok: /[a-zA-Z]/.test(pw) },
+  ];
+}
+
 export default function RegisterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="size-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+      }
+    >
+      <RegisterWizard />
+    </Suspense>
+  );
+}
+
+function RegisterWizard() {
+  const searchParams = useSearchParams();
+  const roleFromUrl = searchParams.get("role");
+  const initialRole = ROLES.some((r) => r.value === roleFromUrl)
+    ? (roleFromUrl as string)
+    : "student";
+
+  const [step, setStep] = useState(0);
+  const [role, setRole] = useState(initialRole);
+  const [campus, setCampus] = useState("huaykaew");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("student");
-  const [campus, setCampus] = useState("huaykaew");
+
   // ข้อมูลเพิ่มเติมตาม role
   const [studentIdCard, setStudentIdCard] = useState("");
   const [faculty, setFaculty] = useState("");
@@ -65,18 +117,58 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState(false);
   const supabase = createClient();
 
+  const isRmutlEmail = /@(.+\.)?rmutl\.ac\.th$/i.test(email.trim());
+  const pwChecks = passwordChecks(password);
+  const pwOk = pwChecks.every((c) => c.ok);
+
+  /** ตรวจเฉพาะขั้นปัจจุบัน — คืน error string ถ้าไปต่อไม่ได้ */
+  function validateStep(s: number): string {
+    if (s === 0) {
+      if (!role) return "กรุณาเลือกบทบาท";
+      if (!campus) return "กรุณาเลือกวิทยาเขต";
+    }
+    if (s === 1) {
+      if (!name.trim()) return "กรุณากรอกชื่อ-นามสกุล";
+      if (!email.trim()) return "กรุณากรอกอีเมล";
+      if (!pwOk) return "รหัสผ่านยังไม่ครบเกณฑ์ด้านล่าง";
+    }
+    if (s === 3 && !pdpaAccepted) {
+      return "กรุณาติ๊กยอมรับนโยบายความเป็นส่วนตัว (PDPA) ก่อน";
+    }
+    return "";
+  }
+
+  function goNext() {
+    const msg = validateStep(step);
+    if (msg) {
+      setError(msg);
+      return;
+    }
+    setError("");
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+  }
+
+  function goBack() {
+    setError("");
+    setStep((s) => Math.max(s - 1, 0));
+  }
+
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
+
+    // ตรวจทุกขั้นอีกครั้ง เผื่อผู้ใช้ย้อนกลับไปลบข้อมูลทิ้ง
+    for (let s = 0; s < STEPS.length; s++) {
+      const msg = validateStep(s);
+      if (msg) {
+        setError(msg);
+        setStep(s);
+        return;
+      }
+    }
+
     setLoading(true);
     setError("");
 
-    if (!pdpaAccepted) {
-      setError("กรุณายอมรับนโยบายความเป็นส่วนตัว (PDPA)");
-      setLoading(false);
-      return;
-    }
-
-    // Rate limit check
     const rlRes = await fetch("/api/auth/register-check", { method: "POST" });
     if (rlRes.status === 429) {
       const rlData = await rlRes.json();
@@ -87,7 +179,6 @@ export default function RegisterPage() {
 
     const metadata: Record<string, unknown> = { name, role, campus, pdpa_version: pdpaVersion };
 
-    // เพิ่มข้อมูลตาม role
     if (role === "student") {
       metadata.student_id_card = studentIdCard;
       metadata.faculty = faculty;
@@ -107,14 +198,14 @@ export default function RegisterPage() {
       metadata.org_registration = orgRegistration;
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: { data: metadata },
     });
 
-    if (error) {
-      setError(error.message);
+    if (signUpError) {
+      setError(signUpError.message);
       setLoading(false);
       return;
     }
@@ -125,161 +216,411 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-muted px-4">
+      <div className="flex min-h-screen items-center justify-center px-4">
         <Card className="w-full max-w-md text-center">
-          <CardContent className="py-10 space-y-4">
-            <CheckCircle className="size-16 mx-auto text-green-500" />
-            <CardTitle className="text-foreground">ลงทะเบียนสำเร็จ</CardTitle>
-            <div className="flex items-center justify-center gap-2 text-sm text-yellow-700 bg-yellow-50 rounded-lg p-3">
-              <Clock className="size-4 shrink-0" />
-              <span>บัญชีของคุณอยู่ระหว่าง<strong>รอการยืนยัน</strong>จากผู้ดูแลระบบ</span>
+          <CardContent className="space-y-4 py-10">
+            <CheckCircle className="mx-auto size-14 text-[var(--brand-success)]" />
+            <CardTitle className="text-2xl">ลงทะเบียนสำเร็จ</CardTitle>
+            <div className="flex items-start gap-2 rounded-lg bg-accent p-3 text-left text-sm text-accent-foreground">
+              <Clock className="mt-0.5 size-4 shrink-0" />
+              <span>
+                ผู้ดูแลจะตรวจสอบบัญชีของคุณ <strong>ภายใน 24 ชั่วโมง</strong> และส่งอีเมลแจ้งไปที่{" "}
+                <strong className="break-all">{email}</strong> เมื่อเข้าใช้งานได้
+              </span>
             </div>
             <p className="text-sm text-muted-foreground">
-              เมื่อได้รับการยืนยันแล้ว จะสามารถเข้าสู่ระบบได้
+              ถ้าไม่ได้รับอีเมลภายใน 24 ชั่วโมง ตรวจในกล่องจดหมายขยะ หรือติดต่อกลุ่มแผนงานใต้ร่มพระบารมี
             </p>
-            <Link href="/login">
-              <Button>ไปหน้าเข้าสู่ระบบ</Button>
-            </Link>
+            <Button render={<Link href="/login" />}>ไปหน้าเข้าสู่ระบบ</Button>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-muted px-4 py-8">
-      <Card className="w-full max-w-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl text-foreground">ลงทะเบียน SkillChain</CardTitle>
-          <CardDescription>สร้างบัญชีเพื่อเข้าใช้งานระบบ</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleRegister} className="space-y-4">
-            {/* ข้อมูลพื้นฐาน */}
-            <div className="space-y-2">
-              <Label className="text-foreground">ชื่อ-นามสกุล</Label>
-              <Input placeholder="ชื่อ นามสกุล" value={name} onChange={(e) => setName(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">อีเมล</Label>
-              <Input type="email" placeholder="email@rmutl.ac.th" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-foreground">รหัสผ่าน</Label>
-              <Input type="password" placeholder="อย่างน้อย 6 ตัวอักษร" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
-            </div>
+  const selectedRole = ROLES.find((r) => r.value === role);
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label className="text-foreground">บทบาท</Label>
-                <Select value={role} onValueChange={(v) => v && setRole(v)}>
-                  <SelectTrigger>
-                    {ROLES.find((r) => r.value === role)?.label ?? "เลือกบทบาท"}
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ROLES.map((r) => <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+  return (
+    <div className="grid min-h-screen lg:grid-cols-[minmax(0,26rem)_1fr]">
+      {/* แถบซ้าย — บอกว่าเหลืออีกกี่ขั้น */}
+      <aside className="flex flex-col justify-between gap-10 bg-primary px-8 py-10 text-primary-foreground lg:px-10 lg:py-14">
+        <div>
+          <p className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-primary-foreground/60">
+            SkillChain · ลงทะเบียน
+          </p>
+          <h1 className="mt-8 text-3xl font-semibold leading-tight text-primary-foreground lg:text-4xl">
+            มาช่วยกันทำให้งานซ่อม
+            <br />
+            เป็นโอกาสฝึกวิชาชีพ
+          </h1>
+          <p className="mt-5 max-w-[42ch] text-sm leading-relaxed text-primary-foreground/75">
+            กรอก 4 ขั้นตอน ใช้เวลาประมาณ 3 นาที ผู้ดูแลตรวจสอบภายใน 24 ชั่วโมง
+          </p>
+
+          <ol className="mt-10 space-y-4">
+            {STEPS.map((label, i) => {
+              const done = i < step;
+              const active = i === step;
+              return (
+                <li key={label} className="flex items-center gap-3">
+                  <span
+                    className={cn(
+                      "flex size-6 shrink-0 items-center justify-center rounded-full font-mono text-xs font-bold",
+                      done && "bg-primary-foreground/25 text-primary-foreground",
+                      active && "bg-[var(--brand-brass)] text-primary",
+                      !done && !active && "bg-primary-foreground/15 text-primary-foreground/70"
+                    )}
+                  >
+                    {done ? <Check className="size-3.5" /> : i + 1}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-sm",
+                      active
+                        ? "font-semibold text-primary-foreground"
+                        : "text-primary-foreground/70"
+                    )}
+                  >
+                    {label}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+
+        <p className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-primary-foreground/60">
+          {step + 1} / {STEPS.length}
+        </p>
+      </aside>
+
+      {/* ฟอร์ม */}
+      <main className="flex items-start justify-center px-4 py-10 lg:items-center lg:px-12">
+        <form onSubmit={handleRegister} className="w-full max-w-xl space-y-6">
+          <div>
+            <p className="font-mono text-[0.7rem] uppercase tracking-[0.14em] text-[var(--brand-brass)]">
+              ขั้นตอน {step + 1} จาก {STEPS.length}
+            </p>
+            <h2 className="mt-1 text-2xl font-bold">{STEPS[step]}</h2>
+          </div>
+
+          {/* ── ขั้น 1 · บทบาท + วิทยาเขต ───────────────────────── */}
+          {step === 0 && (
+            <div className="space-y-5">
+              <p className="text-sm text-muted-foreground">
+                เลือกบทบาทที่ตรงกับสถานะปัจจุบันของคุณ — แต่ละบทบาทเห็นเมนูและสิทธิ์ต่างกัน
+              </p>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {ROLES.map((r) => (
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => setRole(r.value)}
+                    aria-pressed={role === r.value}
+                    className={cn(
+                      "rounded-lg border-2 p-4 text-left transition-colors",
+                      "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+                      role === r.value
+                        ? "border-primary bg-secondary"
+                        : "border-border bg-card hover:border-primary/50"
+                    )}
+                  >
+                    <span className="block font-semibold">{r.label}</span>
+                    <span className="mt-1 block text-[0.8rem] leading-relaxed text-muted-foreground">
+                      {r.blurb}
+                    </span>
+                  </button>
+                ))}
               </div>
+
               <div className="space-y-2">
-                <Label className="text-foreground">วิทยาเขต</Label>
+                <Label>วิทยาเขต</Label>
                 <Select value={campus} onValueChange={(v) => v && setCampus(v)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     {CAMPUSES.find((c) => c.value === campus)?.label ?? "เลือกวิทยาเขต"}
                   </SelectTrigger>
                   <SelectContent>
-                    {CAMPUSES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    {CAMPUSES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
+          )}
 
-            {/* ข้อมูลเพิ่มเติม — นักศึกษา */}
-            {role === "student" && (
-              <div className="space-y-3 rounded-lg border p-3 bg-blue-50/50">
-                <p className="text-xs font-medium text-blue-700">ข้อมูลนักศึกษา</p>
-                <Input placeholder="รหัสนักศึกษา" value={studentIdCard} onChange={(e) => setStudentIdCard(e.target.value)} />
-                <Input placeholder="คณะ/สาขา" value={faculty} onChange={(e) => setFaculty(e.target.value)} />
-                <Select value={yearLevel} onValueChange={(v) => v && setYearLevel(v)}>
-                  <SelectTrigger><SelectValue placeholder="ชั้นปี" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">ปี 1</SelectItem>
-                    <SelectItem value="2">ปี 2</SelectItem>
-                    <SelectItem value="3">ปี 3</SelectItem>
-                    <SelectItem value="4">ปี 4</SelectItem>
-                    <SelectItem value="5">ปี 5</SelectItem>
-                  </SelectContent>
-                </Select>
+          {/* ── ขั้น 2 · ข้อมูลบัญชี ────────────────────────────── */}
+          {step === 1 && (
+            <div className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="reg-name">ชื่อ-นามสกุล</Label>
+                <Input
+                  id="reg-name"
+                  placeholder="เช่น สมชาย ใจดี"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
               </div>
-            )}
 
-            {/* ข้อมูลเพิ่มเติม — ผู้ว่าจ้าง */}
-            {role === "employer" && (
-              <div className="space-y-3 rounded-lg border p-3 bg-green-50/50">
-                <p className="text-xs font-medium text-green-700">ข้อมูลหน่วยงาน/บริษัท</p>
-                <Input placeholder="ชื่อหน่วยงาน/บริษัท" value={organization} onChange={(e) => setOrganization(e.target.value)} />
-                <Input placeholder="เลขทะเบียนนิติบุคคล" value={orgRegistration} onChange={(e) => setOrgRegistration(e.target.value)} />
-                <Input placeholder="ที่อยู่" value={orgAddress} onChange={(e) => setOrgAddress(e.target.value)} />
+              <div className="space-y-2">
+                <Label htmlFor="reg-email">อีเมล</Label>
+                <Input
+                  id="reg-email"
+                  type="email"
+                  placeholder="เช่น somchai@rmutl.ac.th"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                {email.trim() !== "" && (
+                  <p
+                    className={cn(
+                      "text-[0.8rem]",
+                      isRmutlEmail ? "text-[var(--brand-success)]" : "text-muted-foreground"
+                    )}
+                  >
+                    {isRmutlEmail
+                      ? "เป็นอีเมลของมหาวิทยาลัย — ตรวจสอบได้เร็วกว่าอีเมลอื่น"
+                      : "ใช้อีเมล @rmutl.ac.th จะได้รับการตรวจสอบเร็วกว่า"}
+                  </p>
+                )}
               </div>
-            )}
 
-            {/* ข้อมูลเพิ่มเติม — อาจารย์ */}
-            {role === "teacher" && (
-              <div className="space-y-3 rounded-lg border p-3 bg-orange-50/50">
-                <p className="text-xs font-medium text-orange-700">ข้อมูลอาจารย์</p>
-                <Input placeholder="รหัสอาจารย์" value={teacherIdCard} onChange={(e) => setTeacherIdCard(e.target.value)} />
-                <Input placeholder="คณะ/สาขา" value={faculty} onChange={(e) => setFaculty(e.target.value)} />
+              <div className="space-y-2">
+                <Label htmlFor="reg-password">รหัสผ่าน</Label>
+                <Input
+                  id="reg-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <ul className="space-y-1 pt-1">
+                  {pwChecks.map((c) => (
+                    <li
+                      key={c.label}
+                      className={cn(
+                        "flex items-center gap-2 text-[0.8rem]",
+                        c.ok ? "text-[var(--brand-success)]" : "text-muted-foreground"
+                      )}
+                    >
+                      <Check className={cn("size-3.5", !c.ok && "opacity-30")} />
+                      {c.label}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            )}
+            </div>
+          )}
 
-            {/* ข้อมูลเพิ่มเติม — คณะทำงาน */}
-            {(role === "project_staff" || role === "rmutl_staff") && (
-              <div className="space-y-3 rounded-lg border p-3 bg-purple-50/50">
-                <p className="text-xs font-medium text-purple-700">
-                  {role === "project_staff" ? "ข้อมูลคณะทำงานใต้ร่มพระบารมี" : "ข้อมูลคณะทำงาน มทร.ล้านนา"}
-                </p>
-                <Input placeholder="ตำแหน่ง" value={staffPosition} onChange={(e) => setStaffPosition(e.target.value)} />
-                <Input placeholder="คณะ/หน่วยงาน" value={faculty} onChange={(e) => setFaculty(e.target.value)} />
-              </div>
-            )}
-
-            {/* ข้อมูลเพิ่มเติม — ผู้บริจาค */}
-            {role === "donor" && (
-              <div className="space-y-3 rounded-lg border p-3 bg-yellow-50/50">
-                <p className="text-xs font-medium text-yellow-700">ข้อมูลผู้บริจาค</p>
-                <Input placeholder="ชื่อหน่วยงาน (ถ้ามี)" value={organization} onChange={(e) => setOrganization(e.target.value)} />
-                <Input placeholder="เลขผู้เสียภาษี (สำหรับใบเสร็จ)" value={orgRegistration} onChange={(e) => setOrgRegistration(e.target.value)} />
-              </div>
-            )}
-
-            {/* PDPA Consent */}
-            <PDPAConsent
-              accepted={pdpaAccepted}
-              onAccept={(version) => { setPdpaAccepted(true); setPdpaVersion(version); }}
-            />
-
-            {error && <p className="text-sm text-red-600">{error}</p>}
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "กำลังลงทะเบียน..." : "ลงทะเบียน"}
-            </Button>
-
-            {!pdpaAccepted && (
-              <p className="text-[0.72rem] text-center text-muted-foreground">
-                ติ๊กยอมรับนโยบายความเป็นส่วนตัวด้านบนก่อนจึงจะลงทะเบียนได้
+          {/* ── ขั้น 3 · ข้อมูลเพิ่มเติมตามบทบาท ──────────────── */}
+          {step === 2 && (
+            <div className="space-y-5">
+              <p className="text-sm text-muted-foreground">
+                ข้อมูลสำหรับบทบาท <strong className="text-foreground">{selectedRole?.label}</strong> —
+                กรอกได้ภายหลังในหน้าโปรไฟล์ ถ้ายังไม่พร้อมตอนนี้
               </p>
+
+              {role === "student" && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="f-student-id">รหัสนักศึกษา</Label>
+                    <Input
+                      id="f-student-id"
+                      value={studentIdCard}
+                      onChange={(e) => setStudentIdCard(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="f-faculty">คณะ / สาขาวิชา</Label>
+                    <Input
+                      id="f-faculty"
+                      placeholder="เช่น วิศวกรรมไฟฟ้า"
+                      value={faculty}
+                      onChange={(e) => setFaculty(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>ชั้นปี</Label>
+                    <Select value={yearLevel} onValueChange={(v) => v && setYearLevel(v)}>
+                      <SelectTrigger className="w-full">
+                        {yearLevel ? `ปี ${yearLevel}` : "เลือกชั้นปี"}
+                      </SelectTrigger>
+                      <SelectContent>
+                        {["1", "2", "3", "4", "5"].map((y) => (
+                          <SelectItem key={y} value={y}>
+                            ปี {y}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </>
+              )}
+
+              {role === "employer" && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="f-org">ชื่อหน่วยงาน / บริษัท</Label>
+                    <Input
+                      id="f-org"
+                      value={organization}
+                      onChange={(e) => setOrganization(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="f-orgreg">เลขทะเบียนนิติบุคคล</Label>
+                    <Input
+                      id="f-orgreg"
+                      inputMode="numeric"
+                      value={orgRegistration}
+                      onChange={(e) => setOrgRegistration(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="f-orgaddr">ที่อยู่</Label>
+                    <Input
+                      id="f-orgaddr"
+                      value={orgAddress}
+                      onChange={(e) => setOrgAddress(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
+              {role === "teacher" && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="f-teacher-id">รหัสอาจารย์</Label>
+                    <Input
+                      id="f-teacher-id"
+                      value={teacherIdCard}
+                      onChange={(e) => setTeacherIdCard(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="f-teacher-faculty">คณะ / สาขาวิชา</Label>
+                    <Input
+                      id="f-teacher-faculty"
+                      value={faculty}
+                      onChange={(e) => setFaculty(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
+              {(role === "project_staff" || role === "rmutl_staff") && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="f-position">ตำแหน่ง</Label>
+                    <Input
+                      id="f-position"
+                      value={staffPosition}
+                      onChange={(e) => setStaffPosition(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="f-unit">คณะ / หน่วยงาน</Label>
+                    <Input
+                      id="f-unit"
+                      value={faculty}
+                      onChange={(e) => setFaculty(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+
+              {role === "donor" && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="f-donor-org">ชื่อหน่วยงาน (ถ้ามี)</Label>
+                    <Input
+                      id="f-donor-org"
+                      value={organization}
+                      onChange={(e) => setOrganization(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="f-taxid">เลขผู้เสียภาษี (สำหรับออกใบเสร็จ)</Label>
+                    <Input
+                      id="f-taxid"
+                      inputMode="numeric"
+                      value={orgRegistration}
+                      onChange={(e) => setOrgRegistration(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── ขั้น 4 · PDPA + ตรวจทาน ───────────────────────── */}
+          {step === 3 && (
+            <div className="space-y-5">
+              <dl className="divide-y rounded-lg border">
+                {[
+                  { k: "บทบาท", v: selectedRole?.label },
+                  { k: "วิทยาเขต", v: CAMPUSES.find((c) => c.value === campus)?.label },
+                  { k: "ชื่อ-นามสกุล", v: name },
+                  { k: "อีเมล", v: email },
+                ].map((row) => (
+                  <div key={row.k} className="flex justify-between gap-4 px-4 py-2.5 text-sm">
+                    <dt className="text-muted-foreground">{row.k}</dt>
+                    <dd className="text-right font-medium break-all">{row.v}</dd>
+                  </div>
+                ))}
+              </dl>
+
+              <PDPAConsent
+                accepted={pdpaAccepted}
+                onAccept={(version) => {
+                  setPdpaAccepted(true);
+                  setPdpaVersion(version);
+                }}
+              />
+
+              <p className="text-[0.8rem] leading-relaxed text-muted-foreground">
+                ผู้ดูแลจะตรวจสอบและยืนยันบัญชีภายใน 24 ชั่วโมง — คุณจะได้รับอีเมลแจ้งเมื่อพร้อมใช้งาน
+              </p>
+            </div>
+          )}
+
+          {error && (
+            <p role="alert" className="text-sm font-medium text-destructive">
+              {error}
+            </p>
+          )}
+
+          {/* ปุ่มเดินหน้า/ถอยหลัง */}
+          <div className="flex items-center gap-3 pt-2">
+            {step > 0 && (
+              <Button type="button" variant="outline" size="lg" onClick={goBack}>
+                <ArrowLeft className="size-4" />
+                ย้อนกลับ
+              </Button>
             )}
 
-            <p className="text-[0.68rem] text-center text-muted-foreground">
-              ผู้ดูแลจะตรวจสอบและยืนยันบัญชีภายใน 24 ชั่วโมง — คุณจะได้รับอีเมลแจ้งเมื่อพร้อมใช้งาน
-            </p>
-          </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
+            {step < STEPS.length - 1 ? (
+              <Button type="button" size="lg" className="flex-1" onClick={goNext}>
+                ถัดไป — {STEPS[step + 1]}
+                <ArrowRight className="size-4" />
+              </Button>
+            ) : (
+              <Button type="submit" size="lg" className="flex-1" disabled={loading}>
+                {loading ? "กำลังลงทะเบียน..." : "ลงทะเบียน"}
+              </Button>
+            )}
+          </div>
+
+          <p className="text-center text-sm text-muted-foreground">
             มีบัญชีแล้ว?{" "}
-            <Link href="/login" className="text-blue-600 hover:underline">เข้าสู่ระบบ</Link>
+            <Link href="/login" className="font-semibold text-primary hover:underline">
+              เข้าสู่ระบบ
+            </Link>
           </p>
-        </CardContent>
-      </Card>
+        </form>
+      </main>
     </div>
   );
 }
