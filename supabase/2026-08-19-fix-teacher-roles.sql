@@ -1,92 +1,120 @@
--- แก้ role ของอาจารย์ที่ลงทะเบียนมาเป็น student
+-- แก้บัญชีอาจารย์ที่ลงทะเบียนมาเป็นนักศึกษา
 -- 2026-08-19
 --
--- สาเหตุ: ตอนสมัคร dropdown บทบาทแสดงค่า enum ดิบ ("student") และตั้งเป็น
--- ค่าเริ่มต้น ผู้สมัครจึงไม่รู้ว่าต้องเปลี่ยน แก้ที่หน้าลงทะเบียนแล้วใน
--- commit 994849b (แสดงชื่อไทย) และ 93716da (การ์ดเลือกบทบาท)
+-- อาจารย์ 2 ท่านสมัครแล้วได้ role 'student' เพราะตอนนั้น dropdown บทบาท
+-- แสดงค่า enum ดิบ ("student") และตั้งเป็นค่าเริ่มต้น แก้ที่หน้าลงทะเบียน
+-- แล้วใน commit 994849b (แสดงชื่อไทย) และ 93716da (การ์ดเลือกบทบาท)
 --
--- ตารางคือ public.skc_users (ดู @@map ใน prisma/schema.prisma:77)
--- หมายเหตุ: supabase-auth-trigger.sql ยังเขียน "public.users" อยู่ ซึ่งตกรุ่น
--- ตั้งแต่ตอน rename ตาราง — อย่ายึดไฟล์นั้นเป็นแหล่งอ้างอิงชื่อตาราง/คอลัมน์
+-- ทั้งสองบัญชีมีคอลัมน์ name ว่าง เพราะ trigger เดิมใช้ COALESCE ที่หยุดที่
+-- ค่าแรกที่ไม่ใช่ NULL — เมื่อ metadata ส่งสตริงว่างมา fallback จึงไม่ทำงาน
+-- แก้ที่ trigger แล้วใน 2026-08-19-signup-trigger-keep-profile-fields.sql
 --
--- สิทธิ์: ระบบคำนวณจาก skc_role_permissions (role → permission) บวกกับ
--- override รายคน ตอนอ่านค่า ไม่ได้เก็บเป็นคอลัมน์ในตารางผู้ใช้
--- ดังนั้น "แก้คอลัมน์ role อย่างเดียวก็พอ" สิทธิ์จะตามมาเอง
+-- ตารางคือ public.skc_users (@@map ใน prisma/schema.prisma:77)
+-- สิทธิ์มาจาก skc_role_permissions ตาม role ตอนอ่านค่า — แก้คอลัมน์ role พอ
 --
--- วิธีใช้: รันทีละบล็อกใน Supabase SQL Editor · ตรวจผลก่อนรันบล็อกถัดไป
+-- วิธีใช้: รันทีละบล็อก ตรวจผลก่อนไปบล็อกถัดไป
 
 -- ═══════════════════════════════════════════════════════════════
--- บล็อก 1 · ตรวจก่อน — ดูว่าใครบ้างที่จะโดนแก้ (ยังไม่เปลี่ยนอะไร)
+-- บล็อก 1 · ดูสถานะปัจจุบันของทั้ง 3 บัญชี
 -- ═══════════════════════════════════════════════════════════════
-SELECT
-  id, email, name, role, campus, approval_status,
-  teacher_id_card, student_id_card, faculty,
-  created_at
+SELECT id, email, name, role, campus, faculty, teacher_id_card,
+       approval_status, is_active, created_at
 FROM public.skc_users
-WHERE email ILIKE '%montri%'
-   OR email ILIKE '%nattawat%'
-   OR name  ILIKE '%มนตรี%'
-   OR name  ILIKE '%ณัฐวัฒน%'
+WHERE email IN (
+  'montri@rmutl.ac.th',
+  'nattawat@rmutl.ac.th',
+  'montri.ngaodat@gmail.com'
+)
 ORDER BY created_at;
 
--- ตรวจให้แน่ใจว่า:
---   1. เจอครบ 2 คน และไม่มีคนอื่นติดมาด้วย
---   2. role ปัจจุบันเป็น 'student' จริง
---   3. จด id ทั้งสองไว้ แล้วใช้ id ในบล็อก 2 แทนการ match ด้วยชื่อ/อีเมล
+-- ตรวจ approval_status ด้วย — ถ้ายัง PENDING ต้องอนุมัติแยกต่างหาก
+-- (ผ่านหน้า /admin/approvals หรือเพิ่มใน UPDATE บล็อก 2)
 
 
 -- ═══════════════════════════════════════════════════════════════
--- บล็อก 2 · แก้จริง — แทน id ที่จดไว้ก่อนรัน
+-- บล็อก 2 · ตั้ง role และข้อมูลให้อาจารย์ 2 ท่าน
 -- ═══════════════════════════════════════════════════════════════
 BEGIN;
 
+-- ผศ.มนตรี เงาเดช · วิศวกรรมไฟฟ้า คณะวิศวกรรมศาสตร์
 UPDATE public.skc_users
 SET role       = 'teacher'::"UserRole",
+    name       = 'ผศ.มนตรี เงาเดช',
+    faculty    = 'คณะวิศวกรรมศาสตร์ สาขาวิศวกรรมไฟฟ้า',
     updated_at = NOW()
-WHERE id IN (
-  -- ใส่ id จากบล็อก 1 ที่นี่
-  '00000000-0000-0000-0000-000000000000',
-  '00000000-0000-0000-0000-000000000000'
-);
+WHERE email = 'montri@rmutl.ac.th';
 
--- ตรวจว่าได้ 2 แถวและ role ถูกต้องก่อน COMMIT
-SELECT id, email, name, role
+-- ณัฐวัฒน์ พัลวัล (Nattawat Panlawan) · วิศวกรรมไฟฟ้า คณะวิศวกรรมศาสตร์
+UPDATE public.skc_users
+SET role       = 'teacher'::"UserRole",
+    name       = 'ณัฐวัฒน์ พัลวัล',
+    faculty    = 'คณะวิศวกรรมศาสตร์ สาขาวิศวกรรมไฟฟ้า',
+    updated_at = NOW()
+WHERE email = 'nattawat@rmutl.ac.th';
+
+-- ตรวจว่าได้ 2 แถวและถูกต้องก่อน COMMIT
+SELECT email, name, role, faculty, approval_status, is_active
 FROM public.skc_users
-WHERE id IN (
-  '00000000-0000-0000-0000-000000000000',
-  '00000000-0000-0000-0000-000000000000'
-);
+WHERE email IN ('montri@rmutl.ac.th', 'nattawat@rmutl.ac.th');
 
 COMMIT;
--- ถ้าผลไม่ถูกต้อง: ROLLBACK;
+-- ROLLBACK; ถ้าผลไม่ถูก
+
+-- หมายเหตุ: teacher_id_card ยังว่าง เพราะตอนสมัครเลือกเป็นนักศึกษา
+-- ฟอร์มจึงไม่ได้ถามช่องนั้น — ให้อาจารย์กรอกเองในหน้าโปรไฟล์ภายหลัง
 
 
 -- ═══════════════════════════════════════════════════════════════
--- บล็อก 3 · ตรวจหาคนอื่นที่อาจสมัครผิดแบบเดียวกัน
+-- บล็อก 3 · ปิดบัญชีซ้ำของ ผศ.มนตรี
 -- ═══════════════════════════════════════════════════════════════
--- student ที่กรอก teacher_id_card หรือ staff_position มา = สัญญาณว่าเลือก
--- บทบาทผิด เพราะช่องพวกนี้จะโผล่เฉพาะเมื่อเลือก role นั้น ๆ
-SELECT id, email, name, role, teacher_id_card, staff_position, faculty, created_at
-FROM public.skc_users
-WHERE role = 'student'
-  AND (
-    COALESCE(teacher_id_card, '') <> ''
-    OR COALESCE(staff_position, '') <> ''
-  )
-ORDER BY created_at;
+-- montri.ngaodat@gmail.com (17 ก.ค.) เป็นบัญชีที่สมัครซ้ำ หลังบัญชี
+-- montri@rmutl.ac.th (24 มิ.ย.) ยังไม่ได้รับการอนุมัติ
+-- ปิดการใช้งานแทนการลบ เพื่อไม่ให้กระทบแถวอื่นที่อาจอ้างถึง id นี้
 
--- student ที่ไม่มีรหัสนักศึกษาเลย — อาจไม่ใช่นักศึกษาจริง
-SELECT id, email, name, role, student_id_card, faculty, created_at
+-- ตรวจก่อนว่าบัญชีนี้ยังไม่ได้ผูกกับงาน/การประเมินใด ๆ
+SELECT
+  (SELECT COUNT(*) FROM public.skc_jobs
+    WHERE student_id = u.id OR employer_id = u.id OR mentor_id = u.id) AS jobs,
+  (SELECT COUNT(*) FROM public.skc_evaluations
+    WHERE teacher_id = u.id OR student_id = u.id)                      AS evaluations
+FROM public.skc_users u
+WHERE u.email = 'montri.ngaodat@gmail.com';
+
+-- ถ้าทั้งสองค่าเป็น 0 ค่อยรัน UPDATE นี้
+BEGIN;
+
+UPDATE public.skc_users
+SET is_active  = FALSE,
+    updated_at = NOW()
+WHERE email = 'montri.ngaodat@gmail.com';
+
+SELECT email, name, role, is_active FROM public.skc_users
+WHERE email = 'montri.ngaodat@gmail.com';
+
+COMMIT;
+-- ROLLBACK; ถ้าผลไม่ถูก
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- บล็อก 4 · หาคนอื่นที่อาจสมัครผิดบทบาทแบบเดียวกัน
+-- ═══════════════════════════════════════════════════════════════
+-- บัญชีอีเมลมหาวิทยาลัยที่ role เป็น student แต่ไม่มีรหัสนักศึกษา
+-- และไม่ใช่รูปแบบอีเมลนักศึกษา (@live.rmutl.ac.th)
+SELECT id, email, name, role, faculty, student_id_card, created_at
 FROM public.skc_users
 WHERE role = 'student'
+  AND email LIKE '%@rmutl.ac.th'
+  AND email NOT LIKE '%@live.rmutl.ac.th'
   AND COALESCE(student_id_card, '') = ''
 ORDER BY created_at;
 
+-- บัญชีที่ยังไม่มีชื่อ — ผลจากบั๊ก COALESCE ใน trigger เดิม
+SELECT id, email, name, role, created_at
+FROM public.skc_users
+WHERE COALESCE(name, '') = ''
+ORDER BY created_at;
 
--- ═══════════════════════════════════════════════════════════════
--- บล็อก 4 · ตรวจว่าอาจารย์ได้สิทธิ์ครบหลังแก้
--- ═══════════════════════════════════════════════════════════════
--- ดูว่า role 'teacher' ผูกกับ permission อะไรบ้างในระบบ
+-- ดูว่า role teacher ได้สิทธิ์อะไรบ้าง
 SELECT role, permission_code
 FROM public.skc_role_permissions
 WHERE role = 'teacher'

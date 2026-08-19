@@ -7,10 +7,14 @@
 -- 9 ช่องแล้วส่งไปใน raw_user_meta_data แต่ trigger ไม่ได้อ่าน ข้อมูลจึงหาย
 -- ทุกครั้งที่มีคนสมัคร
 --
--- ผลที่เกิดขึ้นแล้ว:
---   · campus ตกไปใช้ค่า default 'huaykaew' ทุกคน แม้ผู้สมัครจะเลือกดอยสะเก็ด
---   · student_id_card / faculty / year_level ว่างทั้งหมด
---   · teacher_id_card / staff_position / organization ว่างทั้งหมด
+-- ผลที่เกิดขึ้นแล้ว (ยืนยันกับ production 40 บัญชี):
+--   · campus ตกไปใช้ค่า default 'huaykaew' ทุกคน
+--   · student_id_card / faculty / year_level ว่าง 39 จาก 40
+--   · teacher_id_card ว่างทั้งหมด
+--
+-- บั๊กที่สอง: COALESCE ของคอลัมน์ name หยุดที่ค่าแรกที่ไม่ใช่ NULL เมื่อ
+-- metadata ส่งสตริงว่างมา จึงได้ชื่อว่างและ fallback ทั้ง 3 ชั้นไม่ทำงาน
+-- แก้ด้วย NULLIF ทุกชั้นในบล็อก 2
 --
 -- ไฟล์ supabase-auth-trigger.sql ในรีโปไม่ตรงกับของจริง (ยังชี้ตาราง "users"
 -- และมีคอลัมน์สิทธิ์ที่ไม่มีอยู่แล้ว) — ให้ยึดไฟล์นี้แทน
@@ -65,17 +69,20 @@ BEGIN
   VALUES (
     NEW.id::text,
     NEW.email,
+    -- ต้อง NULLIF ทุกชั้น เพราะ COALESCE หยุดที่ค่าแรกที่ไม่ใช่ NULL
+    -- ถ้า metadata ส่งสตริงว่างมา จะได้ชื่อว่างและ fallback ไม่ทำงาน
+    -- (เกิดขึ้นจริงกับบัญชี montri@ และ nattawat@ ก่อนแก้จุดนี้)
     COALESCE(
-      NEW.raw_user_meta_data->>'name',
-      NEW.raw_user_meta_data->>'full_name',
-      CONCAT_WS(' ',
+      NULLIF(NEW.raw_user_meta_data->>'name', ''),
+      NULLIF(NEW.raw_user_meta_data->>'full_name', ''),
+      NULLIF(CONCAT_WS(' ',
         NEW.raw_user_meta_data->>'first_name',
         NEW.raw_user_meta_data->>'last_name'
-      ),
+      ), ''),
       SPLIT_PART(NEW.email, '@', 1)
     ),
     COALESCE((NEW.raw_user_meta_data->>'role')::"UserRole", 'student'::"UserRole"),
-    COALESCE(NEW.raw_user_meta_data->>'campus', 'huaykaew'),
+    COALESCE(NULLIF(NEW.raw_user_meta_data->>'campus', ''), 'huaykaew'),
     'PENDING'::"ApprovalStatus",
     TRUE,
     NEW.email_confirmed_at IS NOT NULL,
